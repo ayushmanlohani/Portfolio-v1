@@ -1,0 +1,1677 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   Windows 7, inside a beige CRT.
+
+   The monitor fills the viewport and the glass takes whatever
+   shape the viewer's screen is. There is no fixed aspect ratio
+   and no stand: the bezel is a frame around the browser window,
+   so an ultrawide gets a wide desktop and a laptop gets a
+   laptop-shaped one. Nothing ever gaps at the sides or clips at
+   the bottom, because there is nothing left over to place.
+
+   Three units do all the work:
+   • --bezel  frame thickness on three sides
+   • --chin   the deeper bottom edge, where the brand and LED live
+   • --px     one Windows-7 pixel
+
+   `--px` is fixed at 1px on purpose. A bigger monitor should show
+   MORE desktop, not a scaled-up UI — same as a real screen at a
+   higher resolution. So the taskbar is literally Win7's 40px, and
+   every OS measurement below is written as its real value.
+
+   Both frame units key off `vmin` (the smaller viewport side), not
+   `vw` — a percentage of width would balloon into a giant slab of
+   plastic on an ultrawide.
+   ───────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body {
+  background: #0e0f11;
+  color: #f2f2f2;
+  /* Segoe UI is Windows 7's system font and is already installed on
+     Windows. Tahoma is the XP-era fallback, so the chrome degrades to
+     something period-correct rather than to Helvetica. */
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── The room ──────────────────────────────────────────────────
+   Only visible in the monitor's rounded corners now. It keeps the
+   corners from cutting to white.
+   ───────────────────────────────────────────────────────────── */
+
+.room {
+  position: relative;
+  height: 100%;
+  background: #0a0b0d;
+}
+
+/* ── Beige CRT ─────────────────────────────────────────────── */
+
+.crt {
+  --bezel: clamp(14px, 3.4vmin, 56px);
+  --chin: clamp(38px, 8vmin, 124px);
+
+  /* --os-px is the true Windows pixel. --px is what components read, so a
+     single panel can scale itself (the Start menu runs at 90%) by overriding
+     --px against --os-px without touching any of its own measurements. */
+  --os-px: 1px;
+  --px: var(--os-px);
+
+  position: absolute;
+  inset: 0;
+}
+
+/* Frameless: no plastic at all, Windows edge to edge. A look-see toggle —
+   flip `data-frame` in components/Monitor.tsx between "on" and "off". */
+.crt[data-frame="off"] {
+  --bezel: 0px;
+  --chin: 0px;
+}
+
+.crt[data-frame="off"] .crt-body {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.crt[data-frame="off"] .crt-screen {
+  border-radius: 0;
+  /* Keep the inner darkening — that's the glass, not the plastic. */
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.75);
+}
+
+.crt[data-frame="off"] .crt-chin {
+  display: none;
+}
+
+.crt-body {
+  position: absolute;
+  inset: 0;
+  padding: var(--bezel) var(--bezel) var(--chin);
+  border-radius: clamp(10px, 2.2vmin, 32px);
+  background: linear-gradient(
+    160deg,
+    #e6dfcd 0%,
+    #d5cdb8 26%,
+    #c2b9a3 62%,
+    #a9a08b 100%
+  );
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.28);
+}
+
+/* The glass. Fills whatever the padding box leaves, so its shape is
+   the viewer's screen shape minus the frame. */
+.crt-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: clamp(4px, 0.9vmin, 14px);
+  box-shadow:
+    inset 0 0 0 2px #6f6a5c,
+    inset 0 0 30px rgba(0, 0, 0, 0.75),
+    0 0 0 clamp(3px, 0.6vmin, 9px) #b4ab96,
+    0 0 0 clamp(4px, 0.85vmin, 12px) #8e8672;
+}
+
+/* Curved-glass read: barrel vignette + a specular streak off the top
+   + scanlines. Sits above the OS, ignores the mouse. */
+.crt-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  background:
+    radial-gradient(120% 100% at 50% 50%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, 0.42) 100%),
+    linear-gradient(
+      178deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 14%,
+      rgba(255, 255, 255, 0) 32%
+    ),
+    /* Scanlines, but a fine grain rather than stripes. At 10% black they read
+       as banding across a white window — worse on a scaled display, where a
+       1px line lands on fractional device pixels and alternates thick and
+       thin. Kept at a third of that: still a CRT, no longer a corduroy. */
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.032) 0 1px,
+      rgba(0, 0, 0, 0) 1px 3px
+    );
+}
+
+/* Chin: brand, controls, power LED. */
+.crt-chin {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--chin);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(18px, 4vmin, 64px);
+}
+
+.crt-brand {
+  font-size: clamp(9px, 1.15vmin, 16px);
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  color: #6d6555;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+.crt-controls {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.9vmin, 14px);
+}
+
+.crt-button {
+  width: clamp(16px, 2.2vmin, 34px);
+  height: clamp(5px, 0.78vmin, 12px);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #cfc6b1, #a89f8a);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.crt-led {
+  width: clamp(6px, 0.82vmin, 13px);
+  height: clamp(6px, 0.82vmin, 13px);
+  border-radius: 50%;
+  margin-left: clamp(6px, 0.8vmin, 12px);
+  background: #6ef07a;
+  box-shadow: 0 0 10px 2px rgba(110, 240, 122, 0.75);
+}
+
+/* ── Windows 7 desktop ─────────────────────────────────────── */
+
+.win7 {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* The wallpaper is a fixed 16:10 image on a screen that can be any
+   shape, so it fills and crops — exactly what Windows' own "Fill"
+   setting does. Centred, so the logo stays put. */
+.win7-wallpaper {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  /* Shows through only if the image fails to load. */
+  background-color: #1b5b98;
+}
+
+/* ── Desktop icons ─────────────────────────────────────────────
+   Windows lays these out in a column from the top-left corner.
+   ───────────────────────────────────────────────────────────── */
+
+.desktop-icons {
+  /* The invisible grid. DesktopIcons.tsx reads these two values at runtime,
+     so the snap spacing and the icon box can never drift apart. */
+  --cell-w: calc(80 * var(--px));
+  --cell-h: calc(92 * var(--px));
+
+  position: absolute;
+  top: calc(8 * var(--px));
+  left: calc(8 * var(--px));
+  /* Leaves room for the taskbar so an icon can't be dropped behind it. */
+  right: calc(8 * var(--px));
+  /* Exactly the taskbar height — anything more wastes a row's worth of
+     desktop that visibly looks free but can't be dropped into. */
+  bottom: calc(40 * var(--px));
+  z-index: 20;
+}
+
+.desktop-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  width: var(--cell-w);
+  padding: calc(5 * var(--px)) calc(3 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  cursor: default;
+  touch-action: none;
+}
+
+/* Lifted and slightly transparent while it's being carried, so you can see
+   the cell you're aiming at underneath. */
+.desktop-icon[data-dragging] {
+  z-index: 5;
+  opacity: 0.75;
+}
+
+/* Aero's translucent blue selection rectangle. */
+.desktop-icon:hover {
+  background: rgba(120, 190, 245, 0.28);
+  border-color: rgba(190, 225, 250, 0.6);
+}
+
+.desktop-icon[data-selected] {
+  background: rgba(90, 165, 235, 0.45);
+  border-color: rgba(210, 235, 255, 0.85);
+}
+
+.di-icon {
+  width: calc(48 * var(--px));
+  height: calc(48 * var(--px));
+  filter: drop-shadow(0 calc(2 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, 0.55));
+}
+
+.di-label {
+  font-size: calc(12 * var(--px));
+  line-height: 1.25;
+  color: #fff;
+  text-align: center;
+  /* Windows draws a hard shadow behind desktop labels so they stay legible
+     over any wallpaper. */
+  text-shadow:
+    0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.95),
+    0 0 calc(4 * var(--px)) rgba(0, 0, 0, 0.7);
+}
+
+/* Refresh from the context menu repaints the icons, like Windows redrawing
+   the desktop. Positions are untouched. */
+.desktop-redraw .desktop-icon {
+  animation: desktop-redraw 180ms ease-out;
+}
+
+@keyframes desktop-redraw {
+  0% { opacity: 0; }
+  40% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ── Desktop context menu ──────────────────────────────────────
+   Windows 7's right-click menu, replacing the browser's.
+   ───────────────────────────────────────────────────────────── */
+
+.ctx-menu {
+  position: fixed;
+  z-index: 400;
+  min-width: calc(190 * var(--px));
+  padding: calc(2 * var(--px));
+  background: #f6f6f6;
+  border: calc(1 * var(--px)) solid #9a9a9a;
+  border-radius: calc(3 * var(--px));
+  box-shadow: 0 calc(3 * var(--px)) calc(10 * var(--px)) rgba(0, 0, 0, 0.35);
+  font-size: calc(12 * var(--px));
+  color: #1a1a1a;
+  /* The lighter gutter Windows runs down the left of a menu, where icons and
+     checkmarks would sit. */
+  background-image: linear-gradient(
+    90deg,
+    #ececec 0,
+    #ececec calc(26 * var(--px)),
+    #f6f6f6 calc(26 * var(--px))
+  );
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: calc(22 * var(--px));
+  padding: 0 calc(8 * var(--px)) 0 calc(30 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(2 * var(--px));
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.ctx-item:hover:not([data-disabled]),
+.ctx-item:focus-visible:not([data-disabled]) {
+  background: linear-gradient(180deg, #e8f4fd 0%, #cfe8fb 48%, #bcdff8 52%, #d7eefc 100%);
+  border-color: #7fb4dd;
+  outline: none;
+}
+
+.ctx-item[data-disabled] {
+  color: #9c9c9c;
+}
+
+.ctx-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.ctx-arrow {
+  flex: none;
+  width: calc(8 * var(--px));
+  height: calc(10 * var(--px));
+  margin-left: calc(10 * var(--px));
+  background: #3a3a3a;
+  clip-path: polygon(20% 12%, 78% 50%, 20% 88%);
+}
+
+.ctx-item[data-disabled] .ctx-arrow {
+  background: #9c9c9c;
+}
+
+.ctx-sep {
+  height: calc(1 * var(--px));
+  margin: calc(3 * var(--px)) calc(2 * var(--px)) calc(3 * var(--px)) calc(30 * var(--px));
+  background: #d3d3d3;
+}
+
+/* ── Taskbar (Aero glass) ──────────────────────────────────────
+   Deliberately empty: no pinned apps, no tray, no clock yet.
+   ───────────────────────────────────────────────────────────── */
+
+.taskbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(40 * var(--px));
+  display: flex;
+  align-items: center;
+  z-index: 50;
+  backdrop-filter: blur(calc(10 * var(--px))) saturate(1.5);
+  /* A solid dark base floors the colour so a white patch of wallpaper can't
+     bleach the bar; the gradient on top only adds the Aero lighting. */
+  background-color: rgba(9, 20, 38, 0.66);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.42) 0px,
+    rgba(255, 255, 255, 0.42) 1px,
+    rgba(170, 208, 245, 0.3) 2px,
+    rgba(110, 160, 210, 0.2) 22%,
+    rgba(70, 120, 175, 0.12) 45%,
+    rgba(0, 0, 0, 0.3) 46.5%,
+    rgba(0, 0, 0, 0.24) 85%,
+    rgba(40, 80, 130, 0.16) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 calc(2 * var(--px)) 0 rgba(255, 255, 255, 0.14),
+    inset 0 calc(-1 * var(--px)) 0 rgba(0, 0, 0, 0.5),
+    0 calc(-2 * var(--px)) calc(8 * var(--px)) rgba(0, 0, 0, 0.4);
+}
+
+/* Start orb. Overflows the top of the bar, the way Win7's does. */
+.start-orb {
+  position: relative;
+  flex: none;
+  width: calc(54 * var(--px));
+  height: calc(54 * var(--px));
+  margin-left: calc(2 * var(--px));
+  margin-top: calc(-9 * var(--px));
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: default;
+  border-radius: 50%;
+}
+
+/* Dark blue sphere with a bright specular cap and a lit rim below. */
+.start-orb-sphere {
+  position: absolute;
+  inset: calc(3 * var(--px));
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse 62% 42% at 50% 17%,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(200, 235, 255, 0.45) 40%,
+      rgba(120, 190, 240, 0.08) 72%,
+      rgba(0, 0, 0, 0) 100%
+    ),
+    radial-gradient(ellipse 85% 55% at 50% 108%, #a8e8ff 0%, rgba(70, 170, 230, 0) 62%),
+    radial-gradient(circle at 50% 42%, #2d7cc2 0%, #1a5793 50%, #0c3866 78%, #08284d 100%);
+  box-shadow:
+    inset 0 0 0 calc(1.5 * var(--px)) rgba(255, 255, 255, 0.55),
+    inset 0 0 calc(6 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.35),
+    0 0 0 calc(1.5 * var(--px)) rgba(8, 26, 48, 0.75),
+    0 calc(1 * var(--px)) calc(6 * var(--px)) rgba(0, 0, 0, 0.5),
+    0 0 calc(12 * var(--px)) rgba(80, 180, 240, 0.45);
+}
+
+.start-orb-flag {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+/* Orb states. Windows lights the orb from within on hover, brightens it
+   further while the menu is open, and sinks it very slightly on press. */
+.start-orb:hover .start-orb-sphere,
+.start-orb[data-open] .start-orb-sphere {
+  background:
+    radial-gradient(
+      ellipse 62% 42% at 50% 17%,
+      rgba(255, 255, 255, 0.98) 0%,
+      rgba(215, 242, 255, 0.62) 42%,
+      rgba(140, 205, 245, 0.16) 74%,
+      rgba(0, 0, 0, 0) 100%
+    ),
+    radial-gradient(ellipse 90% 62% at 50% 108%, #c7f1ff 0%, rgba(90, 190, 240, 0) 66%),
+    radial-gradient(circle at 50% 42%, #4aa0dd 0%, #2470b4 50%, #124a83 78%, #0d3a62 100%);
+  box-shadow:
+    inset 0 0 0 calc(1.5 * var(--px)) rgba(255, 255, 255, 0.75),
+    inset 0 0 calc(6 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.28),
+    0 0 0 calc(1.5 * var(--px)) rgba(8, 26, 48, 0.7),
+    0 calc(1 * var(--px)) calc(6 * var(--px)) rgba(0, 0, 0, 0.5),
+    0 0 calc(20 * var(--px)) rgba(120, 210, 255, 0.85);
+}
+
+.start-orb:active .start-orb-sphere {
+  transform: translateY(calc(1 * var(--px)));
+  box-shadow:
+    inset 0 0 0 calc(1.5 * var(--px)) rgba(255, 255, 255, 0.6),
+    inset 0 calc(2 * var(--px)) calc(6 * var(--px)) rgba(0, 0, 0, 0.45),
+    0 0 0 calc(1.5 * var(--px)) rgba(8, 26, 48, 0.8),
+    0 0 calc(16 * var(--px)) rgba(120, 210, 255, 0.7);
+}
+
+/* ── Start menu ────────────────────────────────────────────────
+   Sizes are real Win7 pixels via --px. Fixed-duration easing, no
+   spring — same rule as the window physics.
+   ───────────────────────────────────────────────────────────── */
+
+.taskbar-root {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+}
+
+.start-menu {
+  /* Whole menu at 90%. Every measurement inside is in --px, so this one line
+     scales all of it — nothing below needed changing. */
+  --px: calc(var(--os-px) * 0.9);
+
+  position: absolute;
+  bottom: calc(40 * var(--os-px));
+  left: 0;
+  width: calc(480 * var(--px));
+  border-radius: calc(6 * var(--px)) calc(6 * var(--px)) 0 0;
+  overflow: hidden;
+  backdrop-filter: blur(calc(14 * var(--px))) saturate(1.4);
+  background: rgba(28, 52, 84, 0.72);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.45),
+    inset 0 0 0 calc(2 * var(--px)) rgba(90, 140, 190, 0.35),
+    0 calc(-2 * var(--px)) calc(24 * var(--px)) rgba(0, 0, 0, 0.55);
+  animation: sm-in 140ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  color: #10202f;
+}
+
+@keyframes sm-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(10 * var(--px)));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sm-body {
+  display: grid;
+  grid-template-columns: calc(300 * var(--px)) 1fr;
+  margin: calc(3 * var(--px));
+  border-radius: calc(4 * var(--px)) calc(4 * var(--px)) 0 0;
+  overflow: hidden;
+}
+
+/* ── left column ── */
+
+.sm-left {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(500 * var(--px));
+  background: #fbfdfe;
+  padding: calc(6 * var(--px)) 0 0;
+}
+
+.sm-programs {
+  list-style: none;
+  margin: 0;
+  padding: 0 calc(6 * var(--px));
+  flex: 1;
+}
+
+.sm-sep {
+  height: calc(1 * var(--px));
+  margin: calc(5 * var(--px)) calc(4 * var(--px));
+  background: #d5e0ea;
+}
+
+.sm-item {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  width: 100%;
+  padding: calc(4 * var(--px)) calc(6 * var(--px));
+  border: 0;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #17334d;
+  text-align: left;
+  cursor: default;
+}
+
+/* The Aero hover pill: pale blue fill, thin brighter border. */
+.sm-item:hover,
+.sm-item:focus-visible {
+  background: linear-gradient(180deg, #e8f4fd 0%, #cfe8fb 48%, #bcdff8 52%, #d7eefc 100%);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.9),
+    0 0 0 calc(1 * var(--px)) #7fb4dd;
+  outline: none;
+}
+
+.sm-icon {
+  width: calc(24 * var(--px));
+  height: calc(24 * var(--px));
+  flex: none;
+  filter: drop-shadow(0 calc(1 * var(--px)) calc(1 * var(--px)) rgba(0, 0, 0, 0.25));
+}
+
+.sm-all {
+  margin: 0 calc(6 * var(--px)) calc(6 * var(--px));
+  width: auto;
+  font-weight: 600;
+  border-top: calc(1 * var(--px)) solid #d5e0ea;
+  border-radius: 0;
+  padding-top: calc(7 * var(--px));
+}
+
+.sm-all-arrow {
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+  flex: none;
+  background: #3f7fbf;
+  clip-path: polygon(38% 22%, 68% 50%, 38% 78%);
+}
+
+.sm-search {
+  position: relative;
+  margin: 0 calc(8 * var(--px)) calc(8 * var(--px));
+}
+
+.sm-search input {
+  width: 100%;
+  padding: calc(4 * var(--px)) calc(24 * var(--px)) calc(4 * var(--px)) calc(6 * var(--px));
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #17334d;
+  background: #fff;
+  border: calc(1 * var(--px)) solid #9db8ce;
+  border-radius: calc(2 * var(--px));
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.12);
+  cursor: default;
+}
+
+.sm-search input::placeholder {
+  color: #8496a6;
+}
+
+.sm-search-glass {
+  position: absolute;
+  right: calc(7 * var(--px));
+  top: 50%;
+  width: calc(9 * var(--px));
+  height: calc(9 * var(--px));
+  margin-top: calc(-6 * var(--px));
+  border: calc(1.5 * var(--px)) solid #5d7a88;
+  border-radius: 50%;
+}
+
+.sm-search-glass::after {
+  content: "";
+  position: absolute;
+  right: calc(-4 * var(--px));
+  bottom: calc(-4 * var(--px));
+  width: calc(5 * var(--px));
+  height: calc(1.5 * var(--px));
+  background: #5d7a88;
+  transform: rotate(45deg);
+}
+
+/* ── right column ── */
+
+.sm-right {
+  display: flex;
+  flex-direction: column;
+  padding: calc(8 * var(--px)) 0 0;
+  background: linear-gradient(180deg, #eaf2fa 0%, #dfe9f5 60%, #d4e1f0 100%);
+  box-shadow: inset calc(1 * var(--px)) 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.sm-user {
+  text-align: center;
+  padding: 0 calc(8 * var(--px)) calc(8 * var(--px));
+}
+
+.sm-user-pic {
+  width: calc(46 * var(--px));
+  height: calc(46 * var(--px));
+  border-radius: calc(3 * var(--px));
+  box-shadow:
+    0 0 0 calc(2 * var(--px)) #fff,
+    0 0 0 calc(3 * var(--px)) #9db8ce,
+    0 calc(2 * var(--px)) calc(4 * var(--px)) rgba(0, 0, 0, 0.3);
+}
+
+.sm-user-name {
+  margin-top: calc(6 * var(--px));
+  font-size: calc(12 * var(--px));
+  font-weight: 600;
+  color: #17334d;
+}
+
+.sm-links {
+  list-style: none;
+  margin: 0;
+  padding: 0 calc(6 * var(--px));
+  flex: 1;
+}
+
+.sm-link-div {
+  border-top: calc(1 * var(--px)) solid #c2d3e4;
+  margin-top: calc(5 * var(--px));
+  padding-top: calc(5 * var(--px));
+}
+
+.sm-link {
+  display: block;
+  width: 100%;
+  padding: calc(4 * var(--px)) calc(8 * var(--px));
+  border: 0;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #17334d;
+  text-align: left;
+  cursor: default;
+}
+
+.sm-link:hover,
+.sm-link:focus-visible {
+  background: linear-gradient(180deg, #e8f4fd 0%, #cfe8fb 48%, #bcdff8 52%, #d7eefc 100%);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.9),
+    0 0 0 calc(1 * var(--px)) #7fb4dd;
+  outline: none;
+}
+
+/* ── shut down ── */
+
+.sm-shutdown {
+  display: flex;
+  align-items: stretch;
+  gap: calc(1 * var(--px));
+  padding: calc(8 * var(--px));
+}
+
+.sm-shutdown-main,
+.sm-shutdown-arrow {
+  border: calc(1 * var(--px)) solid #4a5f74;
+  background: linear-gradient(180deg, #7e8fa1 0%, #64778c 48%, #55697f 52%, #46596e 100%);
+  color: #f2f6fa;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  cursor: default;
+  box-shadow: inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.35);
+}
+
+.sm-shutdown-main {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  flex: 1;
+  padding: calc(5 * var(--px)) calc(8 * var(--px));
+  border-radius: calc(3 * var(--px)) 0 0 calc(3 * var(--px));
+}
+
+.sm-power {
+  width: calc(14 * var(--px));
+  height: calc(14 * var(--px));
+  flex: none;
+}
+
+.sm-shutdown-arrow {
+  width: calc(20 * var(--px));
+  border-radius: 0 calc(3 * var(--px)) calc(3 * var(--px)) 0;
+  position: relative;
+}
+
+.sm-shutdown-arrow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #f2f6fa;
+  clip-path: polygon(34% 42%, 66% 42%, 50% 60%);
+}
+
+.sm-shutdown-main:hover,
+.sm-shutdown-arrow:hover {
+  background: linear-gradient(180deg, #94a5b7 0%, #76889d 48%, #667b91 52%, #576b80 100%);
+}
+
+/* ── Aero windows ──────────────────────────────────────────────
+   Under the taskbar (z 50) and over the icons (z 20), the same
+   order Windows uses. Every measurement is its real Win7 value
+   times --px, so a window is the size Windows would make it.
+   ───────────────────────────────────────────────────────────── */
+
+.w7-window-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  /* The layer itself must not eat desktop clicks; each window opts back in. */
+  pointer-events: none;
+}
+
+.w7-rnd {
+  pointer-events: auto;
+}
+
+.w7-window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(6 * var(--px)) calc(6 * var(--px)) calc(4 * var(--px))
+    calc(4 * var(--px));
+  /* Aero's frame is a thick pane of tinted glass with the desktop showing
+     through it. backdrop-filter is what makes it read as glass rather than as
+     flat grey plastic. */
+  background: rgba(190, 214, 238, 0.62);
+  backdrop-filter: blur(calc(12 * var(--px))) saturate(1.4);
+  border: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.4),
+    0 calc(8 * var(--px)) calc(28 * var(--px)) rgba(0, 0, 0, 0.42),
+    0 calc(2 * var(--px)) calc(6 * var(--px)) rgba(0, 0, 0, 0.3);
+}
+
+/* An unfocused Aero window loses its tint and most of its shadow. */
+.w7-window:not([data-focused]) {
+  background: rgba(214, 222, 232, 0.5);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.28),
+    0 calc(4 * var(--px)) calc(14 * var(--px)) rgba(0, 0, 0, 0.28);
+}
+
+/* Maximised windows meet the screen edges square, same as the real thing. */
+.w7-window[data-maximized] {
+  border-radius: 0;
+}
+
+.w7-caption {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  height: calc(30 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  cursor: default;
+  user-select: none;
+}
+
+.w7-title {
+  margin-top: calc(6 * var(--px));
+  max-width: 55%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(12 * var(--px));
+  color: #1b1b1b;
+  /* Aero's caption text sits on glass, so it carries a white halo rather than
+     a drop shadow — that's what keeps it readable over a dark wallpaper. */
+  text-shadow:
+    0 0 calc(4 * var(--px)) rgba(255, 255, 255, 0.95),
+    0 0 calc(8 * var(--px)) rgba(255, 255, 255, 0.8);
+}
+
+.w7-window:not([data-focused]) .w7-title {
+  color: #4a4a4a;
+}
+
+.w7-caption-buttons {
+  position: absolute;
+  top: 0;
+  right: calc(2 * var(--px));
+  display: flex;
+  align-items: stretch;
+  height: calc(21 * var(--px));
+}
+
+.w7-cap-btn {
+  width: calc(29 * var(--px));
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.5);
+  border-top: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.5),
+    rgba(190, 212, 235, 0.35) 48%,
+    rgba(140, 175, 215, 0.3) 52%,
+    rgba(215, 232, 248, 0.42)
+  );
+  cursor: default;
+}
+
+.w7-cap-btn:first-child {
+  border-radius: 0 0 0 calc(3 * var(--px));
+}
+
+.w7-cap-btn:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.85),
+    rgba(205, 230, 255, 0.7) 48%,
+    rgba(150, 200, 245, 0.66) 52%,
+    rgba(225, 244, 255, 0.8)
+  );
+}
+
+.w7-cap-btn svg {
+  width: calc(10 * var(--px));
+  height: calc(10 * var(--px));
+  fill: #1e2a36;
+  stroke: #1e2a36;
+}
+
+/* Close is the wide red one at the corner. */
+.w7-cap-close {
+  width: calc(46 * var(--px));
+  border-radius: 0 calc(4 * var(--px)) 0 calc(3 * var(--px));
+  background: linear-gradient(
+    180deg,
+    rgba(240, 130, 120, 0.85),
+    rgba(215, 60, 45, 0.8) 48%,
+    rgba(180, 28, 20, 0.85) 52%,
+    rgba(228, 108, 90, 0.85)
+  );
+}
+
+.w7-cap-close:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 165, 155, 0.95),
+    rgba(240, 85, 65, 0.92) 48%,
+    rgba(205, 40, 28, 0.95) 52%,
+    rgba(250, 140, 120, 0.95)
+  );
+}
+
+.w7-cap-close svg {
+  fill: #ffffff;
+  stroke: #ffffff;
+}
+
+/* The client area: opaque, inset inside the glass frame. */
+.w7-body {
+  flex: 1;
+  min-height: 0;
+  margin: 0 calc(6 * var(--px)) calc(6 * var(--px));
+  overflow: hidden;
+  background: #ffffff;
+  border: calc(1 * var(--px)) solid rgba(120, 145, 175, 0.55);
+  box-shadow: inset 0 calc(1 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, 0.16);
+}
+
+.w7-window[data-maximized] .w7-body {
+  margin: 0;
+  border-width: calc(1 * var(--px)) 0 0;
+}
+
+
+/* ── Taskbar window buttons ────────────────────────────────────
+   One per open window. The rest of the bar is still undecided.
+   ───────────────────────────────────────────────────────────── */
+
+.taskbar-windows {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  margin-left: calc(6 * var(--px));
+  min-width: 0;
+  overflow: hidden;
+}
+
+.task-button {
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  height: calc(32 * var(--px));
+  max-width: calc(160 * var(--px));
+  padding: 0 calc(10 * var(--px));
+  border: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.22);
+  border-radius: calc(3 * var(--px));
+  background: rgba(255, 255, 255, 0.1);
+  color: #f2f6fb;
+  font-size: calc(12 * var(--px));
+  cursor: default;
+  /* Fixed-duration easing. No bounce anywhere in this project. */
+  transition: background 120ms ease;
+}
+
+.task-button:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.task-button[data-active] {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.5);
+}
+
+.task-button-icon {
+  flex: none;
+  width: calc(20 * var(--px));
+  height: calc(20 * var(--px));
+}
+
+.task-button-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.7);
+}
+
+/* ── Explorer ──────────────────────────────────────────────────
+   The inside of a folder window. Real Win7 measurements times
+   --px, same rule as the rest of the chrome: 33px of navigation,
+   30px of command bar, a 180px tree, 30px of details.
+
+   Explorer is the one part of Windows that is NOT glass — it sits
+   opaque inside the Aero frame, which is why the whites here are
+   flat and the gradients are shallow.
+   ───────────────────────────────────────────────────────────── */
+
+.ex {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: calc(12 * var(--px));
+  color: #1a1a1a;
+  background: #ffffff;
+  cursor: default;
+  user-select: none;
+}
+
+.ex-icon {
+  flex: none;
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+}
+
+/* ── Address row ───────────────────────────────────────────── */
+
+.ex-nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(3 * var(--px));
+  height: calc(33 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  background: linear-gradient(180deg, #f6f9fc 0%, #eaf0f7 100%);
+}
+
+.ex-nav-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(22 * var(--px));
+  height: calc(22 * var(--px));
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #3d6d99;
+  cursor: default;
+}
+
+/* Both arrows start greyed: a folder opened from the desktop has no history
+   behind it, exactly as in Windows. */
+.ex-nav-btn:disabled {
+  color: #a8b6c2;
+}
+
+.ex-nav-arrow {
+  width: calc(15 * var(--px));
+  height: calc(15 * var(--px));
+}
+
+.ex-address {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  height: calc(22 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  overflow: hidden;
+  white-space: nowrap;
+  border: calc(1 * var(--px)) solid #a6bcd0;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.06);
+}
+
+.ex-crumb {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ex-sep {
+  flex: none;
+  width: 0;
+  height: 0;
+  margin: 0 calc(1 * var(--px));
+  /* A CSS triangle, not the ▸ glyph — at 12px that character renders as a
+     smudge, and Explorer's chevron is a crisp solid arrow. */
+  border-top: calc(4 * var(--px)) solid transparent;
+  border-bottom: calc(4 * var(--px)) solid transparent;
+  border-left: calc(4 * var(--px)) solid #7a8d9e;
+}
+
+.ex-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  width: calc(160 * var(--px));
+  height: calc(22 * var(--px));
+  padding: 0 calc(5 * var(--px));
+  border: calc(1 * var(--px)) solid #a6bcd0;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.06);
+}
+
+.ex-search-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #8d8d8d;
+}
+
+.ex-search-icon {
+  width: calc(13 * var(--px));
+  height: calc(13 * var(--px));
+}
+
+/* ── Command bar ───────────────────────────────────────────── */
+
+.ex-commands {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  height: calc(30 * var(--px));
+  padding: 0 calc(4 * var(--px));
+  border-bottom: calc(1 * var(--px)) solid #d3dce5;
+  background: linear-gradient(180deg, #fbfdff 0%, #eef3f8 52%, #e6edf5 100%);
+}
+
+.ex-cmd {
+  display: flex;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  height: calc(22 * var(--px));
+  padding: 0 calc(8 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  color: #17334d;
+  cursor: default;
+}
+
+.ex-cmd:hover {
+  border-color: #b6d3ea;
+  background: linear-gradient(180deg, #ffffff, #dcecfa);
+}
+
+.ex-cmd-caret {
+  width: 0;
+  height: 0;
+  /* Same reason as .ex-sep: the ▾ glyph is a smudge at this size. */
+  border-left: calc(3 * var(--px)) solid transparent;
+  border-right: calc(3 * var(--px)) solid transparent;
+  border-top: calc(4 * var(--px)) solid #4a6d8c;
+}
+
+/* ── Tree + content ────────────────────────────────────────── */
+
+.ex-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.ex-tree {
+  flex: none;
+  width: calc(180 * var(--px));
+  padding: calc(6 * var(--px)) 0;
+  overflow: auto;
+  border-right: calc(1 * var(--px)) solid #dfe6ec;
+  background: #ffffff;
+}
+
+.ex-tree-row {
+  display: flex;
+  align-items: center;
+  height: calc(21 * var(--px));
+  padding-left: calc(4 * var(--px));
+  padding-right: calc(6 * var(--px));
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ex-tree-row:hover {
+  background: #e9f4fd;
+}
+
+/* The place currently open, in Explorer's selected blue. */
+.ex-tree-row[data-here] {
+  background: linear-gradient(180deg, #dcebfd, #c9e0fa);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #b3d3f2;
+}
+
+/* Children indent past the twisty their parent occupies. */
+.ex-tree-child {
+  padding-left: calc(24 * var(--px));
+}
+
+.ex-tree-label {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: calc(5 * var(--px));
+  height: 100%;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.ex-tree-group {
+  font-weight: 600;
+}
+
+/* The expander. A CSS triangle rather than an SVG — it is five pixels of solid
+   colour, and an icon file would be more markup than shape. The button around
+   it is 16px so there is something real to hit. */
+.ex-twisty {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+}
+
+/* Collapsed: points right. */
+.ex-twisty::before {
+  content: "";
+  border-top: calc(4 * var(--px)) solid transparent;
+  border-bottom: calc(4 * var(--px)) solid transparent;
+  border-left: calc(5 * var(--px)) solid #8296aa;
+  border-right: 0;
+}
+
+/* Expanded: points down, and darker — Windows fills the open one. */
+.ex-twisty[data-open]::before {
+  border-left: calc(4 * var(--px)) solid transparent;
+  border-right: calc(4 * var(--px)) solid transparent;
+  border-top: calc(5 * var(--px)) solid #4a5f75;
+  border-bottom: 0;
+}
+
+.ex-twisty:hover::before {
+  border-left-color: #3d7fbf;
+}
+
+.ex-twisty[data-open]:hover::before {
+  border-left-color: transparent;
+  border-right-color: transparent;
+  border-top-color: #3d7fbf;
+}
+
+/* Keeps a childless place lined up with the ones that have a twisty. */
+.ex-twisty-gap {
+  flex: none;
+  width: calc(16 * var(--px));
+}
+
+.ex-content {
+  flex: 1;
+  min-width: 0;
+  padding: calc(10 * var(--px)) calc(14 * var(--px));
+  overflow: auto;
+  background: #ffffff;
+}
+
+.ex-empty {
+  margin: 0;
+  color: #6d6d6d;
+}
+
+/* Explorer's group headings — "Hard Disk Drives (1)" — a blue label with a
+   rule running off to the right of it. */
+.ex-heading {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  margin-bottom: calc(8 * var(--px));
+  color: #1f5a8f;
+  white-space: nowrap;
+}
+
+.ex-heading::after {
+  content: "";
+  flex: 1;
+  height: calc(1 * var(--px));
+  background: #d6e2ec;
+}
+
+/* ── Drive tile ────────────────────────────────────────────── */
+
+.ex-drive {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  width: calc(260 * var(--px));
+  padding: calc(4 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.ex-drive:hover {
+  border-color: #b8dcf5;
+  background: linear-gradient(180deg, #f2f9ff, #ddeefc);
+}
+
+.ex-drive-icon {
+  flex: none;
+  width: calc(48 * var(--px));
+  height: calc(48 * var(--px));
+}
+
+.ex-drive-text {
+  min-width: 0;
+}
+
+.ex-drive-name {
+  margin-bottom: calc(3 * var(--px));
+}
+
+.ex-drive-space {
+  margin-top: calc(3 * var(--px));
+  color: #5f7284;
+}
+
+/* ── Capacity meter ────────────────────────────────────────────
+   Windows switches the fill to red once a drive drops under 10%
+   free, rather than putting a warning beside it — the bar itself
+   is the warning.
+   ───────────────────────────────────────────────────────────── */
+
+.ex-bar {
+  width: calc(150 * var(--px));
+  height: calc(10 * var(--px));
+  padding: calc(1 * var(--px));
+  border: calc(1 * var(--px)) solid #a8b6c2;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.12);
+}
+
+.ex-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: calc(1 * var(--px));
+  background: linear-gradient(180deg, #6fc5f5 0%, #2e9ee0 50%, #1f86c8 51%, #57bdf0 100%);
+}
+
+.ex-bar[data-low] > span {
+  background: linear-gradient(180deg, #f08a7f 0%, #d94236 50%, #bf2c22 51%, #ec7468 100%);
+}
+
+/* The details pane runs 30px tall, so the meter has to sit inside it. */
+.ex-bar-small {
+  flex: none;
+  width: calc(90 * var(--px));
+  height: calc(9 * var(--px));
+}
+
+/* ── Details pane ──────────────────────────────────────────── */
+
+.ex-details {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  height: calc(30 * var(--px));
+  padding: 0 calc(8 * var(--px));
+  border-top: calc(1 * var(--px)) solid #d3dce5;
+  background: linear-gradient(180deg, #f4f8fc 0%, #e8eff6 100%);
+}
+
+.ex-details-name {
+  font-weight: 600;
+}
+
+.ex-details-meta {
+  color: #5f7284;
+}
+
+/* ── Command Prompt ────────────────────────────────────────────
+   The one window whose body is not white. Sizes are in --px like
+   everything else, so the console keeps OS scale: a bigger screen
+   shows more rows, not bigger letters.
+   ───────────────────────────────────────────────────────────── */
+
+.term {
+  height: 100%;
+  padding: calc(4 * var(--px)) calc(6 * var(--px));
+  overflow-y: auto;
+  background: #000000;
+  /* Silver on black, cmd's own defaults. */
+  color: #c0c0c0;
+  font-family: Consolas, "Lucida Console", "Courier New", monospace;
+  font-size: calc(14 * var(--px));
+  line-height: calc(17 * var(--px));
+  cursor: text;
+}
+
+.term-line {
+  white-space: pre-wrap;
+  /* A console breaks a long line at the column, not at the word. */
+  overflow-wrap: break-word;
+}
+
+.term-typed {
+  white-space: pre;
+}
+
+/* A blinking block, stepped rather than faded — a console caret is on or off,
+   it never dims through the middle. */
+.term-caret {
+  display: inline-block;
+  width: calc(8 * var(--px));
+  height: calc(14 * var(--px));
+  vertical-align: text-bottom;
+  background: #c0c0c0;
+  animation: term-blink 1.06s step-end infinite;
+}
+
+@keyframes term-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Parked out of sight rather than hidden: display:none and visibility:hidden
+   both make an input unfocusable, and this one has to hold the caret. */
+.term-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* cmd's body goes edge to edge — no inset border and no white gutter. */
+.w7-window[data-app="terminal"] .w7-body {
+  background: #000000;
+  box-shadow: none;
+}
+
+
+/* ── About Me ──────────────────────────────────────────────────
+   The only text in the OS set in faces Windows never shipped:
+   Libre Bodoni for the name, Public Sans for the prose. Both are
+   loaded by next/font in app/layout.tsx, which self-hosts them at
+   build time — nothing is fetched from Google at runtime.
+
+   The words are in content/about.ts. Nothing here decides them.
+   ───────────────────────────────────────────────────────────── */
+
+.about {
+  /* ~62 characters of Public Sans at 14px. Past that a line is work to read. */
+  max-width: calc(580 * var(--px));
+  margin: 0 auto;
+  padding: calc(34 * var(--px)) calc(8 * var(--px)) calc(32 * var(--px));
+  /* .ex turns selection off for the chrome; prose is not chrome. */
+  user-select: text;
+}
+
+/* Centred, as asked. The one deliberate break in scale — 50px of Bodoni in a
+   pane whose interface text is 12px. It is meant to be too big for the window. */
+.about-name {
+  margin: 0;
+  font-family: var(--font-display), "Didot", Georgia, serif;
+  font-weight: 500;
+  font-size: calc(50 * var(--px));
+  line-height: 1.1;
+  text-align: center;
+  color: #16181a;
+}
+
+/* A masthead rule. Short and centred, so it reads as part of the name rather
+   than as a divider cutting the pane in half. */
+.about-rule {
+  width: calc(64 * var(--px));
+  height: calc(1 * var(--px));
+  margin: calc(22 * var(--px)) auto calc(24 * var(--px));
+  background: #dbe3ea;
+}
+
+/* Body copy stays left-aligned: centred paragraphs start every line in a
+   different place and the eye has to hunt for each one. Only the name is
+   centred. */
+.about-body {
+  color: #33383d;
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(14 * var(--px));
+  line-height: 1.66;
+}
+
+.about-body p {
+  margin: 0 0 calc(15 * var(--px));
+}
+
+.about-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* A project that has a link. Explorer's own blue, underlined on hover only —
+   an always-underlined link inside a file pane reads as clutter. */
+.about-body a {
+  color: #1f5a8f;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.about-body a:hover {
+  text-decoration: underline;
+}
+
+.about-body a:focus-visible {
+  outline: calc(2 * var(--px)) solid #3d7fbf;
+  outline-offset: calc(2 * var(--px));
+}
+
+/* A project named but not yet linked — content/about.ts writes those with a
+   "#" address. Bold, not blue: nothing here invites a click that does nothing. */
+.about-body strong {
+  font-weight: 600;
+  color: #1c1f22;
+}
+
+/* ── Folder listings ───────────────────────────────────────────
+   Explorer's Details view: a header row, then one row per item.
+   ───────────────────────────────────────────────────────────── */
+
+.ex-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ex-list-head,
+.ex-row {
+  display: grid;
+  grid-template-columns: 1fr calc(140 * var(--px));
+  align-items: center;
+  gap: calc(6 * var(--px));
+}
+
+.ex-list-head {
+  padding: 0 calc(6 * var(--px)) calc(4 * var(--px));
+  margin-bottom: calc(3 * var(--px));
+  border-bottom: calc(1 * var(--px)) solid #dfe6ec;
+  color: #4a6d8c;
+}
+
+/* The icon sits in the name column, so the header's first cell spans it. */
+.ex-row {
+  grid-template-columns: calc(16 * var(--px)) 1fr calc(140 * var(--px));
+  height: calc(22 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(2 * var(--px));
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.ex-row:hover {
+  border-color: #cfe6fa;
+  background: linear-gradient(180deg, #f2f9ff, #dcecfa);
+}
+
+.ex-row-name,
+.ex-row-type {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ex-row-type {
+  color: #5f7284;
+}
+
+/* ── Network ───────────────────────────────────────────────────
+   What the browser will actually admit about the connection. The
+   SSID and the carrier are not on that list — see Network.tsx.
+   ───────────────────────────────────────────────────────────── */
+
+.net-table {
+  margin: 0;
+  max-width: calc(420 * var(--px));
+}
+
+.net-row {
+  display: grid;
+  grid-template-columns: calc(110 * var(--px)) 1fr;
+  gap: calc(10 * var(--px));
+  padding: calc(4 * var(--px)) 0;
+  border-bottom: calc(1 * var(--px)) solid #eef3f7;
+}
+
+.net-row dt {
+  color: #5f7284;
+}
+
+.net-row dd {
+  margin: 0;
+}
+
+.net-note {
+  max-width: calc(460 * var(--px));
+  margin: calc(16 * var(--px)) 0 0;
+  color: #6d7d8b;
+  line-height: 1.55;
+}
+
+/* The Recycle Bin, lit up while a folder is being dragged onto it. Windows
+   selects the target icon rather than drawing a separate drop zone. */
+.desktop-icon[data-drop] {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(120, 180, 240, 0.42);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.5);
+}
+
+/* The selection rectangle — drag on bare desktop to pick up several icons.
+   Windows draws a flat translucent fill with a solid one-pixel edge; no
+   rounding, no shadow. */
+.desktop-band {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  border: calc(1 * var(--px)) solid #3399ff;
+  background: rgba(120, 190, 245, 0.32);
+}
