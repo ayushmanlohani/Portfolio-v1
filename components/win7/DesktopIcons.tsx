@@ -38,17 +38,55 @@ const DRAG_THRESHOLD = 4;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /**
+ * Where the icons sit when the page loads — Ayushman's own arrangement, taken
+ * from a screenshot of how he'd dragged them.
+ *
+ * Two columns. The bin and Resume share the top row, About Me and Contact the
+ * next, and the remaining three run down the first column. Cells are adjacent;
+ * there are no gaps.
+ *
+ *     c0          c1
+ *   ┌───────────┬───────────┐
+ * r0│ Recycle   │ Resume    │
+ * r1│ About Me  │ Contact   │
+ * r2│ Experience│           │
+ * r3│ Projects  │           │
+ * r4│ Education │           │
+ *   └───────────┴───────────┘
+ */
+const DEFAULT_LAYOUT: Layout = {
+  recycle: { c: 0, r: 0 },
+  resume: { c: 1, r: 0 },
+  about: { c: 0, r: 1 },
+  contact: { c: 1, r: 1 },
+  experience: { c: 0, r: 2 },
+  projects: { c: 0, r: 3 },
+  education: { c: 0, r: 4 },
+};
+
+/** How many rows the arrangement above needs to fit. */
+const DEFAULT_ROWS = Math.max(...Object.values(DEFAULT_LAYOUT).map((cell) => cell.r)) + 1;
+
+/**
  * Effective cell for every icon: an explicit position if the user has moved it,
- * otherwise its default slot. Derived rather than stored, so the default
- * arrangement reflows if the number of rows changes and only icons that were
- * actually dragged are pinned.
+ * otherwise its default slot. Derived rather than stored, so only icons that
+ * were actually dragged are pinned.
+ *
+ * A window too short for the arrangement falls back to Windows' own
+ * column-major fill — top to bottom, then across — which fits any height. It's
+ * all-or-nothing on purpose: letting only the icons that don't fit fall back
+ * would drop them on top of the ones that do.
  */
 function computeCells(moved: Layout, rows: number): Layout {
   const cells: Layout = {};
+  const fits = rows >= DEFAULT_ROWS;
+
   // Every icon keeps its default slot whether or not it is currently on the
   // desktop, so deleting one does not shuffle the ones below it up a row.
   ITEMS.forEach((id, i) => {
-    cells[id] = moved[id] ?? { c: Math.floor(i / rows), r: i % rows };
+    cells[id] =
+      moved[id] ??
+      (fits ? DEFAULT_LAYOUT[id] : { c: Math.floor(i / rows), r: i % rows });
   });
   return cells;
 }
