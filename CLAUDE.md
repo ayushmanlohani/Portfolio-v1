@@ -45,6 +45,11 @@ is the Windows 7 redesign. Old files are in the session scratchpad, not the repo
 
 - **The concept:** a beige CRT monitor; inside the glass is Windows 7. Chose
   the chunky beige CRT over a black LCD and a black CRT.
+- **The CRT frame is currently OFF.** `Monitor.tsx` renders `data-frame="off"`,
+  which zeroes `--bezel` and `--chin` — Windows runs edge to edge and no
+  plastic, MULTISYNC or LED is on screen. The whole CRT is still in the CSS;
+  flipping that one attribute to `"on"` brings it back. Read the CRT notes
+  below as *how the frame works*, not as what's visible right now.
 - **The monitor fills the viewport. No stand, no fixed aspect ratio.** The
   glass takes the *viewer's* screen shape, so an ultrawide gets a wide desktop
   and a laptop gets a laptop-shaped one. This was a deliberate reversal of the
@@ -58,9 +63,11 @@ is the Windows 7 redesign. Old files are in the session scratchpad, not the repo
   `public/letterbox/Z0Ts3J2-windows-7-official-wallpapers.jpg`.
 - **Font:** Segoe UI, Win7's own system font — already installed on Windows, so
   no webfont. Montserrat is gone. Tahoma is the period-correct fallback.
-- **Taskbar exists but is empty** — bar + Start orb only. No pinned apps, no
-  tray, no clock. He wants to decide that content separately.
-- **No desktop icons yet.** They get added one at a time, on his direction.
+- **Taskbar:** Aero bar, Start orb, a working Start menu, and a button per open
+  window. Still no tray, no clock, no pinned apps — deferred on purpose.
+- **Six desktop folders** — About Me, Projects, Experience, Education, Resume,
+  Contact — plus a Recycle Bin. Each opens a real Win7 Explorer window.
+  **Only About Me has content**; the other five read "This folder is empty."
 
 ## Project rules
 
@@ -83,9 +90,11 @@ is the Windows 7 redesign. Old files are in the session scratchpad, not the repo
 ## Still open
 
 - Taskbar contents — deliberately deferred, needs a conversation.
-- Desktop icons/folders — none yet, coming one at a time.
-- Window chrome — the old pastel `WindowFrame` was deleted rather than
-  restyled. Win7 Aero windows get built fresh when the first folder lands.
+- **What goes inside the five empty folders.** Chrome is done, content panes
+  are not. His call — three directions were already rejected, so don't propose
+  more unprompted.
+- Whether the CRT frame comes back on. It's one attribute either way.
 - No mobile/small-screen design yet.
-- Still not a git repo. Deletes are irreversible — move to scratchpad, don't
-  `rm`, until he sets one up.
+- **It is a git repo now** (`main` + feature branches, work in worktrees under
+  `.claude/worktrees/`). Deletes are recoverable, so `rm` is fine on tracked
+  files. Commit or push only when he asks.

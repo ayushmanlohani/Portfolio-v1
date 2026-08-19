@@ -8,7 +8,11 @@ CLAUDE.md is *how* to work with Ayushman, this doc is *where the project is*.
 ```bash
 npm run dev
 ```
-`localhost:3000`. Not a git repo — no version control, so deletes are permanent.
+`localhost:3000`.
+
+**It is a git repo now** — `main` plus feature branches, and sessions run in
+worktrees under `.claude/worktrees/`. Deletes are recoverable; `rm` on a
+tracked file is safe. Commit and push only when Ayushman asks.
 
 ## What this is
 
@@ -23,25 +27,34 @@ Don't reintroduce any of it.
 
 ## Current visible state
 
-- **Monitor**: beige CRT filling the whole viewport — putty plastic, curved
-  glass (barrel vignette + specular streak + scanlines), deeper bottom edge
-  carrying MULTISYNC and a green power LED. **No stand, no fixed aspect
-  ratio.**
-- **Screen**: whatever shape the viewer's window is, minus the frame. Win7
-  "Harmony" wallpaper set to fill and crop. Nothing else on it.
+- **Monitor — the CRT frame is currently OFF.** `Monitor.tsx` renders
+  `data-frame="off"`, which zeroes `--bezel` and `--chin`, so **no beige
+  plastic, no MULTISYNC, no LED is on screen**: Windows runs edge to edge and
+  the wallpaper touches all four sides. The whole CRT (putty plastic, curved
+  glass, barrel vignette, specular streak, scanlines, deeper chin) is still in
+  `globals.css` and comes back by flipping that one attribute to `"on"`.
+  Everything below about `--bezel`/`--chin` describes how the frame works,
+  not what's visible now.
+- **Screen**: whatever shape the viewer's window is. Win7 "Harmony" wallpaper
+  set to fill and crop.
 - **Desktop icons**: six folders — About Me, Projects, Experience, Education,
   Resume, Contact. All use the same folder icon. Draggable on an invisible
-  92×80 grid with collision avoidance, clamped to bounds (fixed a bug where
+  grid — **80px wide × 92px tall** (`--cell-w` / `--cell-h`, read off the CSS
+  at runtime so the two can't drift), filled column-major like Windows —
+  with collision avoidance, clamped to bounds (fixed a bug where
   dragging past the bottom edge bounced icons to the wrong cell instead of
   the last row). Bottom row now uses the taskbar height, not a whole extra
   cell. Double-clicking one opens it.
 - **Folder windows**: every folder opens the same **Windows 7 Explorer
   chrome** — back/forward, breadcrumb address bar, search box, the command
-  bar (Organize / Include in library / Share with / Burn / New folder), the
-  navigation tree (Favorites, Computer, Network — Libraries and Burn were
-  both removed on request) and a details pane at the foot. Draggable,
+  bar (Organize / Include in library / Share with / New folder — **Burn is
+  gone**, removed on request), the navigation tree (Favorites, Computer,
+  Network — Libraries removed too) and a details pane at the foot. Draggable,
   resizable, minimise/maximise/close, cascading on open. Tree groups collapse,
   back and forward work.
+- **Five of the six folders are empty.** Only About Me has a content pane;
+  Projects, Experience, Education, Resume and Contact all render Explorer's
+  "This folder is empty." That is the open work, not a bug.
 - **Navigation is real.** `components/win7/fs.ts` is the single file tree, read
   by the desktop, the tree, the address bar, the listings and the window
   caption. Desktop holds the six folders plus the Recycle Bin; C:\ holds
@@ -90,6 +103,10 @@ Don't reintroduce any of it.
   desktop icons and on folder rows alike because both tag themselves
   `data-node-id`, and `data-in-bin` when drawn inside the bin — the menu never
   needs to know either component exists.
+  Desktop items are View / Sort by / Refresh / Paste (greyed) / Paste shortcut
+  (greyed) / New / Screen resolution / Personalize. It replaces Chrome's own
+  menu inside the screen and flips inward near an edge. Refresh repaints icons
+  without rearranging them. Submenus (▸) don't open yet.
 - **Network** shows one line: Status / Connected, live off `navigator.onLine`.
   It was briefly a six-row panel of speed and latency estimates; he cut it
   back to this. **SSID and carrier are impossible** — no browser exposes the
@@ -97,13 +114,8 @@ Don't reintroduce any of it.
 - **Local Disk (C:)** opens: 69.00 GB total, 2.00 GB free, so the capacity bar
   goes red — Windows' own rule is red under 10% free. Both numbers come from
   one `DRIVE` constant in `Explorer.tsx`.
-- **Right-click menu**: real Win7 desktop context menu — View/Sort by/
-  Refresh/Paste (greyed)/Paste shortcut (greyed)/New/Screen resolution/
-  Gadgets/Personalize — replaces Chrome's inside the screen, flips inside
-  near edges. Refresh repaints icons without rearranging them. Submenus (▸)
-  don't open yet.
 - **About Me has content**: his name centred in **Libre Bodoni** 50px over a
-  short masthead rule, then three paragraphs in **Public Sans**. Both come from
+  short masthead rule, then four paragraphs in **Public Sans**. Both come from
   `next/font/google` in `app/layout.tsx`, self-hosted at build — no runtime
   request to Google, no layout shift. He chose this pairing off a five-way
   Lavish mockup; the other four were Space Mono/IBM Plex Sans, Poiret
@@ -115,8 +127,11 @@ Don't reintroduce any of it.
   **The words live in `content/about.ts`.** Plain strings, no JSX, no HTML
   entities — that file exists so he can fix copy without opening a component.
   Links are written `[words](address)`; an address of `#` renders bold instead
-  of as an anchor, so the page never ships a dead link. Unitwise and RBI
-  Sentinel are both `#` until he supplies URLs.
+  of as an anchor, so the page never ships a dead link. Unitwise, RBI Sentinel,
+  GitHub and LeetCode all have real URLs now — nothing is left at `#`.
+  There are **four** paragraphs, not three. One typo is live: "Chekout my
+  Github" should read "Check out my GitHub" — flagged, not fixed, because copy
+  is his.
 - **Command Prompt**: opens from the Start menu, captioned "Ayush". Prints a
   cmd-shaped banner, takes a line, keeps scrollback, blinking block caret,
   up/down recalls history. **No commands exist yet** — anything typed gets
@@ -132,11 +147,14 @@ Don't reintroduce any of it.
 
 | File | What it is |
 |---|---|
-| `app/globals.css` | Everything visual. Room, CRT, glass, taskbar, orb. |
-| `app/page.tsx` | Composes Monitor → wallpaper → Taskbar. Where icons will go. |
-| `components/Monitor.tsx` | The CRT plastic. Children render into the glass. |
-| `components/Taskbar.tsx` | Bar, Start orb, open/close state for the menu. |
-| `components/win7/StartMenu.tsx` | The Start menu. Placeholder items. |
+| `app/globals.css` | Everything visual, ~1700 lines. Room, CRT, glass, desktop grid, Explorer, windows, taskbar, orb, context menu. |
+| `app/page.tsx` | Composes Monitor → wallpaper → DesktopSurface → WindowLayer → Taskbar. |
+| `components/Monitor.tsx` | The CRT plastic. **`data-frame="off"` is set here** — that's the one switch for the whole frame. |
+| `components/Taskbar.tsx` | Bar, Start orb, menu state, a button per open window. |
+| `components/win7/StartMenu.tsx` | The Start menu. About Me, stock shortcuts, Command Prompt, Shut down. |
+| `components/win7/Win7Window.tsx` | Aero window chrome — caption, buttons, drag, resize. |
+| `components/win7/WindowLayer.tsx` | Renders every open window and picks the component by id. |
+| `components/win7/desk.ts` | Measures the glass (`.win7`), not the viewport. Windows position against this. |
 | **`components/win7/fs.ts`** | **The file tree — what contains what. One source for everything.** |
 | `components/win7/Explorer.tsx` | The folder window: tree, listings, navigation, details pane. |
 | `components/win7/Network.tsx` | The Network place. Real connection readings. |
@@ -197,8 +215,9 @@ font weight he mistook for a font family.
 ## Open / not yet decided
 
 - **Taskbar contents** — deferred deliberately, needs a conversation.
-- **What goes INSIDE a folder** — the window and its chrome exist; the content
-  pane is empty on purpose. Three directions have now been rejected: an
+- **What goes INSIDE the five empty folders** — the window and its chrome
+  exist; Projects, Experience, Education, Resume and Contact are all still
+  "This folder is empty." Three directions have now been rejected: an
   editorial magazine set (Vogue/Tom Ford/GQ/Gentlewoman/i-D), and a
   free-canvas sticker collage that got built, arranged by hand, and scrapped
   on sight. Plain Win7 Explorer is where he landed, and he asked for it by
@@ -212,12 +231,13 @@ font weight he mistook for a font family.
 - **Wallpaper on extreme shapes** — fills and crops, so an ultrawide loses a
   lot of sky and the logo drifts off-centre on very narrow windows. He picked
   this over letterboxing; revisit only if it bothers him.
-- **Window chrome** — the old pastel `WindowFrame` was deleted rather than
-  restyled. Aero windows get written fresh with the first folder.
+- **Whether the CRT frame comes back on.** It's off today and it's one
+  attribute either way — ask before flipping it.
 - No mobile/small-screen fallback. Explicitly deferred again on 2026-08-19 —
   on a phone this becomes a very tall skinny monitor. It doesn't break, it's
   just wrong.
-- Not a git repo. Worth asking, don't set it up unprompted.
+- **Terminal has no commands.** `run()` in `Terminal.tsx` still answers
+  everything with cmd's "is not recognized".
 
 ## Stack
 
