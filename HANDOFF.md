@@ -14,6 +14,19 @@ npm run dev
 worktrees under `.claude/worktrees/`. Deletes are recoverable; `rm` on a
 tracked file is safe. Commit and push only when Ayushman asks.
 
+**A fresh worktree needs its own `npm install`.** `node_modules` is gitignored,
+so a new worktree starts without one. Two traps, both cost time once:
+
+1. **Don't junction or symlink it to the parent's.** Turbopack refuses —
+   *"Symlink [project]/node_modules is invalid, it points out of the
+   filesystem root"* — and because a worktree lives *inside* `port/`, the link
+   also makes a directory loop that takes down the dev server already running
+   on :3000. Run the real install.
+2. **Use a different port** (`npx next dev -p 3100`). :3000 is usually already
+   serving the main checkout, which is a different set of files — a change made
+   in the worktree will not show up there, and it is very easy to spend ten
+   minutes wondering why. Kill the extra server when you're done.
+
 ## What this is
 
 A portfolio styled as a beige CRT monitor standing in a dark room, with
@@ -52,9 +65,14 @@ Don't reintroduce any of it.
   Network — Libraries removed too) and a details pane at the foot. Draggable,
   resizable, minimise/maximise/close, cascading on open. Tree groups collapse,
   back and forward work.
-- **Five of the six folders are empty.** Only About Me has a content pane;
-  Projects, Experience, Education, Resume and Contact all render Explorer's
-  "This folder is empty." That is the open work, not a bug.
+- **Folders hold items now.** Ayushman picked "items you click into" over a
+  single page per folder, so a folder opens to an Explorer listing and
+  double-clicking a row opens that item's writing **in the same window** —
+  Back walks straight out of it. Projects has 3, Contact 3, Experience,
+  Education and Resume 1 each. About Me is the exception: it still draws its
+  own pane instead of a listing, which is what an absent `children` means.
+  **The words are all in `content/folders.ts`** and several are marked
+  `NEEDS YOUR WORDS` — see below.
 - **Navigation is real.** `components/win7/fs.ts` is the single file tree, read
   by the desktop, the tree, the address bar, the listings and the window
   caption. Desktop holds the six folders plus the Recycle Bin; C:\ holds
@@ -160,7 +178,9 @@ Don't reintroduce any of it.
 | `components/win7/Network.tsx` | The Network place. Real connection readings. |
 | `store/recycleBin.ts` | Which nodes are deleted. In memory; a reload undoes everything. |
 | **`content/about.ts`** | **The About Me words. Edit this to fix copy — plain text, no JSX.** |
-| `components/win7/folders/About.tsx` | Renders About Me and turns `[words](url)` into links. |
+| **`content/folders.ts`** | **What's inside every other folder. Add an item = copy a block, change the words.** |
+| `components/win7/folders/Doc.tsx` | The one prose renderer. Heading, rule, paragraphs, `[words](url)` → links. About Me and every item go through it. |
+| `components/win7/folders/About.tsx` | Three lines — hands `content/about.ts` to `Doc`. |
 | `components/win7/Terminal.tsx` | The Command Prompt. `run()` is where commands go. |
 | `components/win7/apps.ts` | Ids/titles/sizes for windows that aren't folders. |
 | `components/win7/DesktopIcons.tsx` | Desktop folders + the drag-to-grid logic. |
@@ -215,14 +235,21 @@ font weight he mistook for a font family.
 ## Open / not yet decided
 
 - **Taskbar contents** — deferred deliberately, needs a conversation.
-- **What goes INSIDE the five empty folders** — the window and its chrome
-  exist; Projects, Experience, Education, Resume and Contact are all still
-  "This folder is empty." Three directions have now been rejected: an
-  editorial magazine set (Vogue/Tom Ford/GQ/Gentlewoman/i-D), and a
-  free-canvas sticker collage that got built, arranged by hand, and scrapped
-  on sight. Plain Win7 Explorer is where he landed, and he asked for it by
-  name. **Don't propose more directions unprompted** — the next move is his
-  call on content.
+- **The words in `content/folders.ts` are half his and half placeholder.**
+  Every line I could verify came out of his own `content/about.ts`; everything
+  else carries a `NEEDS YOUR WORDS` comment right above it. Specifically:
+  - **Experience / Research Assistant** — one vague sentence. Where, since
+    when, and what he actually does are all unknown. Rewrite entirely.
+  - **Resume** — links to `#` because there is no PDF. Drop one in
+    `public/letterbox/` and swap the `#` for its path.
+  - **Contact / Email** — deliberately left at `#`. His address was not put on
+    a public page without him saying so.
+  - The second paragraph of each project is filler and should be replaced.
+- **The shape of folder content is settled, the styling isn't.** Three earlier
+  directions were rejected: an editorial magazine set (Vogue/Tom Ford/GQ/
+  Gentlewoman/i-D), and a free-canvas sticker collage that got built, arranged
+  by hand, and scrapped on sight. Plain Win7 Explorer is where he landed and he
+  asked for it by name. **Don't propose more directions unprompted.**
 - **Scrapped, in the session scratchpad** (`scrapped-canvas/`): the whole
   `components/win7/canvas/` tree, a drag-and-drop arranger page, and the
   route handler that saved its layout. Recoverable, not in the repo.

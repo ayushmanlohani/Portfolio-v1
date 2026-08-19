@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { About } from "@/components/win7/folders/About";
+import { Doc } from "@/components/win7/folders/Doc";
 import { contents, node, TREE } from "@/components/win7/fs";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
@@ -198,6 +199,12 @@ function Contents({
 }) {
   if (view === "about") return <About />;
   if (view === "network") return <Network />;
+
+  // An item from content/folders.ts. Opening one replaces the listing with its
+  // words, the same way About Me does — a file "opens" into the window it was
+  // clicked in rather than spawning a second one, so Back still walks out of it.
+  const here = node(view);
+  if (here?.body) return <Doc title={here.label} body={here.body} size="file" />;
 
   if (view === "computer") {
     const Drive = node("drive-c")!.Icon;

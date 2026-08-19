@@ -3,9 +3,11 @@ import {
   DriveIcon,
   FolderIcon,
   NetworkIcon,
+  NotepadIcon,
   RecycleBinIcon,
   StarIcon,
 } from "@/components/win7/icons";
+import { FOLDERS } from "@/content/folders";
 
 /**
  * The file tree.
@@ -20,7 +22,7 @@ import {
  * what a place shows when you open it.
  */
 
-export type NodeKind = "folder" | "drive" | "bin" | "computer" | "network" | "group";
+export type NodeKind = "folder" | "file" | "drive" | "bin" | "computer" | "network" | "group";
 
 export type FsNode = {
   id: string;
@@ -34,6 +36,8 @@ export type FsNode = {
   deletable?: boolean;
   /** What the details pane calls it. */
   type?: string;
+  /** A file's words, straight from content/folders.ts. Folders have none. */
+  body?: readonly string[];
 };
 
 /** The six folders on the desktop, in the order Windows stacks them. */
@@ -46,6 +50,23 @@ export const DESKTOP_FOLDERS = [
   "contact",
 ] as const;
 
+/**
+ * A file's id is `<folder>/<name>`, so it is unique without anyone having to
+ * invent and maintain a second set of ids in the content file. Ayushman writes
+ * a name; the id follows from it.
+ */
+const fileId = (parent: string, name: string) =>
+  `${parent}/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+
+/**
+ * A desktop folder. Its children come from content/folders.ts, so adding an
+ * item to that file is the whole job — nothing here has to be touched.
+ *
+ * A folder with no entry there keeps `children` undefined rather than an empty
+ * array, which is the difference between "empty folder" and "somewhere that
+ * doesn't list things at all". About Me is the second kind: it draws its own
+ * pane instead of a listing.
+ */
 const folder = (id: string, label: string): FsNode => ({
   id,
   label,
@@ -53,7 +74,22 @@ const folder = (id: string, label: string): FsNode => ({
   kind: "folder",
   deletable: true,
   type: "File folder",
+  children: FOLDERS[id]?.map((item) => fileId(id, item.name)),
 });
+
+/** One node per item in content/folders.ts. */
+const FILES: FsNode[] = Object.entries(FOLDERS).flatMap(([parent, items]) =>
+  items.map(
+    (item): FsNode => ({
+      id: fileId(parent, item.name),
+      label: item.name,
+      Icon: NotepadIcon,
+      kind: "file",
+      type: item.type ?? "Text Document",
+      body: item.text,
+    }),
+  ),
+);
 
 const NODE_LIST: FsNode[] = [
   folder("about", "About Me"),
@@ -111,6 +147,8 @@ const NODE_LIST: FsNode[] = [
     type: "Local Disk",
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },
+
+  ...FILES,
 ];
 
 export const NODES = new Map(NODE_LIST.map((n) => [n.id, n]));

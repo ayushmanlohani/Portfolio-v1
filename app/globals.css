@@ -1519,6 +1519,18 @@ body {
   color: #16181a;
 }
 
+/* An item opened out of a folder listing. Half the size, because the 50px
+   above is a person's name overflowing its window on purpose and "Unitwise"
+   is a file — same face, same centring, one step down the scale. */
+.about[data-doc="file"] .about-name {
+  font-size: calc(26 * var(--px));
+}
+
+.about[data-doc="file"] .about-rule {
+  margin-top: calc(16 * var(--px));
+  margin-bottom: calc(20 * var(--px));
+}
+
 /* A masthead rule. Short and centred, so it reads as part of the name rather
    than as a divider cutting the pane in half. */
 .about-rule {
