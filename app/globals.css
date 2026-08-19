@@ -1675,3 +1675,11 @@ body {
   border: calc(1 * var(--px)) solid #3399ff;
   background: rgba(120, 190, 245, 0.32);
 }
+
+/* Nothing on the desktop is text you select. Without this the rubber band
+   drags a text selection across the icon labels as it goes, and pressing an
+   icon afterwards starts a native file drag that kills the real one. */
+.desktop-icons {
+  user-select: none;
+  -webkit-user-select: none;
+}

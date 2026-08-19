@@ -490,10 +490,15 @@ export function DesktopIcons() {
                 cell.r * grid.h + (isDragging ? dragging!.dy : 0)
               }px)`,
             }}
+            // The browser will happily start a native HTML5 drag from an icon
+            // (its label is text, its glyph is an SVG), and the moment it does
+            // it fires pointercancel and the real drag dies mid-gesture. This
+            // is why dragging worked until a marquee had been used: the band
+            // left the labels text-selected, and dragging selected text is
+            // exactly what triggers it.
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
             onPointerDown={(e) => onPointerDown(e, id)}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
             onDoubleClick={() => openItem(id)}
             onKeyDown={(e) => {
               if (e.key === "Enter") openItem(id);

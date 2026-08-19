@@ -61,7 +61,25 @@ Don't reintroduce any of it.
   than reflowing — same as Windows. A reload also restores everything.
 - **Marquee selection**: drag on bare desktop and the Win7 rubber band picks
   up every icon it touches, live as you drag. Ctrl adds to a selection;
-  clicking bare desktop clears it. **Delete is bound on the document**, not on
+  clicking bare desktop clears it. **A selection drags in formation** — grab
+  any selected icon and the whole group moves by one shared delta, keeping its
+  arrangement; drop it on the bin and all of them go.
+
+  Three traps here, all of them cost real time once:
+  1. Icon drags run on **window listeners, not pointer capture**. Capture
+     silently stopped engaging after a marquee and the press went dead.
+  2. `.desktop-icons` sets `user-select: none` and the icons are
+     `draggable={false}`. Without it the band drags a *text selection* across
+     the labels, and pressing an icon afterwards starts a native HTML5 file
+     drag — which fires **pointercancel** and kills the real drag one frame in.
+     This was the actual cause of "only the clicked icon moves".
+  3. When placing a group, members must block **each other**: the ignore-set
+     passed to `freeCellNear` has to be empty, because the working map already
+     has the group lifted out and re-adds each one as it lands. Passing the
+     group made them invisible to each other and stacked two icons in one cell.
+  Both drags also bail on `ev.buttons === 0` and on `pointercancel`, so a
+  release the page never sees can't leave the band painted or icons glued to
+  the pointer. **Delete is bound on the document**, not on
   the icons — a marquee captures the pointer on the container, so afterwards
   no icon button holds focus and a handler bound to one silently never fires.
   It skips INPUT/TEXTAREA so the console keeps its own Delete, and an empty
