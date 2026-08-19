@@ -30,4 +30,6 @@ export const PARAGRAPHS = [
   `I've built things that people actually use, watched them break, and then spent multiple nights fixing them. Right now, I'm working on a lightweight computer vision model with YOLO 26n, while exploring AI agents, RAG, and whatever else catches my attention.`,
 
   `Along the way, I've built [Unitwise](https://unitwise-weld.vercel.app/) and [RBI Sentinel](https://rbi-sentinel.streamlit.app).`,
+
+  `Chekout my [Github](https://github.com/ayushmanlohani) and [Leetcode](https://leetcode.com/u/ayushmanlohani/).`,
 ];
