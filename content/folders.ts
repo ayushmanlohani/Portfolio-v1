@@ -45,17 +45,10 @@ export type Item = {
 };
 
 export const FOLDERS: Record<string, Item[]> = {
+  // Unitwise is not here — it has a page of its own, in content/unitwise.ts,
+  // registered in content/projects.ts. Anything listed below stays a plain
+  // text file inside its folder.
   projects: [
-    {
-      name: "Unitwise",
-      type: "Web app",
-      text: [
-        `A unit converter that stays out of your way. Live at [unitwise-weld.vercel.app](https://unitwise-weld.vercel.app/).`,
-
-        // NEEDS YOUR WORDS — what it does, what you built it with, what broke.
-        `Built it, shipped it, and then kept using it, which is the only test that counts.`,
-      ],
-    },
     {
       name: "RBI Sentinel",
       type: "Streamlit app",

@@ -8,6 +8,7 @@ import {
   StarIcon,
 } from "@/components/win7/icons";
 import { FOLDERS } from "@/content/folders";
+import { PROJECTS } from "@/content/projects";
 
 /**
  * The file tree.
@@ -58,14 +59,28 @@ export const DESKTOP_FOLDERS = [
 const fileId = (parent: string, name: string) =>
   `${parent}/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 
+/** A project big enough for its own page is a folder, not a text file. */
+export const projectId = (key: string) => `projects/${key}`;
+
 /**
- * A desktop folder. Its children come from content/folders.ts, so adding an
- * item to that file is the whole job — nothing here has to be touched.
+ * What a desktop folder contains, gathered from both content files: the
+ * projects that have a page of their own first, then the plain text items.
  *
- * A folder with no entry there keeps `children` undefined rather than an empty
- * array, which is the difference between "empty folder" and "somewhere that
- * doesn't list things at all". About Me is the second kind: it draws its own
- * pane instead of a listing.
+ * `undefined` rather than an empty array when there is nothing, because the
+ * two mean different things — an empty array is "empty folder", `undefined` is
+ * "somewhere that doesn't list things at all". About Me is the second kind: it
+ * draws its own pane instead of a listing.
+ */
+function childrenOf(id: string): string[] | undefined {
+  const projects = id === "projects" ? Object.keys(PROJECTS).map(projectId) : [];
+  const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
+  const all = [...projects, ...items];
+  return all.length > 0 ? all : undefined;
+}
+
+/**
+ * A desktop folder. Its children come from the content files, so adding an
+ * item there is the whole job — nothing here has to be touched.
  */
 const folder = (id: string, label: string): FsNode => ({
   id,
@@ -74,8 +89,21 @@ const folder = (id: string, label: string): FsNode => ({
   kind: "folder",
   deletable: true,
   type: "File folder",
-  children: FOLDERS[id]?.map((item) => fileId(id, item.name)),
+  children: childrenOf(id),
 });
+
+/**
+ * One folder per project page. It is a folder rather than a file because that
+ * is what it behaves like — you open it and you are somewhere, and Back walks
+ * back out. It just happens to have no listing inside.
+ */
+const PROJECT_FOLDERS: FsNode[] = Object.entries(PROJECTS).map(([key, project]) => ({
+  id: projectId(key),
+  label: project.name,
+  Icon: FolderIcon,
+  kind: "folder",
+  type: "File folder",
+}));
 
 /** One node per item in content/folders.ts. */
 const FILES: FsNode[] = Object.entries(FOLDERS).flatMap(([parent, items]) =>
@@ -148,6 +176,7 @@ const NODE_LIST: FsNode[] = [
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },
 
+  ...PROJECT_FOLDERS,
   ...FILES,
 ];
 

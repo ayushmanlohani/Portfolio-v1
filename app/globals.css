@@ -1582,6 +1582,222 @@ body {
   color: #1c1f22;
 }
 
+/* ── A project page ────────────────────────────────────────────
+   Everything above the stack row is deliberately quiet, so the
+   logos are the one thing the eye lands on.
+   ───────────────────────────────────────────────────────────── */
+
+/* A shade wider than About Me: the stack row wants a few more logos per line
+   than a 580px measure allows, and this page has headings to break up the
+   prose that About Me doesn't. */
+.about.project {
+  max-width: calc(640 * var(--px));
+}
+
+/* The two lines under the name. Centred with the name rather than left with
+   the body, because it belongs to the masthead — it is the subtitle, not the
+   first paragraph. Each line is its own block so the break lands where it was
+   written instead of wherever the window happens to be wide. */
+.project-tagline {
+  margin: 0 0 calc(24 * var(--px));
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(15 * var(--px));
+  line-height: 1.55;
+  text-align: center;
+  text-wrap: balance;
+  color: #4a5158;
+}
+
+.project-tagline span {
+  display: block;
+}
+
+.project-links {
+  display: flex;
+  justify-content: center;
+  gap: calc(8 * var(--px));
+  margin-bottom: calc(30 * var(--px));
+}
+
+/* Win7's own button, at prose scale. Not the blue text link the body uses —
+   these two are the actions on the page and they should look pressable. */
+.project-link {
+  padding: calc(5 * var(--px)) calc(14 * var(--px));
+  border: calc(1 * var(--px)) solid #b6c6d6;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(#fdfefe, #ecf3f9 48%, #dfeaf4 52%, #ecf4fb);
+  box-shadow: 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.9) inset;
+  color: #1f4a72;
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(12 * var(--px));
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.project-link:hover {
+  border-color: #7eb4ea;
+  background: linear-gradient(#f4fafe, #e4f2fc 48%, #d4eaf9 52%, #e6f4fd);
+}
+
+.project-link:focus-visible {
+  outline: calc(2 * var(--px)) solid #3d7fbf;
+  outline-offset: calc(2 * var(--px));
+}
+
+.project-section {
+  margin-bottom: calc(28 * var(--px));
+}
+
+.project-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Small, letterspaced, upper case, with a hairline running out to the right.
+   A heading has to separate two blocks of prose without competing with the
+   Bodoni name at the top — this reads as a label, not as a second title. */
+.project-heading {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  margin: 0 0 calc(12 * var(--px));
+  color: #6a737b;
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(11 * var(--px));
+  font-weight: 600;
+  letter-spacing: calc(1.1 * var(--px));
+  text-transform: uppercase;
+}
+
+.project-heading::after {
+  content: "";
+  flex: 1;
+  height: calc(1 * var(--px));
+  background: #e2e8ee;
+}
+
+.project-points {
+  margin: calc(12 * var(--px)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-points li {
+  position: relative;
+  margin-bottom: calc(7 * var(--px));
+  padding-left: calc(18 * var(--px));
+}
+
+.project-points li:last-child {
+  margin-bottom: 0;
+}
+
+.project-points li::before {
+  content: "";
+  position: absolute;
+  top: calc(9 * var(--px));
+  left: calc(2 * var(--px));
+  width: calc(4 * var(--px));
+  height: calc(4 * var(--px));
+  border-radius: 50%;
+  background: #9fb3c4;
+}
+
+/* ── The stack row ─────────────────────────────────────────────
+   Logos only. The name arrives on hover or on keyboard focus.
+   ───────────────────────────────────────────────────────────── */
+
+.project-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(6 * var(--px));
+  /* Room above for the tooltip, which is drawn outside the chip and would
+     otherwise land on top of the heading. Above rather than below because the
+     row is the last thing on the page — a tooltip below it would be clipped by
+     the bottom of the scroll area. */
+  padding-top: calc(20 * var(--px));
+}
+
+/* 40px square: comfortably past the 44px-with-gap touch target once the 6px
+   gap on each side is counted, and big enough that a one-colour mark still
+   reads at a glance. */
+.tech {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(40 * var(--px));
+  height: calc(40 * var(--px));
+  border: calc(1 * var(--px)) solid #dde5ec;
+  border-radius: calc(4 * var(--px));
+  background: #fbfdfe;
+  color: #5c6870;
+  cursor: default;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.tech:hover,
+.tech:focus-visible {
+  border-color: #7eb4ea;
+  background: #f2f9fe;
+  /* Explorer's blue. The mark is monochrome, so colour is the whole hover
+     state — brand colours would turn twelve logos into confetti. */
+  color: #1f5a8f;
+}
+
+.tech:focus-visible {
+  outline: calc(2 * var(--px)) solid #3d7fbf;
+  outline-offset: calc(2 * var(--px));
+}
+
+.tech-logo {
+  width: calc(20 * var(--px));
+  height: calc(20 * var(--px));
+}
+
+/* What a technology with no published mark gets. */
+.tech-letters {
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(13 * var(--px));
+  font-weight: 600;
+  letter-spacing: calc(0.3 * var(--px));
+}
+
+/* Windows 7's tooltip, not the browser's: white-to-pale gradient, hairline
+   border, 3px corners, Segoe UI. The browser's `title` would appear on a
+   delay in the host OS's styling, on top of an OS of our own. */
+.tech-name {
+  position: absolute;
+  bottom: calc(100% + 6 * var(--px));
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  padding: calc(3 * var(--px)) calc(8 * var(--px));
+  border: calc(1 * var(--px)) solid #767676;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(#ffffff, #eef3f9);
+  box-shadow: 0 calc(2 * var(--px)) calc(4 * var(--px)) rgba(0, 0, 0, 0.18);
+  color: #1c1f22;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(11 * var(--px));
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 90ms ease;
+}
+
+.tech:hover .tech-name,
+.tech:focus-visible .tech-name {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tech,
+  .tech-name {
+    transition: none;
+  }
+}
+
 /* ── Folder listings ───────────────────────────────────────────
    Explorer's Details view: a header row, then one row per item.
    ───────────────────────────────────────────────────────────── */
