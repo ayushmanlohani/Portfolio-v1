@@ -65,15 +65,24 @@ Don't reintroduce any of it.
   Network — Libraries removed too) and a details pane at the foot. Draggable,
   resizable, minimise/maximise/close, cascading on open. Tree groups collapse,
   back and forward work.
+  **The breadcrumb walks every ancestor, not just the current folder** —
+  `Ayushman ▸ Education ▸ Nirmala Convent Inter College ▸` rather than
+  jumping straight from the root to wherever the window is. It used to skip
+  the middle. `crumbIds()` in `fs.ts` splits the view's id on `/` and looks up
+  each prefix — ids are already built as `parent/child`, so this needed no new
+  data, just reading the one that was already there.
 - **Folders hold items now.** Ayushman picked "items you click into" over a
   single page per folder, so a folder opens to an Explorer listing (**Large
   Icons view** — 48px icons on a grid, matching the desktop; there is no
   Details view, no Name/Type header and no Type column) and
   double-clicking a row opens that item's writing **in the same window** —
-  Back walks straight out of it. Only Contact (3) works this way; Resume's one
-  item draws `content/resume.ts` instead of prose.
-  About Me is the exception: it still draws its own pane instead of a listing,
-  which is what an absent `children` means.
+  Back walks straight out of it. Resume's one item draws `content/resume.ts`
+  instead of prose.
+  About Me and Contact are the exceptions: both draw their own pane instead of
+  a listing, which is what an absent `children` means. Contact used to be
+  three files (GitHub, LeetCode, an Email pointing at `#`) — each was a single
+  link, not worth a double-click apiece, so it's one page of buttons now, the
+  same shape as About Me.
   **The grid reflows on resize with no JavaScript** — `.ex-tiles` is
   `repeat(auto-fill, minmax(96px, 1fr))`, so the browser re-fits the tiles as
   the window changes. Measured: 1240px wide → 1 row, 887px → 2, 520px → 3.
@@ -84,8 +93,11 @@ Don't reintroduce any of it.
   Projects has **Unitwise** and **RBI Sentinel**; Experience has **Research
   Assistant**, **AI & Machine Learning Intern** and **Machine Learning & Data
   Science Intern**; Education has **University of Lucknow** and **Nirmala
-  Convent Inter College**, which is itself a folder holding **ISC** and
-  **ICSE**. No text files in any of the three —
+  Convent Inter College** — one page, not a folder. It used to hold separate
+  ISC and ICSE children; both marks (`ISC · Class XI – XII · 90%`,
+  `ICSE · Class I – X · 92%`) live in its `tagline` now, which is also why
+  it has no `meta` line — the marks sit where a project's byline usually goes.
+  No text files in any of the three —
   all are empty arrays in `content/folders.ts` on purpose. Such a folder opens
   to a page: optional crest, centred Bodoni name, optional grey meta lines,
   two-line tagline, Win7 link buttons, headed sections, and a **row of logos
@@ -98,14 +110,14 @@ Don't reintroduce any of it.
   - **`content/pages.ts` is the registry** — one map of folder id → entries,
     plus the `Page` type. Anything not in it falls back to
     `content/folders.ts` and stays a plain text file.
-  - **Entries nest.** An entry with `children` instead of a `tagline` is a
-    folder rather than a page, to any depth — that is what makes Nirmala
-    Convent one school folder holding two certificates rather than the school
-    appearing twice in Education. `isGroup()` is the test and it is structural,
-    not a flag anyone has to remember to set. `entryAt(path)` walks an id of
-    any depth, so `education/nirmala/isc` resolves exactly as
-    `projects/unitwise` does, and `fs.ts` walks the whole tree once at load to
-    build a folder node per entry.
+  - **Entries can nest**, though nothing currently uses it. An entry with
+    `children` instead of a `tagline` would be a folder rather than a page, to
+    any depth — Nirmala Convent used to be exactly this (one school folder
+    holding ISC and ICSE) before its two certificates became one page instead.
+    `isGroup()` is the test and it is structural, not a flag anyone has to
+    remember to set. `entryAt(path)` walks an id of any depth, so a nested path
+    would resolve exactly as `projects/unitwise` does, and `fs.ts` walks the
+    whole tree once at load to build a folder node per entry.
   - Long things get a file each (`content/unitwise.ts`, `content/sentinel.ts`);
     short related things share one (`content/experience.ts` holds all three
     roles). **Project three is a copy, an import and a line; job four is one
@@ -126,6 +138,15 @@ Don't reintroduce any of it.
     **Unitwise is a RAG chatbot for syllabus questions, not a unit converter**,
     which is what the name suggests and what an earlier placeholder claimed.
     Don't write a project's copy from its name.
+  - **Unitwise leads with "The problem"** now, before "What it does" — Ayushman
+    sent a screenshot of an unrelated dark-card layout (WhatsApp message, not a
+    design he wanted matched) purely for the *shape* of it: a one-line pitch, a
+    tech row, demo/GitHub buttons, then a named "Problem" section before "How
+    it works". Everything except the Problem section already existed here, so
+    that's the only thing added — one paragraph, drawn from facts already in
+    "What it does" rather than new claims. **He does not want this dark-card
+    look itself** — that would break the Win7 chrome every other page uses,
+    and he confirmed content-structure-only, not a visual swap.
   - The stack chips are **not hover-only**: each is focusable, names itself on
     keyboard focus too, and carries the name on `aria-label`.
   - The tooltip is Win7's own, not the browser's `title` — a native tooltip
@@ -249,9 +270,13 @@ Don't reintroduce any of it.
 | **`content/unitwise.ts`** | **The Unitwise page — tagline, sections, stack. Edit this to change it.** |
 | **`content/sentinel.ts`** | **The RBI Sentinel page. Same shape as unitwise.ts.** |
 | **`content/experience.ts`** | **All three roles. Add a job = one entry here.** |
-| **`content/education.ts`** | **Degree + both school entries. Logo paths go here.** |
+| **`content/education.ts`** | **Degree + Nirmala Convent, one page each. Logo paths go here.** |
 | `content/pages.ts` | The registry: which folders hold pages, plus the `Page` type. |
-| `components/win7/folders/Project.tsx` | Renders any page — project or job — from its content. |
+| **`content/resume.ts`** | **The CV, transcribed from the LaTeX PDF — name, contact, one entry per role/degree/project.** |
+| **`content/contact.ts`** | **The Contact page — intro line, link buttons, email.** |
+| `components/win7/folders/Project.tsx` | Renders any page — project or job or education — from its content. |
+| `components/win7/folders/Resume.tsx` | The CV's own layout — centred header, small-caps section rules, title/date rows. Not `Doc` or `Project`; LaTeX's shape doesn't fit either. |
+| `components/win7/folders/Contact.tsx` | LinkedIn/GitHub/LeetCode buttons + email, same shape as `About.tsx`. |
 | `components/win7/folders/Tech.tsx` | One stack logo + its hover/focus tooltip. |
 | `components/win7/folders/techLogos.ts` | Inlined Simple Icons paths. Generated, not hand-drawn. |
 | `components/win7/folders/Doc.tsx` | The one prose renderer. Heading, rule, paragraphs, `[words](url)` → links. About Me and every item go through it. |
@@ -293,6 +318,20 @@ problem the earlier fixed-ratio version had.
 ## Assets in `public/letterbox/`
 
 - `Z0Ts3J2-windows-7-official-wallpapers.jpg` — the Win7 wallpaper, in use.
+- `AyushmanLohani_Resume.pdf` — his real CV, compiled from LaTeX. What
+  `content/resume.ts` was transcribed from, and what the Resume page's
+  Download button serves. **The text and the PDF are two copies** — recompile
+  the LaTeX and `content/resume.ts` needs a matching edit; nothing checks that
+  they still agree.
+- `cmu/` — three CMU Serif woff2 faces (roman, bold, italic) plus its
+  `OFL.txt`. Real Computer Modern, the same CMR/CMBX/CMTI family his LaTeX
+  resume sets in, pulled from the `computer-modern` npm package (SIL Open
+  Font License, redistribution is fine) rather than approximated with a
+  system serif. Only these three faces — it's all the resume document uses.
+- `LU_Logo.png`, `NCIC logo.png` — the university and school crests he
+  dropped in. **Not wired in yet** — `content/education.ts` still has both
+  entries at `logo: ""`. Point `lucknow.logo` and `nirmala.logo` at these
+  paths when he confirms which crest is which.
 - `pngs/` — eight cut-out stickers (Coke can, skull, badge, Charminar,
   Mustang, kitten, headphone cat, POW). Left over from the scrapped collage.
   **Unused.**
@@ -338,9 +377,25 @@ font weight he mistook for a font family.
     **The text and the PDF are two copies** — change the LaTeX and
     `content/resume.ts` has to change too; nothing checks that they agree.
     Note it publishes his phone number and email, which his PDF carries;
-    deleting either line in `contact` closes the row up.
-  - **Contact / Email** — deliberately left at `#`. His address was not put on
-    a public page without him saying so.
+    deleting either line in `RESUME.contact` (in `content/resume.ts` — not
+    `content/contact.ts`, a different file for the Contact folder) closes the
+    row up.
+    **One trap here worth remembering**: the Download button was first
+    `float: right` so the Certifications list could sit beside it. A float
+    only nudges surrounding *text*; the elements after it in the DOM (the
+    `<li>`s) still paint on top in normal stacking order and swallow the
+    click, even over the area that looks empty. It now sits in a real flex
+    row (`.cv-last-row`) instead — the general fix whenever something needs to
+    share a line with content that follows it, not just here.
+  - **Contact is done, and his email is now public on purpose.** He asked for
+    a message form at first; walked through what that would actually take (a
+    static site can't send mail on its own — it needs a form service or a
+    server route plus a mail provider, real spam/disposable-email checking
+    costs money or goes stale) and he chose to skip all of it. The page is now
+    LinkedIn / GitHub / LeetCode buttons plus his email as a `mailto:` link,
+    drawn by `components/win7/folders/Contact.tsx` from `content/contact.ts`.
+    **If a form comes back later**, the delivery decision comes with it — he's
+    on Vercel, so both a form-service key and a server route are live options.
   - **Projects is done** — both project pages are written off their repos, so
     nothing under Projects is a placeholder any more. The three above are all
     that's left.

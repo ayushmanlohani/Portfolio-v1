@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 
 import { About } from "@/components/win7/folders/About";
+import { Contact } from "@/components/win7/folders/Contact";
 import { Doc } from "@/components/win7/folders/Doc";
 import { Project } from "@/components/win7/folders/Project";
 import { Resume } from "@/components/win7/folders/Resume";
@@ -219,6 +220,7 @@ function Contents({
   onOpen: (id: string) => void;
 }) {
   if (view === "about") return <About />;
+  if (view === "contact") return <Contact />;
   if (view === "network") return <Network />;
   // The resume is a document of its own shape — LaTeX's layout, not prose —
   // so it gets a component rather than going through Doc like other items.

@@ -64,24 +64,7 @@ export const FOLDERS: Record<string, Item[]> = {
     },
   ],
 
-  contact: [
-    {
-      name: "GitHub",
-      type: "Profile",
-      text: [`The code, most of it in public: [github.com/ayushmanlohani](https://github.com/ayushmanlohani).`],
-    },
-    {
-      name: "LeetCode",
-      type: "Profile",
-      text: [`[leetcode.com/u/ayushmanlohani](https://leetcode.com/u/ayushmanlohani/).`],
-    },
-    {
-      name: "Email",
-      type: "Mail",
-      // NEEDS YOUR CALL — I left your address out on purpose. Putting an
-      // email on a public page invites scrapers, and that's your decision to
-      // make, not mine. To add it, swap the "#" for mailto:you@example.com.
-      text: [`[Send me a mail](#).`],
-    },
-  ],
+  // Contact draws content/contact.ts instead of listing files — its three
+  // items were each a single link, which wasn't worth a double-click apiece.
+  contact: [],
 };

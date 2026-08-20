@@ -42,6 +42,12 @@ export const UNITWISE = {
 
   sections: [
     {
+      heading: "The problem",
+      text: [
+        `Ask ChatGPT a syllabus question and it answers confidently — from wherever, not necessarily the textbook a student is actually being examined on. There's no page reference, no way to check the answer against the source, and no sense of whether a topic is even on the syllabus at all.`,
+      ],
+    },
+    {
       heading: "What it does",
       text: [
         `B.Tech students ask a question in the words their syllabus uses, and Unitwise answers from the prescribed textbooks — with the page it came from attached. No hallucinated sources, no "as an AI model", no guessing at what a unit covers.`,
