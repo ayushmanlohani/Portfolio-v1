@@ -3,10 +3,13 @@ import {
   DriveIcon,
   FolderIcon,
   NetworkIcon,
+  NotepadIcon,
   RecycleBinIcon,
   StarIcon,
   TextFileIcon,
 } from "@/components/win7/icons";
+import { FOLDERS } from "@/content/folders";
+import { type Entry, isGroup, PAGES } from "@/content/pages";
 
 /**
  * The file tree.
@@ -21,7 +24,7 @@ import {
  * what a place shows when you open it.
  */
 
-export type NodeKind = "folder" | "drive" | "bin" | "computer" | "network" | "group" | "file";
+export type NodeKind = "folder" | "file" | "drive" | "bin" | "computer" | "network" | "group";
 
 export type FsNode = {
   id: string;
@@ -35,6 +38,8 @@ export type FsNode = {
   deletable?: boolean;
   /** What the details pane calls it. */
   type?: string;
+  /** A file's words, straight from content/folders.ts. Folders have none. */
+  body?: readonly string[];
 };
 
 /** The six folders on the desktop, in the order Windows stacks them. */
@@ -47,6 +52,69 @@ export const DESKTOP_FOLDERS = [
   "contact",
 ] as const;
 
+/**
+ * A file's id is `<folder>/<name>`, so it is unique without anyone having to
+ * invent and maintain a second set of ids in the content file. Ayushman writes
+ * a name; the id follows from it.
+ */
+const fileId = (parent: string, name: string) =>
+  `${parent}/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+
+/**
+ * Every folder that comes from content/pages.ts, and what each one holds.
+ *
+ * Walked once at module load rather than looked up per render. A page becomes
+ * a childless folder — you open it and you are somewhere, and Back walks out
+ * again — and a group becomes a folder holding more of them, to whatever depth
+ * the content file nests.
+ */
+const PAGE_FOLDERS: FsNode[] = [];
+
+function walk(parent: string, entries: Record<string, Entry>): string[] {
+  return Object.entries(entries).map(([key, entry]) => {
+    const id = `${parent}/${key}`;
+
+    // Children first: a group's own node needs the ids of what's inside it,
+    // and those only exist once its children have been walked.
+    const children = isGroup(entry) ? walk(id, entry.children) : undefined;
+
+    PAGE_FOLDERS.push({
+      id,
+      label: entry.name,
+      Icon: FolderIcon,
+      kind: "folder",
+      type: "File folder",
+      children,
+    });
+
+    return id;
+  });
+}
+
+const PAGE_CHILDREN: Record<string, string[]> = Object.fromEntries(
+  Object.entries(PAGES).map(([top, entries]) => [top, walk(top, entries)]),
+);
+
+/**
+ * What a desktop folder contains, gathered from both content files: the
+ * entries that have a page of their own first, then the plain text items.
+ *
+ * `undefined` rather than an empty array when there is nothing, because the
+ * two mean different things — an empty array is "empty folder", `undefined` is
+ * "somewhere that doesn't list things at all". About Me is the second kind: it
+ * draws its own pane instead of a listing.
+ */
+function childrenOf(id: string): string[] | undefined {
+  const pages = PAGE_CHILDREN[id] ?? [];
+  const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
+  const all = [...pages, ...items];
+  return all.length > 0 ? all : undefined;
+}
+
+/**
+ * A desktop folder. Its children come from the content files, so adding an
+ * item there is the whole job — nothing here has to be touched.
+ */
 const folder = (id: string, label: string): FsNode => ({
   id,
   label,
@@ -54,7 +122,22 @@ const folder = (id: string, label: string): FsNode => ({
   kind: "folder",
   deletable: true,
   type: "File folder",
+  children: childrenOf(id),
 });
+
+/** One node per item in content/folders.ts. */
+const FILES: FsNode[] = Object.entries(FOLDERS).flatMap(([parent, items]) =>
+  items.map(
+    (item): FsNode => ({
+      id: fileId(parent, item.name),
+      label: item.name,
+      Icon: NotepadIcon,
+      kind: "file",
+      type: item.type ?? "Text Document",
+      body: item.text,
+    }),
+  ),
+);
 
 const NODE_LIST: FsNode[] = [
   folder("about", "About Me"),
@@ -112,6 +195,9 @@ const NODE_LIST: FsNode[] = [
     type: "Local Disk",
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },
+
+  ...PAGE_FOLDERS,
+  ...FILES,
 ];
 
 export const NODES = new Map(NODE_LIST.map((n) => [n.id, n]));

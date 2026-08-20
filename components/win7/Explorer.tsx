@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 
 import { About } from "@/components/win7/folders/About";
+import { Doc } from "@/components/win7/folders/Doc";
+import { Project } from "@/components/win7/folders/Project";
 import { contents, node, TREE } from "@/components/win7/fs";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
+import { entryAt, isGroup } from "@/content/pages";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -199,6 +202,22 @@ function Contents({
   if (view === "about") return <About />;
   if (view === "network") return <Network />;
 
+  // Anything with a page of its own — a project, a job, a qualification.
+  // content/pages.ts stays the only place a page is declared, and `entryAt`
+  // walks the id whatever its depth, so `education/nirmala/isc` resolves the
+  // same way `projects/unitwise` does.
+  //
+  // A group falls through on purpose: Nirmala Convent is a folder holding ISC
+  // and ICSE, so it should list them rather than draw a page.
+  const entry = entryAt(view);
+  if (entry && !isGroup(entry)) return <Project data={entry} />;
+
+  // An item from content/folders.ts. Opening one replaces the listing with its
+  // words, the same way About Me does — a file "opens" into the window it was
+  // clicked in rather than spawning a second one, so Back still walks out of it.
+  const here = node(view);
+  if (here?.body) return <Doc title={here.label} body={here.body} size="file" />;
+
   if (view === "computer") {
     const Drive = node("drive-c")!.Icon;
     return (
@@ -228,13 +247,12 @@ function Contents({
     );
   }
 
+  // Windows' Large Icons view: 48px icons on a grid that reflows as the window
+  // is resized. There is no Name/Type header and no Type column, same as the
+  // real thing — a tile is a picture and a name. `type` still reaches the
+  // reader through the details pane once the item is open.
   return (
-    <div className="ex-list">
-      <div className="ex-list-head">
-        <span>Name</span>
-        <span>Type</span>
-      </div>
-
+    <div className="ex-tiles">
       {items.map((childId) => {
         const child = node(childId);
         if (!child) return null;
@@ -242,7 +260,7 @@ function Contents({
         return (
           <button
             type="button"
-            className="ex-row"
+            className="ex-tile"
             key={childId}
             title={`Open ${child.label}`}
             // Read by the right-click menu, which decides between Delete and
@@ -251,9 +269,8 @@ function Contents({
             data-in-bin={view === "recycle" ? "true" : undefined}
             onDoubleClick={() => onOpen(childId)}
           >
-            <child.Icon className="ex-icon" />
-            <span className="ex-row-name">{child.label}</span>
-            <span className="ex-row-type">{child.type ?? "File folder"}</span>
+            <child.Icon className="ex-tile-icon" />
+            <span className="ex-tile-name">{child.label}</span>
           </button>
         );
       })}

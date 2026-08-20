@@ -8,7 +8,24 @@ CLAUDE.md is *how* to work with Ayushman, this doc is *where the project is*.
 ```bash
 npm run dev
 ```
-`localhost:3000`. Not a git repo — no version control, so deletes are permanent.
+`localhost:3000`.
+
+**It is a git repo now** — `main` plus feature branches, and sessions run in
+worktrees under `.claude/worktrees/`. Deletes are recoverable; `rm` on a
+tracked file is safe. Commit and push only when Ayushman asks.
+
+**A fresh worktree needs its own `npm install`.** `node_modules` is gitignored,
+so a new worktree starts without one. Two traps, both cost time once:
+
+1. **Don't junction or symlink it to the parent's.** Turbopack refuses —
+   *"Symlink [project]/node_modules is invalid, it points out of the
+   filesystem root"* — and because a worktree lives *inside* `port/`, the link
+   also makes a directory loop that takes down the dev server already running
+   on :3000. Run the real install.
+2. **Use a different port** (`npx next dev -p 3100`). :3000 is usually already
+   serving the main checkout, which is a different set of files — a change made
+   in the worktree will not show up there, and it is very easy to spend ten
+   minutes wondering why. Kill the extra server when you're done.
 
 ## What this is
 
@@ -23,25 +40,106 @@ Don't reintroduce any of it.
 
 ## Current visible state
 
-- **Monitor**: beige CRT filling the whole viewport — putty plastic, curved
-  glass (barrel vignette + specular streak + scanlines), deeper bottom edge
-  carrying MULTISYNC and a green power LED. **No stand, no fixed aspect
-  ratio.**
-- **Screen**: whatever shape the viewer's window is, minus the frame. Win7
-  "Harmony" wallpaper set to fill and crop. Nothing else on it.
+- **Monitor — the CRT frame is currently OFF.** `Monitor.tsx` renders
+  `data-frame="off"`, which zeroes `--bezel` and `--chin`, so **no beige
+  plastic, no MULTISYNC, no LED is on screen**: Windows runs edge to edge and
+  the wallpaper touches all four sides. The whole CRT (putty plastic, curved
+  glass, barrel vignette, specular streak, scanlines, deeper chin) is still in
+  `globals.css` and comes back by flipping that one attribute to `"on"`.
+  Everything below about `--bezel`/`--chin` describes how the frame works,
+  not what's visible now.
+- **Screen**: whatever shape the viewer's window is. Win7 "Harmony" wallpaper
+  set to fill and crop.
 - **Desktop icons**: six folders — About Me, Projects, Experience, Education,
   Resume, Contact. All use the same folder icon. Draggable on an invisible
-  92×80 grid with collision avoidance, clamped to bounds (fixed a bug where
+  grid — **80px wide × 92px tall** (`--cell-w` / `--cell-h`, read off the CSS
+  at runtime so the two can't drift), filled column-major like Windows —
+  with collision avoidance, clamped to bounds (fixed a bug where
   dragging past the bottom edge bounced icons to the wrong cell instead of
   the last row). Bottom row now uses the taskbar height, not a whole extra
   cell. Double-clicking one opens it.
 - **Folder windows**: every folder opens the same **Windows 7 Explorer
   chrome** — back/forward, breadcrumb address bar, search box, the command
-  bar (Organize / Include in library / Share with / Burn / New folder), the
-  navigation tree (Favorites, Computer, Network — Libraries and Burn were
-  both removed on request) and a details pane at the foot. Draggable,
+  bar (Organize / Include in library / Share with / New folder — **Burn is
+  gone**, removed on request), the navigation tree (Favorites, Computer,
+  Network — Libraries removed too) and a details pane at the foot. Draggable,
   resizable, minimise/maximise/close, cascading on open. Tree groups collapse,
   back and forward work.
+- **Folders hold items now.** Ayushman picked "items you click into" over a
+  single page per folder, so a folder opens to an Explorer listing (**Large
+  Icons view** — 48px icons on a grid, matching the desktop; there is no
+  Details view, no Name/Type header and no Type column) and
+  double-clicking a row opens that item's writing **in the same window** —
+  Back walks straight out of it. Only Contact (3) and Resume (1) still work
+  this way.
+  About Me is the exception: it still draws its own pane instead of a listing,
+  which is what an absent `children` means.
+  **The grid reflows on resize with no JavaScript** — `.ex-tiles` is
+  `repeat(auto-fill, minmax(96px, 1fr))`, so the browser re-fits the tiles as
+  the window changes. Measured: 1240px wide → 1 row, 887px → 2, 520px → 3.
+  Don't add a ResizeObserver for this; there is nothing for it to do.
+  **Those words are all in `content/folders.ts`** and several are marked
+  `NEEDS YOUR WORDS` — see below.
+- **Projects, Experience and Education hold nothing but page folders.**
+  Projects has **Unitwise** and **RBI Sentinel**; Experience has **Research
+  Assistant**, **AI & Machine Learning Intern** and **Machine Learning & Data
+  Science Intern**; Education has **University of Lucknow** and **Nirmala
+  Convent Inter College**, which is itself a folder holding **ISC** and
+  **ICSE**. No text files in any of the three —
+  all are empty arrays in `content/folders.ts` on purpose. Such a folder opens
+  to a page: optional crest, centred Bodoni name, optional grey meta lines,
+  two-line tagline, Win7 link buttons, headed sections, and a **row of logos
+  that name themselves on hover**.
+  - **Every part below the name is optional and drops out cleanly.** Empty
+    `sections` and empty `stack` render nothing at all — the two school pages
+    are crest, name, meta and tagline and stop there. In particular the stack
+    heading is *inside* the `stack.length > 0` guard, so an education page
+    doesn't get a stray "Built with" rule.
+  - **`content/pages.ts` is the registry** — one map of folder id → entries,
+    plus the `Page` type. Anything not in it falls back to
+    `content/folders.ts` and stays a plain text file.
+  - **Entries nest.** An entry with `children` instead of a `tagline` is a
+    folder rather than a page, to any depth — that is what makes Nirmala
+    Convent one school folder holding two certificates rather than the school
+    appearing twice in Education. `isGroup()` is the test and it is structural,
+    not a flag anyone has to remember to set. `entryAt(path)` walks an id of
+    any depth, so `education/nirmala/isc` resolves exactly as
+    `projects/unitwise` does, and `fs.ts` walks the whole tree once at load to
+    build a folder node per entry.
+  - Long things get a file each (`content/unitwise.ts`, `content/sentinel.ts`);
+    short related things share one (`content/experience.ts` holds all three
+    roles). **Project three is a copy, an import and a line; job four is one
+    entry in the experience file and nothing else.**
+  - Three optional fields beyond a project's: **`meta`** (grey employer or
+    course lines under the rule), **`stackHeading`** (jobs say "Worked with",
+    projects default to "Built with" — you don't *build with* a job), and
+    **`logo`** (a 72px crest above the name).
+  - **`logo: ""` means "the crest is coming".** All three education entries
+    carry it: the box holds its full size while empty, so dropping the image
+    in later shifts nothing below it. It is faint rather than a dashed
+    "missing image" outline on purpose — a visitor shouldn't be shown our
+    TODO. Omitting the field entirely removes the space. **Ayushman is
+    supplying the university and school logos**; put them in
+    `public/letterbox/` and set the path in `content/education.ts`.
+  - Both projects were written off the actual repos, which corrected a real
+    error:
+    **Unitwise is a RAG chatbot for syllabus questions, not a unit converter**,
+    which is what the name suggests and what an earlier placeholder claimed.
+    Don't write a project's copy from its name.
+  - The stack chips are **not hover-only**: each is focusable, names itself on
+    keyboard focus too, and carries the name on `aria-label`.
+  - The tooltip is Win7's own, not the browser's `title` — a native tooltip
+    would appear in the host OS's styling on top of an OS of our own. It sits
+    *above* the chip because the row is the last thing on the page and a
+    tooltip below would be clipped by the scroll edge; `.project-stack` carries
+    20px of top padding so it clears the heading.
+  - Logos come from `techLogos.ts`, official Simple Icons paths inlined once
+    (CC0, no dependency, no runtime request). **A missing logo is a normal
+    case**, not a bug: it draws the first two letters instead, which is what
+    ChromaDB, Groq, PyMuPDF, statsmodels, pdfplumber and yfinance get.
+  - **Deleted on request**: the *Lightweight CV model* (YOLO 26n) text file is
+    gone from the site entirely, along with the placeholder RBI Sentinel one it
+    replaced. Don't reintroduce either.
 - **Navigation is real.** `components/win7/fs.ts` is the single file tree, read
   by the desktop, the tree, the address bar, the listings and the window
   caption. Desktop holds the six folders plus the Recycle Bin; C:\ holds
@@ -90,6 +188,10 @@ Don't reintroduce any of it.
   desktop icons and on folder rows alike because both tag themselves
   `data-node-id`, and `data-in-bin` when drawn inside the bin — the menu never
   needs to know either component exists.
+  Desktop items are View / Sort by / Refresh / Paste (greyed) / Paste shortcut
+  (greyed) / New / Screen resolution / Personalize. It replaces Chrome's own
+  menu inside the screen and flips inward near an edge. Refresh repaints icons
+  without rearranging them. Submenus (▸) don't open yet.
 - **Network** shows one line: Status / Connected, live off `navigator.onLine`.
   It was briefly a six-row panel of speed and latency estimates; he cut it
   back to this. **SSID and carrier are impossible** — no browser exposes the
@@ -97,13 +199,8 @@ Don't reintroduce any of it.
 - **Local Disk (C:)** opens: 69.00 GB total, 2.00 GB free, so the capacity bar
   goes red — Windows' own rule is red under 10% free. Both numbers come from
   one `DRIVE` constant in `Explorer.tsx`.
-- **Right-click menu**: real Win7 desktop context menu — View/Sort by/
-  Refresh/Paste (greyed)/Paste shortcut (greyed)/New/Screen resolution/
-  Gadgets/Personalize — replaces Chrome's inside the screen, flips inside
-  near edges. Refresh repaints icons without rearranging them. Submenus (▸)
-  don't open yet.
 - **About Me has content**: his name centred in **Libre Bodoni** 50px over a
-  short masthead rule, then three paragraphs in **Public Sans**. Both come from
+  short masthead rule, then four paragraphs in **Public Sans**. Both come from
   `next/font/google` in `app/layout.tsx`, self-hosted at build — no runtime
   request to Google, no layout shift. He chose this pairing off a five-way
   Lavish mockup; the other four were Space Mono/IBM Plex Sans, Poiret
@@ -115,8 +212,11 @@ Don't reintroduce any of it.
   **The words live in `content/about.ts`.** Plain strings, no JSX, no HTML
   entities — that file exists so he can fix copy without opening a component.
   Links are written `[words](address)`; an address of `#` renders bold instead
-  of as an anchor, so the page never ships a dead link. Unitwise and RBI
-  Sentinel are both `#` until he supplies URLs.
+  of as an anchor, so the page never ships a dead link. Unitwise, RBI Sentinel,
+  GitHub and LeetCode all have real URLs now — nothing is left at `#`.
+  There are **four** paragraphs, not three. One typo is live: "Chekout my
+  Github" should read "Check out my GitHub" — flagged, not fixed, because copy
+  is his.
 - **Command Prompt**: opens from the Start menu, captioned "Ayush". Prints a
   cmd-shaped banner, takes a line, keeps scrollback, blinking block caret,
   up/down recalls history. **No commands exist yet** — anything typed gets
@@ -132,17 +232,30 @@ Don't reintroduce any of it.
 
 | File | What it is |
 |---|---|
-| `app/globals.css` | Everything visual. Room, CRT, glass, taskbar, orb. |
-| `app/page.tsx` | Composes Monitor → wallpaper → Taskbar. Where icons will go. |
-| `components/Monitor.tsx` | The CRT plastic. Children render into the glass. |
-| `components/Taskbar.tsx` | Bar, Start orb, open/close state for the menu. |
-| `components/win7/StartMenu.tsx` | The Start menu. Placeholder items. |
+| `app/globals.css` | Everything visual, ~1700 lines. Room, CRT, glass, desktop grid, Explorer, windows, taskbar, orb, context menu. |
+| `app/page.tsx` | Composes Monitor → wallpaper → DesktopSurface → WindowLayer → Taskbar. |
+| `components/Monitor.tsx` | The CRT plastic. **`data-frame="off"` is set here** — that's the one switch for the whole frame. |
+| `components/Taskbar.tsx` | Bar, Start orb, menu state, a button per open window. |
+| `components/win7/StartMenu.tsx` | The Start menu. About Me, stock shortcuts, Command Prompt, Shut down. |
+| `components/win7/Win7Window.tsx` | Aero window chrome — caption, buttons, drag, resize. |
+| `components/win7/WindowLayer.tsx` | Renders every open window and picks the component by id. |
+| `components/win7/desk.ts` | Measures the glass (`.win7`), not the viewport. Windows position against this. |
 | **`components/win7/fs.ts`** | **The file tree — what contains what. One source for everything.** |
 | `components/win7/Explorer.tsx` | The folder window: tree, listings, navigation, details pane. |
 | `components/win7/Network.tsx` | The Network place. Real connection readings. |
 | `store/recycleBin.ts` | Which nodes are deleted. In memory; a reload undoes everything. |
 | **`content/about.ts`** | **The About Me words. Edit this to fix copy — plain text, no JSX.** |
-| `components/win7/folders/About.tsx` | Renders About Me and turns `[words](url)` into links. |
+| **`content/folders.ts`** | **What's inside every other folder. Add an item = copy a block, change the words.** |
+| **`content/unitwise.ts`** | **The Unitwise page — tagline, sections, stack. Edit this to change it.** |
+| **`content/sentinel.ts`** | **The RBI Sentinel page. Same shape as unitwise.ts.** |
+| **`content/experience.ts`** | **All three roles. Add a job = one entry here.** |
+| **`content/education.ts`** | **Degree + both school entries. Logo paths go here.** |
+| `content/pages.ts` | The registry: which folders hold pages, plus the `Page` type. |
+| `components/win7/folders/Project.tsx` | Renders any page — project or job — from its content. |
+| `components/win7/folders/Tech.tsx` | One stack logo + its hover/focus tooltip. |
+| `components/win7/folders/techLogos.ts` | Inlined Simple Icons paths. Generated, not hand-drawn. |
+| `components/win7/folders/Doc.tsx` | The one prose renderer. Heading, rule, paragraphs, `[words](url)` → links. About Me and every item go through it. |
+| `components/win7/folders/About.tsx` | Three lines — hands `content/about.ts` to `Doc`. |
 | `components/win7/Terminal.tsx` | The Command Prompt. `run()` is where commands go. |
 | `components/win7/apps.ts` | Ids/titles/sizes for windows that aren't folders. |
 | `components/win7/DesktopIcons.tsx` | Desktop folders + the drag-to-grid logic. |
@@ -197,13 +310,33 @@ font weight he mistook for a font family.
 ## Open / not yet decided
 
 - **Taskbar contents** — deferred deliberately, needs a conversation.
-- **What goes INSIDE a folder** — the window and its chrome exist; the content
-  pane is empty on purpose. Three directions have now been rejected: an
-  editorial magazine set (Vogue/Tom Ford/GQ/Gentlewoman/i-D), and a
-  free-canvas sticker collage that got built, arranged by hand, and scrapped
-  on sight. Plain Win7 Explorer is where he landed, and he asked for it by
-  name. **Don't propose more directions unprompted** — the next move is his
-  call on content.
+- **The words in `content/folders.ts` are half his and half placeholder.**
+  Every line I could verify came out of his own `content/about.ts`; everything
+  else carries a `NEEDS YOUR WORDS` comment right above it. Specifically:
+  - **Experience / Research Assistant — half answered.** University of Lucknow,
+    July 2026 to present, confirmed by him. **What the YOLO 26n project
+    actually does is still open**: what it detects, the size or speed budget,
+    what it runs on, any numbers. Its stack row (PyTorch, Python, OpenCV) is a
+    guess flagged in the file.
+    Worth knowing why it was blank: he asked me to write it from "my chat
+    history" about the YOLO work and **that history does not exist here** —
+    every Claude Code session on this machine is this portfolio, and searches
+    for YOLO, ultralytics and "research assistant" all returned nothing. Don't
+    go looking again, and **don't invent the missing half** — the two
+    internships beside it are transcribed off his CV and real, so a fabricated
+    one next to them is worse than an obvious blank.
+  - **Resume** — links to `#` because there is no PDF. Drop one in
+    `public/letterbox/` and swap the `#` for its path.
+  - **Contact / Email** — deliberately left at `#`. His address was not put on
+    a public page without him saying so.
+  - **Projects is done** — both project pages are written off their repos, so
+    nothing under Projects is a placeholder any more. The three above are all
+    that's left.
+- **The shape of folder content is settled, the styling isn't.** Three earlier
+  directions were rejected: an editorial magazine set (Vogue/Tom Ford/GQ/
+  Gentlewoman/i-D), and a free-canvas sticker collage that got built, arranged
+  by hand, and scrapped on sight. Plain Win7 Explorer is where he landed and he
+  asked for it by name. **Don't propose more directions unprompted.**
 - **Scrapped, in the session scratchpad** (`scrapped-canvas/`): the whole
   `components/win7/canvas/` tree, a drag-and-drop arranger page, and the
   route handler that saved its layout. Recoverable, not in the repo.
@@ -212,12 +345,13 @@ font weight he mistook for a font family.
 - **Wallpaper on extreme shapes** — fills and crops, so an ultrawide loses a
   lot of sky and the logo drifts off-centre on very narrow windows. He picked
   this over letterboxing; revisit only if it bothers him.
-- **Window chrome** — the old pastel `WindowFrame` was deleted rather than
-  restyled. Aero windows get written fresh with the first folder.
+- **Whether the CRT frame comes back on.** It's off today and it's one
+  attribute either way — ask before flipping it.
 - No mobile/small-screen fallback. Explicitly deferred again on 2026-08-19 —
   on a phone this becomes a very tall skinny monitor. It doesn't break, it's
   just wrong.
-- Not a git repo. Worth asking, don't set it up unprompted.
+- **Terminal has no commands.** `run()` in `Terminal.tsx` still answers
+  everything with cmd's "is not recognized".
 
 ## Stack
 
