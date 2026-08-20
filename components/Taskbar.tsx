@@ -2,51 +2,70 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { TERMINAL_ID, TERMINAL_SIZE, TERMINAL_TITLE } from "@/components/win7/apps";
-import { readDesk } from "@/components/win7/desk";
+import { launchWindow, TERMINAL_ID } from "@/components/win7/apps";
+import { node } from "@/components/win7/fs";
 import { FolderIcon, TerminalIcon } from "@/components/win7/icons";
 import { StartMenu } from "@/components/win7/StartMenu";
+import { Tray, type Panel } from "@/components/win7/Tray";
 import { useWindowStore } from "@/store/windows";
 
 const MENU_ID = "start-menu";
 
+/** Icon for a taskbar button. Folders are the default; cmd is the exception. */
+const TaskIcon = ({ id }: { id: string }) =>
+  id === TERMINAL_ID ? (
+    <TerminalIcon className="task-button-icon" />
+  ) : (
+    <FolderIcon className="task-button-icon" />
+  );
+
+/** Name for a pinned button that has no window to take a caption from. */
+const taskLabel = (id: string) => (id === TERMINAL_ID ? "Command Prompt" : (node(id)?.label ?? id));
+
 /**
- * Windows 7 taskbar — the bar, the Start orb, and the Start menu.
+ * Windows 7 taskbar — the Start orb, a button per open window, and the
+ * notification area at the right end.
  *
- * Carries a button per open window — the bare minimum, added because
- * minimising needs somewhere for the window to go. Still no pinned apps, no
- * system tray and no clock: what else belongs on this bar is a decision we
- * haven't made yet.
+ * The Start menu and every tray flyout share **one** `panel` value rather
+ * than each holding its own open/closed flag. That is what makes them close
+ * each other, and it means one document listener dismisses whichever is up:
+ * two independent systems both anchored inside `.taskbar-root` would each
+ * treat a click on the other as "inside".
+ *
+ * Buttons come from two places and merge into one row: every open window, plus
+ * every pinned id that isn't currently running. A pinned id that IS running
+ * shows once, as its window's button — Windows merges the two rather than
+ * drawing the app twice. Pin and unpin live on the right-click menu.
  */
 export function Taskbar() {
-  const [open, setOpen] = useState(false);
+  const [panel, setPanel] = useState<Panel>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const windows = useWindowStore((s) => s.windows);
   const topZ = useWindowStore((s) => s.topZ);
+  const pinned = useWindowStore((s) => s.pinned);
   const focus = useWindowStore((s) => s.focus);
   const minimize = useWindowStore((s) => s.minimize);
-  const openWindow = useWindowStore((s) => s.open);
 
-  // Launching closes the menu, the way it does in Windows. `open` already
-  // un-minimises and refocuses a window that is already running.
+  // Launching closes the menu, the way it does in Windows. `launchWindow`
+  // already un-minimises and refocuses a window that is already running.
   const launch = (id: string) => {
-    if (id === TERMINAL_ID) {
-      openWindow(id, { title: TERMINAL_TITLE, ...TERMINAL_SIZE, desk: readDesk() });
-    }
-    setOpen(false);
+    launchWindow(id);
+    setPanel(null);
   };
 
-  // Windows closes the menu on Escape or on any click outside it — including
-  // clicks on the desktop, which is why this listens on the document rather
-  // than on a backdrop element.
+  const idlePins = pinned.filter((id) => !windows.some((w) => w.id === id));
+
+  // Windows closes an open panel on Escape or on any click outside it —
+  // including clicks on the desktop, which is why this listens on the
+  // document rather than on a backdrop element.
   useEffect(() => {
-    if (!open) return;
+    if (!panel) return;
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") setPanel(null);
     };
     const onPointerDown = (e: PointerEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      if (!rootRef.current?.contains(e.target as Node)) setPanel(null);
     };
 
     document.addEventListener("keydown", onKey);
@@ -55,11 +74,11 @@ export function Taskbar() {
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [open]);
+  }, [panel]);
 
   return (
     <div className="taskbar-root" ref={rootRef}>
-      {open && <StartMenu id={MENU_ID} onLaunch={launch} />}
+      {panel === "start" && <StartMenu id={MENU_ID} onLaunch={launch} />}
 
       <div className="taskbar">
         <button
@@ -67,10 +86,10 @@ export function Taskbar() {
           className="start-orb"
           aria-label="Start"
           aria-haspopup="menu"
-          aria-expanded={open}
-          aria-controls={open ? MENU_ID : undefined}
-          data-open={open || undefined}
-          onClick={() => setOpen((v) => !v)}
+          aria-expanded={panel === "start"}
+          aria-controls={panel === "start" ? MENU_ID : undefined}
+          data-open={panel === "start" || undefined}
+          onClick={() => setPanel(panel === "start" ? null : "start")}
         >
           <span className="start-orb-sphere" />
           <svg className="start-orb-flag" viewBox="0 0 100 100" aria-hidden="true">
@@ -91,21 +110,39 @@ export function Taskbar() {
                 key={w.id}
                 type="button"
                 className="task-button"
+                // What the right-click menu reads to know which app it is on.
+                data-task-id={w.id}
                 data-active={active || undefined}
+                data-pinned={pinned.includes(w.id) || undefined}
                 // Clicking the active window's button minimises it, the way
                 // Windows toggles rather than re-focusing what's already front.
                 onClick={() => (active ? minimize(w.id) : focus(w.id))}
               >
-                {w.id === TERMINAL_ID ? (
-                  <TerminalIcon className="task-button-icon" />
-                ) : (
-                  <FolderIcon className="task-button-icon" />
-                )}
+                <TaskIcon id={w.id} />
                 <span className="task-button-label">{w.title}</span>
               </button>
             );
           })}
+
+          {/* Pinned but not running: an icon-only square that launches it. */}
+          {idlePins.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className="task-button"
+              data-task-id={id}
+              data-pinned
+              data-idle
+              title={taskLabel(id)}
+              aria-label={taskLabel(id)}
+              onClick={() => launchWindow(id)}
+            >
+              <TaskIcon id={id} />
+            </button>
+          ))}
         </div>
+
+        <Tray panel={panel} setPanel={setPanel} />
       </div>
     </div>
   );
