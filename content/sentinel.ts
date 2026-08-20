@@ -29,7 +29,7 @@ export const SENTINEL = {
   links: [
     { label: "Open the live dashboard", href: "https://rbi-sentinel.streamlit.app/" },
     {
-      label: "Read the source",
+      label: "GitHub",
       href: "https://github.com/ayushmanlohani/rbi-sentiment-volatility-forecasting",
     },
   ],

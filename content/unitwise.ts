@@ -37,7 +37,7 @@ export const UNITWISE = {
   /* The buttons under the tagline. */
   links: [
     { label: "Open the live app", href: "https://unitwise-weld.vercel.app/" },
-    { label: "Read the source", href: "https://github.com/ayushmanlohani/Unitwise" },
+    { label: "GitHub", href: "https://github.com/ayushmanlohani/Unitwise" },
   ],
 
   sections: [
