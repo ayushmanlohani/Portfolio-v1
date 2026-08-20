@@ -2153,6 +2153,15 @@ body {
   object-fit: contain;
 }
 
+/* The pale box is the *empty* state — it stands in for a crest that hasn't
+   arrived. A real crest brings its own edges, so the box goes transparent
+   rather than being removed: the 72px stays exactly where it was and nothing
+   below shifts when an image lands. */
+img.project-crest {
+  border-color: transparent;
+  background: none;
+}
+
 /* Employer and dates on a job page. Sits between the rule and the tagline,
    small and grey — it is a caption on the name above it, not a claim of its
    own, so it stays quieter than everything around it. */
