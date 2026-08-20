@@ -8,7 +8,7 @@ import {
   StarIcon,
 } from "@/components/win7/icons";
 import { FOLDERS } from "@/content/folders";
-import { PAGES } from "@/content/pages";
+import { type Entry, isGroup, PAGES } from "@/content/pages";
 
 /**
  * The file tree.
@@ -60,10 +60,39 @@ const fileId = (parent: string, name: string) =>
   `${parent}/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 
 /**
- * A thing with a page of its own is a folder, not a text file — you open it
- * and you are somewhere, and Back walks out again.
+ * Every folder that comes from content/pages.ts, and what each one holds.
+ *
+ * Walked once at module load rather than looked up per render. A page becomes
+ * a childless folder — you open it and you are somewhere, and Back walks out
+ * again — and a group becomes a folder holding more of them, to whatever depth
+ * the content file nests.
  */
-export const pageId = (parent: string, key: string) => `${parent}/${key}`;
+const PAGE_FOLDERS: FsNode[] = [];
+
+function walk(parent: string, entries: Record<string, Entry>): string[] {
+  return Object.entries(entries).map(([key, entry]) => {
+    const id = `${parent}/${key}`;
+
+    // Children first: a group's own node needs the ids of what's inside it,
+    // and those only exist once its children have been walked.
+    const children = isGroup(entry) ? walk(id, entry.children) : undefined;
+
+    PAGE_FOLDERS.push({
+      id,
+      label: entry.name,
+      Icon: FolderIcon,
+      kind: "folder",
+      type: "File folder",
+      children,
+    });
+
+    return id;
+  });
+}
+
+const PAGE_CHILDREN: Record<string, string[]> = Object.fromEntries(
+  Object.entries(PAGES).map(([top, entries]) => [top, walk(top, entries)]),
+);
 
 /**
  * What a desktop folder contains, gathered from both content files: the
@@ -75,7 +104,7 @@ export const pageId = (parent: string, key: string) => `${parent}/${key}`;
  * draws its own pane instead of a listing.
  */
 function childrenOf(id: string): string[] | undefined {
-  const pages = Object.keys(PAGES[id] ?? {}).map((key) => pageId(id, key));
+  const pages = PAGE_CHILDREN[id] ?? [];
   const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
   const all = [...pages, ...items];
   return all.length > 0 ? all : undefined;
@@ -94,23 +123,6 @@ const folder = (id: string, label: string): FsNode => ({
   type: "File folder",
   children: childrenOf(id),
 });
-
-/**
- * One folder per page, across every folder that has them. Named by the `name`
- * in its content file, so renaming a project or a job is a one-word edit there
- * and nothing here changes.
- */
-const PAGE_FOLDERS: FsNode[] = Object.entries(PAGES).flatMap(([parent, entries]) =>
-  Object.entries(entries).map(
-    ([key, page]): FsNode => ({
-      id: pageId(parent, key),
-      label: page.name,
-      Icon: FolderIcon,
-      kind: "folder",
-      type: "File folder",
-    }),
-  ),
-);
 
 /** One node per item in content/folders.ts. */
 const FILES: FsNode[] = Object.entries(FOLDERS).flatMap(([parent, items]) =>

@@ -6,9 +6,9 @@ import { About } from "@/components/win7/folders/About";
 import { Doc } from "@/components/win7/folders/Doc";
 import { Project } from "@/components/win7/folders/Project";
 import { contents, node, TREE } from "@/components/win7/fs";
-import { PAGES } from "@/content/pages";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
+import { entryAt, isGroup } from "@/content/pages";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -202,14 +202,15 @@ function Contents({
   if (view === "about") return <About />;
   if (view === "network") return <Network />;
 
-  // Anything with a page of its own — a project, a job. The id is
-  // `<folder>/<key>`, so splitting it is the whole lookup, and
-  // content/pages.ts stays the only place a page is declared. A plain text
-  // item shares that shape, simply isn't in the map, and falls through to the
-  // Doc below.
-  const [parent, key] = view.split("/");
-  const page = key ? PAGES[parent]?.[key] : undefined;
-  if (page) return <Project data={page} />;
+  // Anything with a page of its own — a project, a job, a qualification.
+  // content/pages.ts stays the only place a page is declared, and `entryAt`
+  // walks the id whatever its depth, so `education/nirmala/isc` resolves the
+  // same way `projects/unitwise` does.
+  //
+  // A group falls through on purpose: Nirmala Convent is a folder holding ISC
+  // and ICSE, so it should list them rather than draw a page.
+  const entry = entryAt(view);
+  if (entry && !isGroup(entry)) return <Project data={entry} />;
 
   // An item from content/folders.ts. Opening one replaces the listing with its
   // words, the same way About Me does — a file "opens" into the window it was

@@ -83,8 +83,9 @@ Don't reintroduce any of it.
 - **Projects, Experience and Education hold nothing but page folders.**
   Projects has **Unitwise** and **RBI Sentinel**; Experience has **Research
   Assistant**, **AI & Machine Learning Intern** and **Machine Learning & Data
-  Science Intern**; Education has **University of Lucknow**, **Nirmala Convent
-  — ISC** and **Nirmala Convent — ICSE**. No text files in any of the three —
+  Science Intern**; Education has **University of Lucknow** and **Nirmala
+  Convent Inter College**, which is itself a folder holding **ISC** and
+  **ICSE**. No text files in any of the three —
   all are empty arrays in `content/folders.ts` on purpose. Such a folder opens
   to a page: optional crest, centred Bodoni name, optional grey meta lines,
   two-line tagline, Win7 link buttons, headed sections, and a **row of logos
@@ -96,8 +97,15 @@ Don't reintroduce any of it.
     doesn't get a stray "Built with" rule.
   - **`content/pages.ts` is the registry** — one map of folder id → entries,
     plus the `Page` type. Anything not in it falls back to
-    `content/folders.ts` and stays a plain text file. Explorer resolves a page
-    by splitting the id on `/`, so the registry is the only declaration.
+    `content/folders.ts` and stays a plain text file.
+  - **Entries nest.** An entry with `children` instead of a `tagline` is a
+    folder rather than a page, to any depth — that is what makes Nirmala
+    Convent one school folder holding two certificates rather than the school
+    appearing twice in Education. `isGroup()` is the test and it is structural,
+    not a flag anyone has to remember to set. `entryAt(path)` walks an id of
+    any depth, so `education/nirmala/isc` resolves exactly as
+    `projects/unitwise` does, and `fs.ts` walks the whole tree once at load to
+    build a folder node per entry.
   - Long things get a file each (`content/unitwise.ts`, `content/sentinel.ts`);
     short related things share one (`content/experience.ts` holds all three
     roles). **Project three is a copy, an import and a line; job four is one

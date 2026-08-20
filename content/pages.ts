@@ -20,8 +20,15 @@ import { UNITWISE } from "@/content/unitwise";
  *   Add an entry to content/experience.ts. Nothing here changes — the roles
  *   are all in that one file because each is short, where a project is long
  *   enough to earn a file of its own.
+ *
+ * NESTING
+ *   An entry can be a folder of its own instead of a page — give it `children`
+ *   rather than a `tagline` and it lists what's inside instead. Nirmala Convent
+ *   in content/education.ts does this: one school folder holding ISC and ICSE,
+ *   rather than the same school appearing twice in Education.
+ *   It nests to any depth, though one level is all this site needs.
  */
-export const PAGES: Record<string, Record<string, Page>> = {
+export const PAGES: Record<string, Record<string, Entry>> = {
   projects: {
     unitwise: UNITWISE,
     sentinel: SENTINEL,
@@ -29,6 +36,40 @@ export const PAGES: Record<string, Record<string, Page>> = {
   experience: EXPERIENCE,
   education: EDUCATION,
 };
+
+/** A page you can open, or a folder holding more of them. */
+export type Entry = Page | Group;
+
+/** A folder inside a folder. It has no page of its own — it lists its children. */
+export type Group = {
+  name: string;
+  children: Record<string, Entry>;
+};
+
+/**
+ * `children` is the whole distinction, and it's structural rather than a flag
+ * anyone has to remember to set — a group has children, a page has a tagline.
+ */
+export const isGroup = (entry: Entry): entry is Group => "children" in entry;
+
+/**
+ * The entry at a path like `education/nirmala/isc`, or undefined if there
+ * isn't one. Walks a key at a time, so a path that runs through a page rather
+ * than a group stops rather than pretending to descend into it.
+ */
+export function entryAt(path: string): Entry | undefined {
+  const [top, ...rest] = path.split("/");
+  let level: Record<string, Entry> | undefined = PAGES[top];
+  let found: Entry | undefined;
+
+  for (const key of rest) {
+    found = level?.[key];
+    if (!found) return undefined;
+    level = isGroup(found) ? found.children : undefined;
+  }
+
+  return found;
+}
 
 /** The shape a page's content has to have. */
 export type Page = {
