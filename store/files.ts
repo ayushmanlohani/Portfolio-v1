@@ -2,7 +2,8 @@
 
 import { create } from "zustand";
 
-import { registerFile } from "@/components/win7/fs";
+import { registerFile, relabel } from "@/components/win7/fs";
+import { useRecycleBin } from "@/store/recycleBin";
 
 /**
  * Text files saved by Notepad.
@@ -22,9 +23,18 @@ export type TextFile = { id: string; name: string; text: string };
 
 type FileStore = {
   files: TextFile[];
-  /** Saves under `name`, overwriting any file already called that. */
+  /** Saves under `name`, overwriting any file already called that — a file
+      sitting in the Recycle Bin doesn't count as "already called that", so
+      deleting one and saving a new file under its old name gets a fresh
+      file rather than quietly resurrecting the deleted one. */
   save: (name: string, text: string) => string;
   read: (id: string) => TextFile | undefined;
+  /** Renames a saved file. Returns false and changes nothing if another
+      live (non-deleted) file already uses that name. */
+  rename: (id: string, name: string) => boolean;
+  /** Drops a file for good — only a permanent delete from the Recycle Bin
+      calls this. */
+  forget: (id: string) => void;
 };
 
 let nextId = 0;
@@ -33,7 +43,8 @@ export const useFiles = create<FileStore>((set, get) => ({
   files: [],
 
   save: (name, text) => {
-    const existing = get().files.find((f) => f.name === name);
+    const deleted = useRecycleBin.getState().deleted;
+    const existing = get().files.find((f) => f.name === name && !deleted.includes(f.id));
     if (existing) {
       set((state) => ({
         files: state.files.map((f) => (f.id === existing.id ? { ...f, text } : f)),
@@ -42,7 +53,7 @@ export const useFiles = create<FileStore>((set, get) => ({
     }
 
     // Ids are internal and never shown; the name is what the desktop displays,
-    // which is why renaming would only need to touch the node's label.
+    // which is why renaming only has to touch the node's label.
     const id = `file-${++nextId}`;
     registerFile(id, name);
     set((state) => ({ files: [...state.files, { id, name, text }] }));
@@ -50,4 +61,16 @@ export const useFiles = create<FileStore>((set, get) => ({
   },
 
   read: (id) => get().files.find((f) => f.id === id),
+
+  rename: (id, name) => {
+    const deleted = useRecycleBin.getState().deleted;
+    const clash = get().files.some((f) => f.id !== id && f.name === name && !deleted.includes(f.id));
+    if (clash) return false;
+
+    set((state) => ({ files: state.files.map((f) => (f.id === id ? { ...f, name } : f)) }));
+    relabel(id, name);
+    return true;
+  },
+
+  forget: (id) => set((state) => ({ files: state.files.filter((f) => f.id !== id) })),
 }));

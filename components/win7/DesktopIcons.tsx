@@ -5,7 +5,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { readDesk } from "@/components/win7/desk";
 import { DESKTOP_FOLDERS, node } from "@/components/win7/fs";
 import { RecycleBinIcon } from "@/components/win7/icons";
+import { RenameField } from "@/components/win7/RenameField";
+import { useMarquee } from "@/components/win7/useMarquee";
 import { useFiles } from "@/store/files";
+import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -115,17 +118,11 @@ export function DesktopIcons() {
   const binEmpty = deleted.length === 0;
   // A set, not a single id: the marquee below can pick up several at once.
   const [selected, setSelected] = useState<string[]>([]);
-  // The rubber band while it is being dragged. Corners are in client space
-  // for the hit test; `left`/`top` are the container's own offset, captured
-  // once at drag start so drawing it needs no measuring during render.
-  const [band, setBand] = useState<{
-    x0: number;
-    y0: number;
-    x1: number;
-    y1: number;
-    left: number;
-    top: number;
-  } | null>(null);
+  const { band, startBand } = useMarquee(rootRef, ".desktop-icon", selected, setSelected);
+  const editingId = useInlineEdit((s) => s.editingId);
+  const warning = useInlineEdit((s) => s.warning);
+  const commitRename = useInlineEdit((s) => s.commit);
+  const cancelRename = useInlineEdit((s) => s.cancel);
   const [layout, setLayout] = useState<Layout>({});
   // `measured` guards the default layout: laying icons out before the real
   // row count is known packs them into a single row instead of a column.
@@ -258,79 +255,6 @@ export function DesktopIcons() {
     },
     [grid.cols, grid.rows],
   );
-
-  /**
-   * The rubber band. Starts on bare desktop, never on an icon — pressing an
-   * icon means "pick this up", and Windows makes the same distinction.
-   *
-   * Coordinates stay in client space so the hit test can compare directly
-   * against each icon's own bounding box, which already accounts for the drag
-   * transform, the grid and the container's offset. Deriving it from cells
-   * instead would duplicate all three.
-   */
-  const startBand = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.button !== 0 || e.target !== e.currentTarget) return;
-
-    if (!e.ctrlKey && !e.metaKey) setSelected([]);
-    const start = { x: e.clientX, y: e.clientY };
-    const keep = e.ctrlKey || e.metaKey ? selected : [];
-    const origin = e.currentTarget.getBoundingClientRect();
-    setBand({ x0: start.x, y0: start.y, x1: start.x, y1: start.y, left: origin.left, top: origin.top });
-
-    const move = (ev: PointerEvent) => {
-      // No button still down means the release happened somewhere this page
-      // never heard about — outside the window, or swallowed by another
-      // element. Without this the band stays painted until the next click.
-      if (ev.buttons === 0) {
-        up();
-        return;
-      }
-
-      const box = {
-        left: Math.min(start.x, ev.clientX),
-        right: Math.max(start.x, ev.clientX),
-        top: Math.min(start.y, ev.clientY),
-        bottom: Math.max(start.y, ev.clientY),
-      };
-      setBand({
-        x0: start.x,
-        y0: start.y,
-        x1: ev.clientX,
-        y1: ev.clientY,
-        left: origin.left,
-        top: origin.top,
-      });
-
-      // Windows updates the selection continuously as the band is dragged,
-      // rather than resolving it once on release.
-      const hit = [...document.querySelectorAll<HTMLElement>(".desktop-icon")]
-        .filter((el) => {
-          const r = el.getBoundingClientRect();
-          return (
-            r.left < box.right && r.right > box.left && r.top < box.bottom && r.bottom > box.top
-          );
-        })
-        .map((el) => el.dataset.nodeId!)
-        .filter(Boolean);
-
-      setSelected([...new Set([...keep, ...hit])]);
-    };
-
-    const up = () => {
-      setBand(null);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-      window.removeEventListener("blur", up);
-    };
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-    // pointercancel fires when the browser takes the gesture over; blur covers
-    // releasing the button after tabbing or dragging out of the window.
-    window.addEventListener("pointercancel", up);
-    window.addEventListener("blur", up);
-  };
 
   /**
    * Picking an icon up.
@@ -562,7 +486,12 @@ export function DesktopIcons() {
             ) : (
               <item.Icon className="di-icon" />
             )}
-            <span className="di-label">{item.label}</span>
+            {editingId === id ? (
+              <RenameField id={id} label={item.label} onCommit={commitRename} onCancel={cancelRename} />
+            ) : (
+              <span className="di-label">{item.label}</span>
+            )}
+            {warning?.id === id && <div className="win7-warn">{warning.text}</div>}
           </button>
         );
       })}

@@ -4,7 +4,6 @@ import { CALC_ID, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
 import {
   CalculatorIcon,
   FlagIcon,
-  FolderIcon,
   NotepadIcon,
   PaintIcon,
   PowerIcon,
@@ -20,9 +19,9 @@ import {
  * search box, a pale blue right column of text-only shortcuts, and the shut
  * down button in the bottom-right corner.
  *
- * "About Me" is pinned at the top of the left column, above the separator,
- * which is where Windows puts pinned items. Command Prompt is the only entry
- * wired to anything so far; the rest are placeholders holding the shape.
+ * The left column's "recently used" block starts with Command Prompt, the
+ * only entry wired to anything so far; the rest are placeholders holding the
+ * shape.
  */
 
 type Program = {
@@ -32,11 +31,6 @@ type Program = {
   /** Entries without this are decoration — they render but do nothing. */
   opens?: boolean;
 };
-
-/** Pinned — sits above the separator. */
-const PINNED: Program[] = [
-  { id: "about", label: "About Me", icon: <FolderIcon className="sm-icon" /> },
-];
 
 /** The "recently used" block Windows fills in for you. */
 const RECENT: Program[] = [
@@ -89,10 +83,6 @@ export function StartMenu({ id, onLaunch }: { id: string; onLaunch: (id: string)
       <div className="sm-body">
         <div className="sm-left">
           <ul className="sm-programs">
-            {PINNED.map(item)}
-
-            <li className="sm-sep" aria-hidden="true" />
-
             {RECENT.map(item)}
           </ul>
 

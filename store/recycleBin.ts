@@ -6,9 +6,12 @@ import { create } from "zustand";
  * The Recycle Bin.
  *
  * In memory only, by choice: a reload puts everything back on the desktop.
- * Nothing here can be destroyed — there is no empty(), because a visitor
- * shouldn't be able to permanently remove anything from someone else's
- * portfolio. Deleting is a toy, and the reload is the undo.
+ * The six content folders can never be destroyed — there is no path from
+ * "in the bin" to "gone" for them, only Restore. A Notepad file is the one
+ * thing that can go all the way: ContextMenu's permanent-delete action
+ * purges it from the tree (`unregisterFile`) and from `useFiles`, then calls
+ * `purge` here to stop tracking it as deleted. Nothing does that silently —
+ * it always sits behind a confirm dialog first.
  */
 type RecycleBin = {
   /** Ids of deleted nodes, oldest first. */
@@ -16,6 +19,9 @@ type RecycleBin = {
   isEmpty: () => boolean;
   remove: (id: string) => void;
   restore: (id: string) => void;
+  /** Stops tracking `id` as deleted without restoring it anywhere — the
+      underlying item is expected to already be gone. */
+  purge: (id: string) => void;
 };
 
 export const useRecycleBin = create<RecycleBin>((set, get) => ({
@@ -30,4 +36,6 @@ export const useRecycleBin = create<RecycleBin>((set, get) => ({
 
   restore: (id) =>
     set((state) => ({ deleted: state.deleted.filter((d) => d !== id) })),
+
+  purge: (id) => set((state) => ({ deleted: state.deleted.filter((d) => d !== id) })),
 }));

@@ -311,6 +311,67 @@ body {
     0 0 calc(4 * var(--px)) rgba(0, 0, 0, 0.7);
 }
 
+/* ── Rename-in-place ──────────────────────────────────────────
+   A desktop icon or Explorer tile's own label, turned into a text
+   box — real Windows renames this way rather than through a
+   dialog, so `RenameField` renders this on either one. Always a
+   plain white system field regardless of what's behind it: white
+   on the wallpaper's blue sky reads exactly like white in an
+   Explorer window, because Windows draws the same control either
+   place.
+   ───────────────────────────────────────────────────────────── */
+.win7-inline-rename {
+  width: 100%;
+  padding: calc(1 * var(--px)) calc(3 * var(--px));
+  border: calc(1 * var(--px)) solid #4a90c8;
+  border-radius: calc(1 * var(--px));
+  background: #ffffff;
+  color: #12222f;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  text-align: center;
+  outline: calc(2 * var(--px)) solid rgba(90, 160, 215, 0.35);
+  outline-offset: 0;
+}
+
+/* The balloon a name collision raises — under Rename's own field, or under
+   whichever bin item Restore just refused. `.desktop-icon` and `.ex-tile`
+   are each already a positioning context for their own children, so this
+   lands directly below the one tile that caused it and nowhere else. */
+.win7-warn {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: calc(4 * var(--px));
+  width: max-content;
+  max-width: calc(200 * var(--px));
+  padding: calc(6 * var(--px)) calc(10 * var(--px));
+  background: #f5f5f0;
+  border: calc(1 * var(--px)) solid #b8b8a8;
+  border-radius: calc(3 * var(--px));
+  box-shadow: 0 calc(3 * var(--px)) calc(8 * var(--px)) rgba(0, 0, 0, 0.35);
+  color: #1a1a1a;
+  font-size: calc(12 * var(--px));
+  line-height: 1.3;
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Restore's collision balloon in the Recycle Bin. Unlike Rename's, it can't
+   hang under the tile that caused it: a tile in the leftmost column would
+   push the balloon past the content box's edge, and `.ex-content`'s own
+   `overflow: auto` would clip it — the message ends up half-hidden under the
+   navigation pane. So the window draws it at the foot of the content area
+   instead, centred on the very box that holds the bin's items. Everything
+   else about the look comes from `.win7-warn` above. */
+.win7-warn-bin {
+  top: auto;
+  bottom: calc(12 * var(--px));
+  z-index: 60;
+}
+
 /* Refresh from the context menu repaints the icons, like Windows redrawing
    the desktop. Positions are untouched. */
 .desktop-redraw .desktop-icon {
@@ -713,7 +774,11 @@ body {
 }
 
 .sm-user {
-  text-align: center;
+  /* Flex so the picture and the name share one centre line — `text-align`
+     alone can't guarantee that when the picture is a replaced inline box. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 0 calc(8 * var(--px)) calc(8 * var(--px));
 }
 
@@ -1836,6 +1901,9 @@ body {
 }
 
 .ex-content {
+  /* Anchors `.win7-warn-bin` — the Recycle Bin's restore-collision balloon —
+     against this box rather than whatever tile was right-clicked. */
+  position: relative;
   flex: 1;
   min-width: 0;
   padding: calc(10 * var(--px)) calc(14 * var(--px));
@@ -2383,15 +2451,30 @@ body {
    resized. No ResizeObserver, no measuring, no JavaScript at all — the
    browser already does this better than we would. */
 .ex-tiles {
+  /* Positions the marquee band against this grid, not some outer ancestor. */
+  position: relative;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(96 * var(--px)), 1fr));
   align-items: start;
   gap: calc(4 * var(--px));
   padding: calc(4 * var(--px));
+  /* The marquee needs bare space to start from, and a grid only grows as
+     tall as its own rows. This stretches it over the whole content box, so
+     the empty strip below the last row is part of the grid — press anywhere
+     in a folder and drag, exactly like the desktop's full-surface container.
+     `align-items: start` above keeps the tiles packed at the top regardless. */
+  min-height: 100%;
+  /* Same trap the desktop already hit: without this, dragging a marquee
+     drags a text selection across the tile labels instead, and the next
+     press starts a native file drag that kills the real one. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* Matches the desktop: a 48px icon over a centred label. */
 .ex-tile {
+  /* Positions `.win7-warn` against this one tile rather than the grid. */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2415,6 +2498,13 @@ body {
 .ex-tile:focus-visible {
   outline: calc(2 * var(--px)) solid #3d7fbf;
   outline-offset: calc(-2 * var(--px));
+}
+
+/* Marquee/click selection — Explorer's own Aero blue, a shade past hover so
+   the two are never ambiguous when both could apply. */
+.ex-tile[data-selected] {
+  border-color: #3d7fbf;
+  background: linear-gradient(180deg, #cbe8fd, #a9d8f7);
 }
 
 .ex-tile-icon {
@@ -2710,20 +2800,27 @@ body {
   color: #45535f;
 }
 
-/* ── Save As ───────────────────────────────────────────────────
-   Modal inside the window, not over the whole desktop: Windows
-   dims nothing, it just blocks its own parent.
+/* ── Win7 dialog chrome ───────────────────────────────────────
+   One small modal, reused wherever the OS needs a yes/no or a
+   name from you: Notepad's Save As, the right-click menu's
+   Rename, a name collision on Restore, and the permanent-delete
+   confirm. `.win7-dialog-layer` is absolutely placed against its
+   nearest positioned parent — Notepad's own `.np`, or `.win7`
+   itself when the dialog comes from the desktop's context menu —
+   so it blocks only that, the same as real Windows dims only the
+   window a modal belongs to.
    ───────────────────────────────────────────────────────────── */
 
-.np-dialog-layer {
+.win7-dialog-layer {
   position: absolute;
   inset: 0;
+  z-index: 500;
   display: grid;
   place-items: center;
   background: rgba(20, 34, 48, 0.18);
 }
 
-.np-dialog {
+.win7-dialog {
   width: calc(320 * var(--px));
   border: calc(1 * var(--px)) solid #6b8ba8;
   border-radius: calc(4 * var(--px));
@@ -2732,7 +2829,7 @@ body {
   overflow: hidden;
 }
 
-.np-dialog-caption {
+.win7-dialog-caption {
   height: calc(26 * var(--px));
   display: flex;
   align-items: center;
@@ -2742,14 +2839,14 @@ body {
   font-weight: 600;
 }
 
-.np-dialog-body {
+.win7-dialog-body {
   display: flex;
   flex-direction: column;
   gap: calc(6 * var(--px));
   padding: calc(14 * var(--px)) calc(14 * var(--px)) calc(10 * var(--px));
 }
 
-.np-dialog-input {
+.win7-dialog-input {
   height: calc(24 * var(--px));
   padding: 0 calc(7 * var(--px));
   border: calc(1 * var(--px)) solid #9fb3c4;
@@ -2760,24 +2857,33 @@ body {
   outline: none;
 }
 
-.np-dialog-input:focus {
+.win7-dialog-input:focus {
   border-color: #4a90c8;
   box-shadow: 0 0 0 calc(2 * var(--px)) rgba(90, 160, 215, 0.28);
 }
 
-.np-dialog-where {
+.win7-dialog-where {
   margin: 0;
   color: #5b6875;
 }
 
-.np-dialog-buttons {
+/* The permanent-delete confirm's warning text — the only body copy left in
+   this dialog now that Rename and Restore's collision message moved to
+   `.win7-warn` below. */
+.win7-dialog-message {
+  margin: 0;
+  color: #33424e;
+  line-height: 1.4;
+}
+
+.win7-dialog-buttons {
   display: flex;
   justify-content: flex-end;
   gap: calc(8 * var(--px));
   padding: 0 calc(14 * var(--px)) calc(14 * var(--px));
 }
 
-.np-dialog-btn {
+.win7-dialog-btn {
   min-width: calc(76 * var(--px));
   height: calc(24 * var(--px));
   border: calc(1 * var(--px)) solid #a8b6c2;
@@ -2788,11 +2894,11 @@ body {
   cursor: default;
 }
 
-.np-dialog-btn:hover:not(:disabled) {
+.win7-dialog-btn:hover:not(:disabled) {
   background: linear-gradient(180deg, #f4fbff 0%, #dceffd 48%, #c9e6fb 52%, #e2f3fe 100%);
   border-color: #7fb4dd;
 }
 
-.np-dialog-btn:disabled {
+.win7-dialog-btn:disabled {
   color: #a4adb6;
 }

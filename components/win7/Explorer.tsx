@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { About } from "@/components/win7/folders/About";
 import { Doc } from "@/components/win7/folders/Doc";
@@ -8,7 +8,11 @@ import { Project } from "@/components/win7/folders/Project";
 import { contents, node, TREE } from "@/components/win7/fs";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
+import { RenameField } from "@/components/win7/RenameField";
+import { useMarquee } from "@/components/win7/useMarquee";
 import { entryAt, isGroup } from "@/content/pages";
+import { useFiles } from "@/store/files";
+import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -57,6 +61,15 @@ export function Explorer({ id, title }: { id: string; title: string }) {
 
   const deleted = useRecycleBin((s) => s.deleted);
   const setTitle = useWindowStore((s) => s.setTitle);
+  // Not read directly below — `node()` is what actually supplies labels and
+  // listings. Subscribing is what makes this window repaint the moment a
+  // file is saved, renamed or forgotten while it's open, the same way
+  // DesktopIcons already does for the desktop itself.
+  useFiles((s) => s.files);
+  // The bin's Restore-collision balloon is drawn at the foot of the content
+  // area by this component (see `.win7-warn-bin` below), so the window needs
+  // its own subscription rather than borrowing `Contents`'.
+  const warning = useInlineEdit((s) => s.warning);
 
   const here = node(view);
   const label = here?.label ?? title;
@@ -179,7 +192,10 @@ export function Explorer({ id, title }: { id: string; title: string }) {
         </nav>
 
         <div className="ex-content">
-          <Contents view={view} deleted={deleted} onOpen={go} />
+          <Contents key={view} view={view} deleted={deleted} onOpen={go} />
+          {view === "recycle" && warning?.kind === "restore" && (
+            <div className="win7-warn win7-warn-bin">{warning.text}</div>
+          )}
         </div>
       </div>
 
@@ -199,6 +215,18 @@ function Contents({
   deleted: string[];
   onOpen: (id: string) => void;
 }) {
+  // Hooks first — several early returns follow, and only the tiles grid at
+  // the bottom actually uses these. Explorer remounts this component with
+  // `key={view}` on every navigation, so a selection never survives into the
+  // next folder.
+  const [selected, setSelected] = useState<string[]>([]);
+  const tilesRef = useRef<HTMLDivElement>(null);
+  const { band, startBand } = useMarquee(tilesRef, ".ex-tile", selected, setSelected);
+  const editingId = useInlineEdit((s) => s.editingId);
+  const warning = useInlineEdit((s) => s.warning);
+  const commitRename = useInlineEdit((s) => s.commit);
+  const cancelRename = useInlineEdit((s) => s.cancel);
+
   if (view === "about") return <About />;
   if (view === "network") return <Network />;
 
@@ -252,7 +280,19 @@ function Contents({
   // real thing — a tile is a picture and a name. `type` still reaches the
   // reader through the details pane once the item is open.
   return (
-    <div className="ex-tiles">
+    <div className="ex-tiles" ref={tilesRef} onPointerDown={startBand}>
+      {band && (
+        <div
+          className="desktop-band"
+          style={{
+            left: Math.min(band.x0, band.x1) - band.left,
+            top: Math.min(band.y0, band.y1) - band.top,
+            width: Math.abs(band.x1 - band.x0),
+            height: Math.abs(band.y1 - band.y0),
+          }}
+        />
+      )}
+
       {items.map((childId) => {
         const child = node(childId);
         if (!child) return null;
@@ -264,13 +304,43 @@ function Contents({
             key={childId}
             title={`Open ${child.label}`}
             // Read by the right-click menu, which decides between Delete and
-            // Restore from these two attributes alone.
+            // Restore from these two attributes alone. Also what the marquee
+            // above reads back off each tile it overlaps.
             data-node-id={childId}
             data-in-bin={view === "recycle" ? "true" : undefined}
+            data-selected={selected.includes(childId) || undefined}
+            // Same reason the desktop icons set this: a native HTML5 file
+            // drag from the label/icon fires pointercancel and kills the
+            // marquee mid-gesture otherwise.
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+            onClick={(e) => {
+              const additive = e.ctrlKey || e.metaKey;
+              setSelected((prev) => {
+                if (additive) return prev.includes(childId) ? prev.filter((s) => s !== childId) : [...prev, childId];
+                return [childId];
+              });
+            }}
             onDoubleClick={() => onOpen(childId)}
           >
             <child.Icon className="ex-tile-icon" />
-            <span className="ex-tile-name">{child.label}</span>
+            {editingId === childId ? (
+              <RenameField
+                id={childId}
+                label={child.label}
+                onCommit={commitRename}
+                onCancel={cancelRename}
+              />
+            ) : (
+              <span className="ex-tile-name">{child.label}</span>
+            )}
+            {/* Rename's collision stays under the field it belongs to. Restore's
+                is drawn at the foot of the content area by the window itself —
+                see `.win7-warn-bin` — because anchoring it to a tile near the
+                left edge would slide it under the navigation pane. */}
+            {warning?.id === childId && warning.kind === "rename" && (
+              <div className="win7-warn">{warning.text}</div>
+            )}
           </button>
         );
       })}

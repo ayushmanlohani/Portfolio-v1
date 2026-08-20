@@ -227,6 +227,25 @@ export function registerFile(id: string, name: string) {
   desktop.children = [...(desktop.children ?? []), id];
 }
 
+/** Changes a registered file's display name in place — used by Rename, and by
+ *  restoring a file whose old name collides with one already on the Desktop. */
+export function relabel(id: string, name: string) {
+  const existing = NODES.get(id);
+  if (existing) NODES.set(id, { ...existing, label: name });
+}
+
+/**
+ * Fully removes a registered file from the tree: the Desktop stops listing
+ * it and `node(id)` stops finding it. Only a permanent delete from the
+ * Recycle Bin calls this — everything else (drag-to-bin, Delete) only moves
+ * an id in and out of `useRecycleBin`'s `deleted` list.
+ */
+export function unregisterFile(id: string) {
+  NODES.delete(id);
+  const desktop = NODES.get("desktop");
+  if (desktop) desktop.children = (desktop.children ?? []).filter((child) => child !== id);
+}
+
 /**
  * What a place contains right now, with anything in the Recycle Bin taken out
  * and the bin's own contents put in. Everywhere that lists files goes through

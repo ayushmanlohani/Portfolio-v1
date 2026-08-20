@@ -66,9 +66,14 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
     setTitle(windowId, `${name || UNTITLED} - Notepad`);
   }, [windowId, name, setTitle]);
 
+  // Select-all belongs to the moment the dialog opens, not to every
+  // keystroke after — depending on `saveAs` itself re-ran this (and
+  // re-selected the whole field) on every character typed, which made it
+  // look like only one letter at a time could ever be entered.
+  const saveAsOpen = saveAs !== null;
   useEffect(() => {
-    if (saveAs !== null) nameRef.current?.select();
-  }, [saveAs]);
+    if (saveAsOpen) nameRef.current?.select();
+  }, [saveAsOpen]);
 
   /** Ln/Col, counted from the caret's offset — Notepad's own status bar. */
   const updateCaret = () => {
@@ -84,6 +89,10 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
     save(filename, text);
     setName(filename);
     setSaveAs(null);
+    // Saving through Save As is a "name it and be done" moment — the file is
+    // on the desktop now, so the editor closes. (File > Save on a file that
+    // already has a name stays in place and keeps the window open.)
+    closeWindow(windowId);
   };
 
   const onSave = () => {
@@ -194,15 +203,15 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
       </div>
 
       {saveAs !== null && (
-        <div className="np-dialog-layer">
-          <div className="np-dialog" role="dialog" aria-modal="true" aria-label="Save As">
-            <div className="np-dialog-caption">Save As</div>
-            <div className="np-dialog-body">
+        <div className="win7-dialog-layer">
+          <div className="win7-dialog" role="dialog" aria-modal="true" aria-label="Save As">
+            <div className="win7-dialog-caption">Save As</div>
+            <div className="win7-dialog-body">
               <label htmlFor={`${windowId}-filename`}>File name:</label>
               <input
                 id={`${windowId}-filename`}
                 ref={nameRef}
-                className="np-dialog-input"
+                className="win7-dialog-input"
                 value={saveAs}
                 onChange={(e) => setSaveAs(e.target.value)}
                 onKeyDown={(e) => {
@@ -210,18 +219,18 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
                   if (e.key === "Escape") setSaveAs(null);
                 }}
               />
-              <p className="np-dialog-where">Saving to Desktop</p>
+              <p className="win7-dialog-where">Saving to Desktop</p>
             </div>
-            <div className="np-dialog-buttons">
+            <div className="win7-dialog-buttons">
               <button
                 type="button"
-                className="np-dialog-btn"
+                className="win7-dialog-btn"
                 disabled={!saveAs.trim()}
                 onClick={() => commitSave(saveAs.trim())}
               >
                 Save
               </button>
-              <button type="button" className="np-dialog-btn" onClick={() => setSaveAs(null)}>
+              <button type="button" className="win7-dialog-btn" onClick={() => setSaveAs(null)}>
                 Cancel
               </button>
             </div>
