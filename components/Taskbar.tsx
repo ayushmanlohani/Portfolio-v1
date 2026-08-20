@@ -2,25 +2,38 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { launchWindow, TERMINAL_ID } from "@/components/win7/apps";
+import { CALC_ID, launchWindow, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
 import { node } from "@/components/win7/fs";
-import { FolderIcon, TerminalIcon } from "@/components/win7/icons";
+import {
+  CalculatorIcon,
+  FolderIcon,
+  NotepadIcon,
+  TerminalIcon,
+} from "@/components/win7/icons";
 import { StartMenu } from "@/components/win7/StartMenu";
 import { Tray, type Panel } from "@/components/win7/Tray";
 import { useWindowStore } from "@/store/windows";
 
 const MENU_ID = "start-menu";
 
-/** Icon for a taskbar button. Folders are the default; cmd is the exception. */
-const TaskIcon = ({ id }: { id: string }) =>
-  id === TERMINAL_ID ? (
-    <TerminalIcon className="task-button-icon" />
-  ) : (
-    <FolderIcon className="task-button-icon" />
-  );
+/** Icon for a taskbar button. Folders and saved files fall back to the tree. */
+const TaskIcon = ({ id }: { id: string }) => {
+  if (id === TERMINAL_ID) return <TerminalIcon className="task-button-icon" />;
+  if (id === CALC_ID) return <CalculatorIcon className="task-button-icon" />;
+  if (id === NOTEPAD_ID) return <NotepadIcon className="task-button-icon" />;
+
+  const Icon = node(id)?.Icon ?? FolderIcon;
+  return <Icon className="task-button-icon" />;
+};
 
 /** Name for a pinned button that has no window to take a caption from. */
-const taskLabel = (id: string) => (id === TERMINAL_ID ? "Command Prompt" : (node(id)?.label ?? id));
+const APP_NAMES: Record<string, string> = {
+  [TERMINAL_ID]: "Command Prompt",
+  [CALC_ID]: "Calculator",
+  [NOTEPAD_ID]: "Notepad",
+};
+
+const taskLabel = (id: string) => APP_NAMES[id] ?? node(id)?.label ?? id;
 
 /**
  * Windows 7 taskbar — the Start orb, a button per open window, and the

@@ -2226,3 +2226,304 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ── App menu bar ──────────────────────────────────────────────
+   The File/Edit/View strip Calculator and Notepad both wear. Win7
+   draws it flat on a pale band, not as glass.
+   ───────────────────────────────────────────────────────────── */
+
+.app-menu {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: calc(21 * var(--px));
+  padding: 0 calc(2 * var(--px));
+  background: linear-gradient(180deg, #f4f8fb 0%, #e9eff5 100%);
+  border-bottom: calc(1 * var(--px)) solid #d3dbe3;
+  font-size: calc(12 * var(--px));
+}
+
+.app-menu-item {
+  height: calc(19 * var(--px));
+  padding: 0 calc(8 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(2 * var(--px));
+  background: none;
+  color: #12222f;
+  font: inherit;
+  cursor: default;
+}
+
+.app-menu-item:hover:not([data-disabled]),
+.app-menu-item[data-open] {
+  background: linear-gradient(180deg, #eaf5fe 0%, #cfe8fb 100%);
+  border-color: #8ec2e8;
+}
+
+.app-menu-item[data-disabled] {
+  color: #a4adb6;
+}
+
+/* ── Calculator ────────────────────────────────────────────────
+   Win7's Standard view: a menu strip, the readout, then a 5×6 key
+   grid where = is two rows tall and 0 is two columns wide.
+   ───────────────────────────────────────────────────────────── */
+
+.calc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #eef2f6;
+  font-size: calc(12 * var(--px));
+  color: #12222f;
+  cursor: default;
+  user-select: none;
+}
+
+.calc-screen {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  height: calc(56 * var(--px));
+  margin: calc(8 * var(--px));
+  padding: calc(6 * var(--px)) calc(8 * var(--px));
+  border: calc(1 * var(--px)) solid #a8b6c2;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #eef3f7 0%, #ffffff 22%, #ffffff 100%);
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.12);
+}
+
+/* The expression line, pinned to the top of the readout. Absolute rather than
+   in the flex flow so the number below stays hard against the bottom edge
+   whether or not there is anything to show up here. */
+.calc-expression {
+  position: absolute;
+  top: calc(5 * var(--px));
+  left: calc(8 * var(--px));
+  right: calc(8 * var(--px));
+  min-height: calc(13 * var(--px));
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(11 * var(--px));
+  color: #6b7a88;
+}
+
+/* Windows' little memory flag, bottom-left of the readout. */
+.calc-memory {
+  position: absolute;
+  left: calc(8 * var(--px));
+  bottom: calc(6 * var(--px));
+  min-width: calc(16 * var(--px));
+  color: #3a4a58;
+  font-size: calc(11 * var(--px));
+}
+
+.calc-display {
+  overflow: hidden;
+  font-size: calc(26 * var(--px));
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.calc-display[data-error] {
+  font-size: calc(14 * var(--px));
+}
+
+.calc-keys {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: calc(5 * var(--px));
+  padding: 0 calc(8 * var(--px)) calc(8 * var(--px));
+}
+
+.calc-key {
+  border: calc(1 * var(--px)) solid #b3bfc9;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(180deg, #ffffff 0%, #f2f6f9 48%, #e6ecf1 52%, #f3f7fa 100%);
+  color: #12222f;
+  font: inherit;
+  font-size: calc(13 * var(--px));
+  cursor: default;
+  transition: background 90ms ease;
+}
+
+.calc-key:hover {
+  background: linear-gradient(180deg, #f4fbff 0%, #dceffd 48%, #c9e6fb 52%, #e2f3fe 100%);
+  border-color: #7fb4dd;
+}
+
+.calc-key:active {
+  background: linear-gradient(180deg, #cfe6f7 0%, #b9daf2 100%);
+  border-color: #6ba3d0;
+}
+
+/* Memory and function keys read quieter than the digits, same as Windows. */
+.calc-key[data-kind="memory"],
+.calc-key[data-kind="fn"] {
+  color: #45535f;
+  font-size: calc(12 * var(--px));
+}
+
+.calc-key[data-kind="op"],
+.calc-key[data-kind="equals"] {
+  font-size: calc(15 * var(--px));
+}
+
+.calc-key[data-span="wide"] {
+  grid-column: span 2;
+}
+
+.calc-key[data-span="tall"] {
+  grid-row: span 2;
+}
+
+/* ── Notepad ───────────────────────────────────────────────────
+   A menu strip, the writing surface, and Ln/Col along the foot.
+   ───────────────────────────────────────────────────────────── */
+
+.np {
+  /* The Save As box is absolutely placed against this, not the desktop. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+  font-size: calc(12 * var(--px));
+  color: #12222f;
+}
+
+.np-file {
+  position: relative;
+}
+
+/* The File menu reuses the desktop menu's chrome, dropped below the strip. */
+.np-file-menu {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  min-width: calc(150 * var(--px));
+}
+
+.np-area {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  padding: calc(2 * var(--px)) calc(4 * var(--px));
+  background: #ffffff;
+  color: #12222f;
+  /* Notepad's own face, and it does not wrap by default. */
+  font-family: Consolas, "Lucida Console", monospace;
+  font-size: calc(13 * var(--px));
+  line-height: calc(17 * var(--px));
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+}
+
+.np-status {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  height: calc(23 * var(--px));
+  align-items: center;
+  padding: 0 calc(16 * var(--px));
+  border-top: calc(1 * var(--px)) solid #d3dbe3;
+  background: #f1f4f7;
+  color: #45535f;
+}
+
+/* ── Save As ───────────────────────────────────────────────────
+   Modal inside the window, not over the whole desktop: Windows
+   dims nothing, it just blocks its own parent.
+   ───────────────────────────────────────────────────────────── */
+
+.np-dialog-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 34, 48, 0.18);
+}
+
+.np-dialog {
+  width: calc(320 * var(--px));
+  border: calc(1 * var(--px)) solid #6b8ba8;
+  border-radius: calc(4 * var(--px));
+  background: #f0f4f8;
+  box-shadow: 0 calc(4 * var(--px)) calc(18 * var(--px)) rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.np-dialog-caption {
+  height: calc(26 * var(--px));
+  display: flex;
+  align-items: center;
+  padding: 0 calc(10 * var(--px));
+  background: linear-gradient(180deg, #f7fbff 0%, #dbe8f4 100%);
+  border-bottom: calc(1 * var(--px)) solid #c3d2df;
+  font-weight: 600;
+}
+
+.np-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--px));
+  padding: calc(14 * var(--px)) calc(14 * var(--px)) calc(10 * var(--px));
+}
+
+.np-dialog-input {
+  height: calc(24 * var(--px));
+  padding: 0 calc(7 * var(--px));
+  border: calc(1 * var(--px)) solid #9fb3c4;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  color: #12222f;
+  font: inherit;
+  outline: none;
+}
+
+.np-dialog-input:focus {
+  border-color: #4a90c8;
+  box-shadow: 0 0 0 calc(2 * var(--px)) rgba(90, 160, 215, 0.28);
+}
+
+.np-dialog-where {
+  margin: 0;
+  color: #5b6875;
+}
+
+.np-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(8 * var(--px));
+  padding: 0 calc(14 * var(--px)) calc(14 * var(--px));
+}
+
+.np-dialog-btn {
+  min-width: calc(76 * var(--px));
+  height: calc(24 * var(--px));
+  border: calc(1 * var(--px)) solid #a8b6c2;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(180deg, #ffffff 0%, #f2f6f9 48%, #e6ecf1 52%, #f3f7fa 100%);
+  color: #12222f;
+  font: inherit;
+  cursor: default;
+}
+
+.np-dialog-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f4fbff 0%, #dceffd 48%, #c9e6fb 52%, #e2f3fe 100%);
+  border-color: #7fb4dd;
+}
+
+.np-dialog-btn:disabled {
+  color: #a4adb6;
+}

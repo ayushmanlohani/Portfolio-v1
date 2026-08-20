@@ -20,6 +20,12 @@ export const TERMINAL_SIZE = { width: 660, height: 420 };
 /** What the caption bar reads. */
 export const TERMINAL_TITLE = "Ayush";
 
+export const CALC_ID = "calculator";
+export const CALC_SIZE = { width: 320, height: 448 };
+
+export const NOTEPAD_ID = "notepad";
+export const NOTEPAD_SIZE = { width: 620, height: 460 };
+
 /** What a folder window opens at. */
 const FOLDER_SIZE = { width: 900, height: 600 };
 
@@ -40,5 +46,24 @@ export function launchWindow(id: string) {
     return;
   }
 
-  open(id, { title: node(id)?.label ?? id, ...FOLDER_SIZE, desk });
+  if (id === CALC_ID) {
+    open(id, { title: "Calculator", ...CALC_SIZE, desk });
+    return;
+  }
+
+  if (id === NOTEPAD_ID) {
+    open(id, { title: "Untitled - Notepad", ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  const item = node(id);
+
+  // A saved text file opens in Notepad rather than Explorer. The window is
+  // keyed by the file's own id, so the same file can't open twice.
+  if (item?.kind === "file") {
+    open(id, { title: `${item.label} - Notepad`, ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  open(id, { title: item?.label ?? id, ...FOLDER_SIZE, desk });
 }

@@ -424,3 +424,26 @@ export function CloseIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** A saved .txt on the desktop — a page with a folded corner and ruled lines. */
+export function TextFileIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="txt-page" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#e6ecf2" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M6 2h13l7 7v21a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"
+        fill="url(#txt-page)"
+        stroke="#8fa3b6"
+      />
+      <path d="M19 2v7h7" fill="#cfdae5" stroke="#8fa3b6" strokeLinejoin="round" />
+      <g stroke="#9fb2c4" strokeLinecap="round">
+        <path d="M9 14h14M9 18h14M9 22h14M9 26h9" />
+      </g>
+    </svg>
+  );
+}

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { readDesk } from "@/components/win7/desk";
 import { DESKTOP_FOLDERS, node } from "@/components/win7/fs";
 import { RecycleBinIcon } from "@/components/win7/icons";
+import { useFiles } from "@/store/files";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -26,8 +27,9 @@ import { useWindowStore } from "@/store/windows";
  */
 
 /* What sits on the desktop, from the shared tree — the same list Explorer
-   shows inside the Desktop folder. The bin goes last, where Windows keeps it. */
-const ITEMS = [...DESKTOP_FOLDERS, "recycle"];
+   shows inside the Desktop folder. The bin goes last, where Windows keeps it,
+   and anything Notepad has saved lands after it. */
+const FIXED_ITEMS = [...DESKTOP_FOLDERS, "recycle"];
 
 type Cell = { c: number; r: number };
 type Layout = Record<string, Cell>;
@@ -43,11 +45,11 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * arrangement reflows if the number of rows changes and only icons that were
  * actually dragged are pinned.
  */
-function computeCells(moved: Layout, rows: number): Layout {
+function computeCells(moved: Layout, rows: number, items: readonly string[]): Layout {
   const cells: Layout = {};
   // Every icon keeps its default slot whether or not it is currently on the
   // desktop, so deleting one does not shuffle the ones below it up a row.
-  ITEMS.forEach((id, i) => {
+  items.forEach((id, i) => {
     cells[id] = moved[id] ?? { c: Math.floor(i / rows), r: i % rows };
   });
   return cells;
@@ -61,6 +63,12 @@ export function DesktopIcons() {
   const rootRef = useRef<HTMLDivElement>(null);
   const openWindow = useWindowStore((s) => s.open);
   const deleted = useRecycleBin((s) => s.deleted);
+  // Saved text files join the desktop the moment Notepad writes one. The store
+  // is what makes this re-render; the file itself lives in the shared tree.
+  const files = useFiles((s) => s.files);
+  // Everything the desktop can show, in slot order. Declared here rather than
+  // at render because the drag handlers below need the same list.
+  const items = [...FIXED_ITEMS, ...files.map((f) => f.id)];
   const remove = useRecycleBin((s) => s.remove);
   const binEmpty = deleted.length === 0;
   // A set, not a single id: the marquee below can pick up several at once.
@@ -354,7 +362,7 @@ export function DesktopIcons() {
 
   /** Where the whole group lands. */
   const drop = (d: { id: string; ids: string[] }, dx: number, dy: number) => {
-    const cellsNow = computeCells(layout, grid.rows);
+    const cellsNow = computeCells(layout, grid.rows, items);
     const want = dropCell(d.id, dx, dy, cellsNow);
     const bin = cellsNow.recycle;
     const group = new Set(d.ids);
@@ -372,7 +380,7 @@ export function DesktopIcons() {
     }
 
     setLayout((moved) => {
-      const cells = computeCells(moved, grid.rows);
+      const cells = computeCells(moved, grid.rows, items);
       // One delta for the whole group, taken from the icon actually under the
       // pointer, so the arrangement they were in survives the move.
       const target = dropCell(d.id, dx, dy, cells);
@@ -438,8 +446,8 @@ export function DesktopIcons() {
     [openWindow],
   );
 
-  const cells = computeCells(layout, grid.rows);
-  const onDesktop = ITEMS.filter((id) => !deleted.includes(id));
+  const cells = computeCells(layout, grid.rows, items);
+  const onDesktop = items.filter((id) => !deleted.includes(id));
 
   // True while a deletable folder is being dragged over the bin. Computed from
   // the same dropCell() the drop uses, so the highlight cannot promise
