@@ -23,10 +23,8 @@ import { UNITWISE } from "@/content/unitwise";
  *
  * NESTING
  *   An entry can be a folder of its own instead of a page — give it `children`
- *   rather than a `tagline` and it lists what's inside instead. Nirmala Convent
- *   in content/education.ts does this: one school folder holding ISC and ICSE,
- *   rather than the same school appearing twice in Education.
- *   It nests to any depth, though one level is all this site needs.
+ *   rather than a `tagline` and it lists what's inside instead. Nothing on the
+ *   site currently uses this, but it nests to any depth if something needs to.
  */
 export const PAGES: Record<string, Record<string, Entry>> = {
   projects: {

@@ -58,45 +58,17 @@ export const EDUCATION = {
     stack: [],
   },
 
-  // One school, one folder. `children` instead of a `tagline` is what makes
-  // this a folder rather than a page: opening it lists ISC and ICSE instead of
-  // showing writing of its own. The school was listed twice in Education
-  // before, which read as a duplicate.
   nirmala: {
     name: "Nirmala Convent Inter College",
 
-    children: {
-      isc: {
-        name: "ISC",
+    logo: "",
 
-        logo: "",
+    tagline: ["ISC · Class XI – XII · 90%", "ICSE · Class I – X · 92%"],
 
-        meta: ["Nirmala Convent Inter College", "Class XI – XII"],
+    links: [],
 
-        tagline: [`Indian School Certificate.`, `Finished at 90%.`],
+    sections: [],
 
-        links: [],
-
-        sections: [],
-
-        stack: [],
-      },
-
-      icse: {
-        name: "ICSE",
-
-        logo: "",
-
-        meta: ["Nirmala Convent Inter College", "Class I – X"],
-
-        tagline: [`Indian Certificate of Secondary Education.`, `Finished at 92%.`],
-
-        links: [],
-
-        sections: [],
-
-        stack: [],
-      },
-    },
+    stack: [],
   },
 };
