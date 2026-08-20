@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { inline } from "@/components/win7/folders/Doc";
 import { TechChip } from "@/components/win7/folders/Tech";
 import type { Page } from "@/content/pages";
@@ -19,6 +21,22 @@ import type { Page } from "@/content/pages";
 export function Project({ data }: { data: Page }) {
   return (
     <article className="about project">
+      {/* An empty string means "the crest is coming" — the box holds its size
+          so adding the file later doesn't move anything below it. */}
+      {data.logo !== undefined &&
+        (data.logo ? (
+          // 72 is the intrinsic hint; the real size is --px-scaled in CSS.
+          <Image
+            className="project-crest"
+            src={data.logo}
+            alt={`${data.name} logo`}
+            width={72}
+            height={72}
+          />
+        ) : (
+          <div className="project-crest" aria-hidden="true" />
+        ))}
+
       <h1 className="about-name">{data.name}</h1>
       <div className="about-rule" />
 
@@ -65,14 +83,18 @@ export function Project({ data }: { data: Page }) {
           </section>
         ))}
 
-        <section className="project-section">
-          <h2 className="project-heading">{data.stackHeading ?? "Built with"}</h2>
-          <div className="project-stack">
-            {data.stack.map((tech) => (
-              <TechChip key={tech.id} id={tech.id} name={tech.name} />
-            ))}
-          </div>
-        </section>
+        {/* No technologies, no heading. An education page has nothing to put
+            here and an empty "Built with" rule would just be a loose line. */}
+        {data.stack.length > 0 && (
+          <section className="project-section">
+            <h2 className="project-heading">{data.stackHeading ?? "Built with"}</h2>
+            <div className="project-stack">
+              {data.stack.map((tech) => (
+                <TechChip key={tech.id} id={tech.id} name={tech.name} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </article>
   );

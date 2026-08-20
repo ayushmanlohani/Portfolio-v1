@@ -1,3 +1,4 @@
+import { EDUCATION } from "@/content/education";
 import { EXPERIENCE } from "@/content/experience";
 import { SENTINEL } from "@/content/sentinel";
 import { UNITWISE } from "@/content/unitwise";
@@ -26,11 +27,20 @@ export const PAGES: Record<string, Record<string, Page>> = {
     sentinel: SENTINEL,
   },
   experience: EXPERIENCE,
+  education: EDUCATION,
 };
 
 /** The shape a page's content has to have. */
 export type Page = {
   name: string;
+  /**
+   * A crest above the name — a university or school badge.
+   *
+   * Omit it entirely and nothing is drawn. Set it to `""` and the page holds
+   * the space empty, so dropping the file in later doesn't shift the layout.
+   * Set it to a path under `public/` and that image appears.
+   */
+  logo?: string;
   /**
    * Small grey lines under the name, before the tagline. Where a job was and
    * when — an employer and a date range, one per line. Projects skip it.

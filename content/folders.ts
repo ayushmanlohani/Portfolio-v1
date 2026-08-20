@@ -45,27 +45,14 @@ export type Item = {
 };
 
 export const FOLDERS: Record<string, Item[]> = {
-  // Projects and Experience are empty here on purpose. Everything in them has
-  // a page of its own — see content/pages.ts, which points at
-  // content/unitwise.ts, content/sentinel.ts and content/experience.ts.
-  // Adding an entry below would put a plain text file alongside those folders,
-  // which is fine if you ever want one.
+  // Projects, Experience and Education are empty here on purpose. Everything
+  // in them has a page of its own — see content/pages.ts, which points at
+  // content/unitwise.ts, content/sentinel.ts, content/experience.ts and
+  // content/education.ts. Adding an entry below would put a plain text file
+  // alongside those folders, which is fine if you ever want one.
   projects: [],
   experience: [],
-
-  education: [
-    {
-      name: "University of Lucknow",
-      type: "B.Tech, final year",
-      text: [
-        `Final-year student, Computer Science and Engineering with a specialisation in Artificial Intelligence.`,
-
-        // NEEDS YOUR WORDS — years, coursework worth naming, anything you'd
-        // want a reader to know. Delete this line if there's nothing to add.
-        `Alongside the degree: AI agents, RAG, and whatever else catches my attention.`,
-      ],
-    },
-  ],
+  education: [],
 
   resume: [
     {

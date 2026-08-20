@@ -70,7 +70,8 @@ Don't reintroduce any of it.
   Icons view** — 48px icons on a grid, matching the desktop; there is no
   Details view, no Name/Type header and no Type column) and
   double-clicking a row opens that item's writing **in the same window** —
-  Back walks straight out of it. Contact has 3, Education and Resume 1 each.
+  Back walks straight out of it. Only Contact (3) and Resume (1) still work
+  this way.
   About Me is the exception: it still draws its own pane instead of a listing,
   which is what an absent `children` means.
   **The grid reflows on resize with no JavaScript** — `.ex-tiles` is
@@ -79,13 +80,20 @@ Don't reintroduce any of it.
   Don't add a ResizeObserver for this; there is nothing for it to do.
   **Those words are all in `content/folders.ts`** and several are marked
   `NEEDS YOUR WORDS` — see below.
-- **Projects and Experience hold nothing but page folders.** Projects has
-  **Unitwise** and **RBI Sentinel**; Experience has **Research Assistant**,
-  **AI & Machine Learning Intern** and **Machine Learning & Data Science
-  Intern**. No text files in either — both are empty arrays in
-  `content/folders.ts` on purpose. Such a folder opens to a page: centred
-  Bodoni name, optional grey meta lines, two-line tagline, Win7 link buttons,
-  headed sections, and a **row of logos that name themselves on hover**.
+- **Projects, Experience and Education hold nothing but page folders.**
+  Projects has **Unitwise** and **RBI Sentinel**; Experience has **Research
+  Assistant**, **AI & Machine Learning Intern** and **Machine Learning & Data
+  Science Intern**; Education has **University of Lucknow**, **Nirmala Convent
+  — ISC** and **Nirmala Convent — ICSE**. No text files in any of the three —
+  all are empty arrays in `content/folders.ts` on purpose. Such a folder opens
+  to a page: optional crest, centred Bodoni name, optional grey meta lines,
+  two-line tagline, Win7 link buttons, headed sections, and a **row of logos
+  that name themselves on hover**.
+  - **Every part below the name is optional and drops out cleanly.** Empty
+    `sections` and empty `stack` render nothing at all — the two school pages
+    are crest, name, meta and tagline and stop there. In particular the stack
+    heading is *inside* the `stack.length > 0` guard, so an education page
+    doesn't get a stray "Built with" rule.
   - **`content/pages.ts` is the registry** — one map of folder id → entries,
     plus the `Page` type. Anything not in it falls back to
     `content/folders.ts` and stays a plain text file. Explorer resolves a page
@@ -94,9 +102,17 @@ Don't reintroduce any of it.
     short related things share one (`content/experience.ts` holds all three
     roles). **Project three is a copy, an import and a line; job four is one
     entry in the experience file and nothing else.**
-  - Two optional fields exist for jobs: **`meta`** (grey employer/date lines
-    under the rule) and **`stackHeading`** (jobs say "Worked with", projects
-    default to "Built with" — you don't *build with* a job).
+  - Three optional fields beyond a project's: **`meta`** (grey employer or
+    course lines under the rule), **`stackHeading`** (jobs say "Worked with",
+    projects default to "Built with" — you don't *build with* a job), and
+    **`logo`** (a 72px crest above the name).
+  - **`logo: ""` means "the crest is coming".** All three education entries
+    carry it: the box holds its full size while empty, so dropping the image
+    in later shifts nothing below it. It is faint rather than a dashed
+    "missing image" outline on purpose — a visitor shouldn't be shown our
+    TODO. Omitting the field entirely removes the space. **Ayushman is
+    supplying the university and school logos**; put them in
+    `public/letterbox/` and set the path in `content/education.ts`.
   - Both projects were written off the actual repos, which corrected a real
     error:
     **Unitwise is a RAG chatbot for syllabus questions, not a unit converter**,
@@ -225,6 +241,7 @@ Don't reintroduce any of it.
 | **`content/unitwise.ts`** | **The Unitwise page — tagline, sections, stack. Edit this to change it.** |
 | **`content/sentinel.ts`** | **The RBI Sentinel page. Same shape as unitwise.ts.** |
 | **`content/experience.ts`** | **All three roles. Add a job = one entry here.** |
+| **`content/education.ts`** | **Degree + both school entries. Logo paths go here.** |
 | `content/pages.ts` | The registry: which folders hold pages, plus the `Page` type. |
 | `components/win7/folders/Project.tsx` | Renders any page — project or job — from its content. |
 | `components/win7/folders/Tech.tsx` | One stack logo + its hover/focus tooltip. |

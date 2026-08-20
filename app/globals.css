@@ -1594,6 +1594,22 @@ body {
   max-width: calc(640 * var(--px));
 }
 
+/* A university or school crest, above the name.
+   Empty until Ayushman supplies the files — deliberately almost invisible
+   rather than a dashed "missing image" box, because a visitor shouldn't be
+   shown our TODO. It still occupies its full size, so dropping the image in
+   later moves nothing below it. */
+.project-crest {
+  display: block;
+  width: calc(72 * var(--px));
+  height: calc(72 * var(--px));
+  margin: 0 auto calc(18 * var(--px));
+  border: calc(1 * var(--px)) solid #e8edf2;
+  border-radius: calc(4 * var(--px));
+  background: #fbfcfd;
+  object-fit: contain;
+}
+
 /* Employer and dates on a job page. Sits between the rule and the tagline,
    small and grey — it is a caption on the name above it, not a claim of its
    own, so it stays quieter than everything around it. */
