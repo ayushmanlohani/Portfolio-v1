@@ -21,8 +21,9 @@
  *            letters instead, which is normal, not a missing file.
  *
  * ── TODO for Ayushman ────────────────────────────────────────────
- *   The two internships below are transcribed straight off your CV.
- *   RESEARCH ASSISTANT IS A STUB — see the note on it.
+ *   The two internships are transcribed straight off your CV and are done.
+ *   Research Assistant has its place and dates from you; what the YOLO
+ *   project actually does is still open — see the note inside it.
  * ─────────────────────────────────────────────────────────────────
  */
 
@@ -30,17 +31,11 @@ export const EXPERIENCE = {
   research: {
     name: "Research Assistant",
 
-    // NEEDS YOUR WORDS — all of it.
-    // I couldn't find the YOLO work anywhere: it isn't in any Claude Code
-    // session on this machine (all seven are this portfolio), and the only
-    // thing you'd written about it is one line in content/about.ts. Rather
-    // than invent a research role for you, this page says only what is
-    // actually known. Tell me about the project and I'll write it properly.
-    meta: ["Where — needed", "Dates — needed"],
+    meta: ["University of Lucknow", "July 2026 – Present"],
 
     tagline: [
       `Building a lightweight computer vision model on YOLO 26n.`,
-      `The rest of this page is waiting on me — see the note in content/experience.ts.`,
+      `Ongoing research — more here as it takes shape.`,
     ],
 
     links: [],
@@ -49,12 +44,22 @@ export const EXPERIENCE = {
       {
         heading: "What I do",
         text: [
-          `Currently working as a Research Assistant on a lightweight computer vision model built with YOLO 26n — small enough to run somewhere that isn't a workstation.`,
+          `Research Assistant at the University of Lucknow, working on a lightweight computer vision model built on YOLO 26n.`,
+
+          // NEEDS YOUR WORDS — the project itself.
+          // You gave me where and when; what it actually does is still open.
+          // What does the model detect? What is the size or speed budget, and
+          // what is it running on? Any numbers yet? Replace the line below
+          // with the real answer and add a `points:` list like the roles
+          // further down if there's more than a paragraph of it.
+          `The interest is in what survives the shrinking: a detector is only useful where it can actually run.`,
         ],
       },
     ],
 
     stackHeading: "Worked with",
+    // Confirm these — YOLO makes PyTorch and Python near-certain, but OpenCV
+    // is my guess rather than something you told me. Delete or add freely.
     stack: [
       { id: "pytorch", name: "PyTorch" },
       { id: "python", name: "Python" },

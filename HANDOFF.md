@@ -288,16 +288,18 @@ font weight he mistook for a font family.
 - **The words in `content/folders.ts` are half his and half placeholder.**
   Every line I could verify came out of his own `content/about.ts`; everything
   else carries a `NEEDS YOUR WORDS` comment right above it. Specifically:
-  - **Experience / Research Assistant is a STUB and the biggest gap.** He asked
-    me to write it from "my chat history" about his YOLO 26n work — **it isn't
-    there.** All seven Claude Code sessions on this machine are this portfolio;
-    a transcript search for YOLO, ultralytics and "research assistant" returned
-    nothing, and memory has only the two files about working style. The single
-    verifiable line is one sentence in `content/about.ts`. So the page says
-    only what is known and its `meta` reads "Where — needed". **Don't invent a
-    research role for him** — the two internships next to it are transcribed
-    off his CV and real, and a fabricated one sitting beside them is worse than
-    an obvious blank. Ask.
+  - **Experience / Research Assistant — half answered.** University of Lucknow,
+    July 2026 to present, confirmed by him. **What the YOLO 26n project
+    actually does is still open**: what it detects, the size or speed budget,
+    what it runs on, any numbers. Its stack row (PyTorch, Python, OpenCV) is a
+    guess flagged in the file.
+    Worth knowing why it was blank: he asked me to write it from "my chat
+    history" about the YOLO work and **that history does not exist here** —
+    every Claude Code session on this machine is this portfolio, and searches
+    for YOLO, ultralytics and "research assistant" all returned nothing. Don't
+    go looking again, and **don't invent the missing half** — the two
+    internships beside it are transcribed off his CV and real, so a fabricated
+    one next to them is worse than an obvious blank.
   - **Resume** — links to `#` because there is no PDF. Drop one in
     `public/letterbox/` and swap the `#` for its path.
   - **Contact / Email** — deliberately left at `#`. His address was not put on
