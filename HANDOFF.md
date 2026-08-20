@@ -68,27 +68,38 @@ Don't reintroduce any of it.
 - **Folders hold items now.** Ayushman picked "items you click into" over a
   single page per folder, so a folder opens to an Explorer listing and
   double-clicking a row opens that item's writing **in the same window** —
-  Back walks straight out of it. Projects has 3, Contact 3, Experience,
-  Education and Resume 1 each. About Me is the exception: it still draws its
-  own pane instead of a listing, which is what an absent `children` means.
-  **The words are all in `content/folders.ts`** and several are marked
+  Back walks straight out of it. Contact has 3, Experience, Education and
+  Resume 1 each. About Me is the exception: it still draws its own pane
+  instead of a listing, which is what an absent `children` means.
+  **Those words are all in `content/folders.ts`** and several are marked
   `NEEDS YOUR WORDS` — see below.
-- **A project can have a page of its own.** Unitwise is the first: inside
-  Projects it is a **folder**, not a text file, and opening it shows a centred
-  Bodoni name, a two-line tagline, Win7 buttons out to the live app and the
-  repo, headed sections, and a **tech-stack row of logos that name themselves
-  on hover**. Its words are in `content/unitwise.ts`; `content/projects.ts` is
-  the two-line registry that turns it into a folder. Everything was written off
-  the actual repo — **Unitwise is a RAG chatbot for syllabus questions, not a
-  unit converter**, which is what the name suggests and what an earlier
-  placeholder wrongly said.
+- **Projects holds nothing but project folders.** Two of them, **Unitwise** and
+  **RBI Sentinel**, and no text files at all — `FOLDERS.projects` is an empty
+  array on purpose. A project folder opens to a page: centred Bodoni name,
+  two-line tagline, Win7 buttons out to the live app and the repo, headed
+  sections, and a **tech-stack row of logos that name themselves on hover**.
+  - Words live one file per project — `content/unitwise.ts`,
+    `content/sentinel.ts` — and `content/projects.ts` is the short registry
+    that turns each into a folder. **Project three is a copy, an import and a
+    line.**
+  - Both were written off the actual repos, which corrected a real error:
+    **Unitwise is a RAG chatbot for syllabus questions, not a unit converter**,
+    which is what the name suggests and what an earlier placeholder claimed.
+    Don't write a project's copy from its name.
   - The stack chips are **not hover-only**: each is focusable, names itself on
     keyboard focus too, and carries the name on `aria-label`.
   - The tooltip is Win7's own, not the browser's `title` — a native tooltip
-    would appear in the host OS's styling on top of an OS of our own.
-  - Logos come from `techLogos.ts`, official Simple Icons paths inlined once.
-    **A missing logo is a normal case**, not a bug: it draws the first two
-    letters instead, which is what ChromaDB, Groq and PyMuPDF get.
+    would appear in the host OS's styling on top of an OS of our own. It sits
+    *above* the chip because the row is the last thing on the page and a
+    tooltip below would be clipped by the scroll edge; `.project-stack` carries
+    20px of top padding so it clears the heading.
+  - Logos come from `techLogos.ts`, official Simple Icons paths inlined once
+    (CC0, no dependency, no runtime request). **A missing logo is a normal
+    case**, not a bug: it draws the first two letters instead, which is what
+    ChromaDB, Groq, PyMuPDF, statsmodels, pdfplumber and yfinance get.
+  - **Deleted on request**: the *Lightweight CV model* (YOLO 26n) text file is
+    gone from the site entirely, along with the placeholder RBI Sentinel one it
+    replaced. Don't reintroduce either.
 - **Navigation is real.** `components/win7/fs.ts` is the single file tree, read
   by the desktop, the tree, the address bar, the listings and the window
   caption. Desktop holds the six folders plus the Recycle Bin; C:\ holds
@@ -196,7 +207,8 @@ Don't reintroduce any of it.
 | **`content/about.ts`** | **The About Me words. Edit this to fix copy — plain text, no JSX.** |
 | **`content/folders.ts`** | **What's inside every other folder. Add an item = copy a block, change the words.** |
 | **`content/unitwise.ts`** | **The Unitwise page — tagline, sections, stack. Edit this to change it.** |
-| `content/projects.ts` | Which projects get a page of their own. Two lines per project. |
+| **`content/sentinel.ts`** | **The RBI Sentinel page. Same shape as unitwise.ts.** |
+| `content/projects.ts` | Which projects get a page of their own. One line per project. |
 | `components/win7/folders/Project.tsx` | Renders a project page from its content file. |
 | `components/win7/folders/Tech.tsx` | One stack logo + its hover/focus tooltip. |
 | `components/win7/folders/techLogos.ts` | Inlined Simple Icons paths. Generated, not hand-drawn. |
@@ -265,8 +277,9 @@ font weight he mistook for a font family.
     `public/letterbox/` and swap the `#` for its path.
   - **Contact / Email** — deliberately left at `#`. His address was not put on
     a public page without him saying so.
-  - **RBI Sentinel** and **Lightweight CV model** still have a filler second
-    paragraph each. Unitwise no longer does — see below.
+  - **Projects is done** — both project pages are written off their repos, so
+    nothing under Projects is a placeholder any more. The three above are all
+    that's left.
 - **The shape of folder content is settled, the styling isn't.** Three earlier
   directions were rejected: an editorial magazine set (Vogue/Tom Ford/GQ/
   Gentlewoman/i-D), and a free-canvas sticker collage that got built, arranged

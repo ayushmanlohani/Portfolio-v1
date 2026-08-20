@@ -1,3 +1,4 @@
+import { SENTINEL } from "@/content/sentinel";
 import { UNITWISE } from "@/content/unitwise";
 
 /**
@@ -15,6 +16,7 @@ import { UNITWISE } from "@/content/unitwise";
  */
 export const PROJECTS: Record<string, Project> = {
   unitwise: UNITWISE,
+  sentinel: SENTINEL,
 };
 
 /** The shape a project content file has to have. */

@@ -45,31 +45,11 @@ export type Item = {
 };
 
 export const FOLDERS: Record<string, Item[]> = {
-  // Unitwise is not here — it has a page of its own, in content/unitwise.ts,
-  // registered in content/projects.ts. Anything listed below stays a plain
-  // text file inside its folder.
-  projects: [
-    {
-      name: "RBI Sentinel",
-      type: "Streamlit app",
-      text: [
-        `A tool for reading what the Reserve Bank of India actually publishes. Live at [rbi-sentinel.streamlit.app](https://rbi-sentinel.streamlit.app).`,
-
-        // NEEDS YOUR WORDS — the problem it solves and how it solves it.
-        `Streamlit on the front, the parsing underneath.`,
-      ],
-    },
-    {
-      name: "Lightweight CV model",
-      type: "In progress",
-      text: [
-        `A lightweight computer vision model built on YOLO 26n. Still in progress — no link yet.`,
-
-        // NEEDS YOUR WORDS — what it detects, why lightweight matters here.
-        `The point is running small: a model that only works on a big machine isn't much use.`,
-      ],
-    },
-  ],
+  // Projects is empty here on purpose. Every project has a page of its own —
+  // see content/projects.ts — so nothing in Projects is a plain text file.
+  // Adding an entry here would put a text file alongside the project folders,
+  // which is fine if you ever want one.
+  projects: [],
 
   experience: [
     {
