@@ -174,24 +174,53 @@ Don't reintroduce any of it.
   same `dropCell()` the drop itself uses). The bin's icon switches to the full
   variant, paper above the rim; the first version drew that paper *below* the
   rim line at y=8.5, so it was painted over and the bin looked empty when it
-  wasn't. **Nothing can be permanently destroyed**: `store/recycleBin.ts` has
-  no empty(). Inside the bin, right-click > **Restore** puts a folder back in
-  the exact grid slot it left, because deleted icons keep their slot rather
-  than reflowing — same as Windows. A reload also restores everything.
-- **Marquee selection**: drag on bare desktop and the Win7 rubber band picks
-  up every icon it touches, live as you drag. Ctrl adds to a selection;
-  clicking bare desktop clears it. **A selection drags in formation** — grab
-  any selected icon and the whole group moves by one shared delta, keeping its
-  arrangement; drop it on the bin and all of them go.
+  wasn't. **The six content folders still can't be destroyed** — only
+  Restore exists for them, same as before. **A Notepad file is the one thing
+  that can go all the way**: inside the bin, right-click a file > Delete asks
+  for confirmation (the dialog never names the files, it just asks "permanently
+  delete N files?") and then calls `unregisterFile` (drops it from the file
+  tree), `useFiles().forget` (drops it from the file store) and
+  `recycleBin.purge` (stops tracking it as deleted) — nothing does this
+  silently. Right-click > **Restore** puts a folder or file back in the exact
+  grid slot it left, because deleted icons keep their slot rather than
+  reflowing — same as Windows. A reload also restores everything still in the
+  bin (the ones actually destroyed don't come back — a reload undoes
+  soft-deletes, not the confirm-gated permanent one).
+- **Rename-in-place**: right-click a Notepad file (not the six content
+  folders — their names come from content, not from anyone renaming them) and
+  its label turns into a text box, the same way real Windows does it — no
+  dialog. Enter commits, Escape cancels, clicking away commits (same as real
+  Explorer). Typing a name with no extension gets `.txt` appended, the same
+  rule Save As uses. A name collision — with another live file, or with
+  whatever's already on the Desktop when Restore tries to reuse an old name —
+  raises a small warning balloon under the field instead of silently failing,
+  and clears itself after a few seconds or the next attempt.
+  `store/inlineEdit.ts` holds `editingId`/`warning` and the
+  `start`/`cancel`/`commit`/`tryRestore` actions; `components/win7/
+  RenameField.tsx` is the one input component both `DesktopIcons` and
+  `Explorer` swap in for a label when `editingId` matches.
+- **Marquee selection works on the desktop and inside every Explorer window**,
+  off one shared hook (`components/win7/useMarquee.ts`) rather than two
+  copies of the same drag logic. Drag on bare space and the Win7 rubber band
+  picks up every icon or tile it touches, live as you drag, scoped to
+  whichever container (`.desktop-icons` or one window's `.ex-tiles`) the drag
+  started in — with several Explorer windows open, a global query would pick
+  up tiles in windows that never saw the drag. Ctrl adds to a selection;
+  clicking bare space clears it; a plain click on one tile selects just that
+  one. **On the desktop, a selection drags in formation** — grab any selected
+  icon and the whole group moves by one shared delta, keeping its arrangement;
+  drop it on the bin and all of them go. (Explorer tiles don't reposition, so
+  this only applies to the desktop.)
 
   Three traps here, all of them cost real time once:
   1. Icon drags run on **window listeners, not pointer capture**. Capture
      silently stopped engaging after a marquee and the press went dead.
-  2. `.desktop-icons` sets `user-select: none` and the icons are
-     `draggable={false}`. Without it the band drags a *text selection* across
-     the labels, and pressing an icon afterwards starts a native HTML5 file
-     drag — which fires **pointercancel** and kills the real drag one frame in.
-     This was the actual cause of "only the clicked icon moves".
+  2. `.desktop-icons` and `.ex-tiles` both set `user-select: none` and their
+     items are `draggable={false}`. Without it the band drags a *text
+     selection* across the labels, and pressing an item afterwards starts a
+     native HTML5 file drag — which fires **pointercancel** and kills the real
+     drag one frame in. This was the actual cause of "only the clicked icon
+     moves".
   3. When placing a group, members must block **each other**: the ignore-set
      passed to `freeCellNear` has to be empty, because the working map already
      has the group lifted out and re-adds each one as it lands. Passing the
@@ -203,12 +232,19 @@ Don't reintroduce any of it.
   no icon button holds focus and a handler bound to one silently never fires.
   It skips INPUT/TEXTAREA so the console keeps its own Delete, and an empty
   selection is the guard that keeps it quiet while a window has focus.
-- **Right-click menu is target-aware.** Bare desktop gets the Win7 desktop menu
-  (Gadgets removed on request). A folder gets Open / Delete / greyed-out
-  extras; the same folder inside the bin gets Restore instead. It works on
-  desktop icons and on folder rows alike because both tag themselves
-  `data-node-id`, and `data-in-bin` when drawn inside the bin — the menu never
-  needs to know either component exists.
+- **Right-click menu is target-aware, and every action covers the whole
+  selection, not just the item you clicked.** Bare desktop gets the Win7
+  desktop menu (Gadgets removed on request). A folder or file gets Open /
+  Delete / Rename (files only) / greyed-out extras; the same item inside the
+  bin gets Restore, and a file only also gets a permanent Delete. Right-
+  clicking something **outside** the current selection collapses the menu's
+  target down to just that one item first — same rule Windows uses — so
+  Delete/Restore/permanent-Delete always act on "whatever's actually
+  selected right now", read live off each tile's own `data-selected`
+  attribute rather than component state, which is what lets one menu serve
+  the desktop and every Explorer window without knowing either exists.
+  It works on desktop icons and on folder rows alike because both tag
+  themselves `data-node-id`, and `data-in-bin` when drawn inside the bin.
   Desktop items are View / Sort by / Refresh / Paste (greyed) / Paste shortcut
   (greyed) / New / Screen resolution / Personalize. It replaces Chrome's own
   menu inside the screen and flips inward near an edge. Refresh repaints icons
@@ -243,9 +279,12 @@ Don't reintroduce any of it.
   up/down recalls history. **No commands exist yet** — anything typed gets
   cmd's own "is not recognized" reply. `run()` in `Terminal.tsx` is the seam:
   a command is a case in that function and nothing else.
-- **Taskbar**: Aero glass bar with a Start orb and a working Start menu
-  (About Me pinned, stock Win7 shortcuts, Shut down). Menu runs at 90% scale.
-  Rest of the bar still empty — no tray, no clock, no pinned apps.
+- **Taskbar**: Aero glass bar with a Start orb and a working Start menu. The
+  left column's "recently used" block starts with Command Prompt (the only
+  entry wired to anything besides Calculator/Notepad); Shut down sits in the
+  corner. **No pinned entry above it any more** — About Me used to be pinned
+  there, removed on request. Menu runs at 90% scale. Rest of the bar still
+  empty — no tray, no clock, no pinned apps.
 - **Fonts**: Segoe UI for all OS chrome (system, no webfont). Libre Bodoni and
   Public Sans for the About pane only, via `next/font`.
 
@@ -257,14 +296,18 @@ Don't reintroduce any of it.
 | `app/page.tsx` | Composes Monitor → wallpaper → DesktopSurface → WindowLayer → Taskbar. |
 | `components/Monitor.tsx` | The CRT plastic. **`data-frame="off"` is set here** — that's the one switch for the whole frame. |
 | `components/Taskbar.tsx` | Bar, Start orb, menu state, a button per open window. |
-| `components/win7/StartMenu.tsx` | The Start menu. About Me, stock shortcuts, Command Prompt, Shut down. |
+| `components/win7/StartMenu.tsx` | The Start menu. Stock shortcuts, Command Prompt, Shut down. |
 | `components/win7/Win7Window.tsx` | Aero window chrome — caption, buttons, drag, resize. |
 | `components/win7/WindowLayer.tsx` | Renders every open window and picks the component by id. |
 | `components/win7/desk.ts` | Measures the glass (`.win7`), not the viewport. Windows position against this. |
 | **`components/win7/fs.ts`** | **The file tree — what contains what. One source for everything.** |
 | `components/win7/Explorer.tsx` | The folder window: tree, listings, navigation, details pane. |
 | `components/win7/Network.tsx` | The Network place. Real connection readings. |
-| `store/recycleBin.ts` | Which nodes are deleted. In memory; a reload undoes everything. |
+| `components/win7/RenameField.tsx` | The rename-in-place input, shared by desktop icons and Explorer tiles. |
+| `components/win7/useMarquee.ts` | The rubber-band marquee hook, shared by the desktop and every Explorer window. |
+| `store/inlineEdit.ts` | Rename state (`editingId`) and the name-collision warning balloon. |
+| `store/files.ts` | Notepad's saved files. `save`/`read`/`rename`/`forget` — only a permanent delete calls `forget`. |
+| `store/recycleBin.ts` | Which nodes are soft-deleted. In memory; a reload undoes a soft-delete. `purge` stops tracking an id after a permanent delete, which is not undone by reload. |
 | **`content/about.ts`** | **The About Me words. Edit this to fix copy — plain text, no JSX.** |
 | **`content/folders.ts`** | **What's inside every other folder. Add an item = copy a block, change the words.** |
 | **`content/unitwise.ts`** | **The Unitwise page — tagline, sections, stack. Edit this to change it.** |
