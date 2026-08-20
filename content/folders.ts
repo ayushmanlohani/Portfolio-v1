@@ -54,16 +54,13 @@ export const FOLDERS: Record<string, Item[]> = {
   experience: [],
   education: [],
 
+  // The one item here draws content/resume.ts instead of these words — see
+  // Explorer's Contents. The text below is the fallback nobody should see.
   resume: [
     {
       name: "Resume",
-      type: "PDF",
-      // NEEDS A FILE — drop the PDF in public/letterbox/ and swap the "#"
-      // below for its path, e.g. (/letterbox/ayushman-lohani-resume.pdf).
-      // Until then this renders as bold text, not a broken link.
-      text: [
-        `The full thing, on one page: [Download the PDF](#).`,
-      ],
+      type: "Document",
+      text: [`The full thing, on one page.`],
     },
   ],
 

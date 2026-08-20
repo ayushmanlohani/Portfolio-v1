@@ -70,8 +70,8 @@ Don't reintroduce any of it.
   Icons view** — 48px icons on a grid, matching the desktop; there is no
   Details view, no Name/Type header and no Type column) and
   double-clicking a row opens that item's writing **in the same window** —
-  Back walks straight out of it. Only Contact (3) and Resume (1) still work
-  this way.
+  Back walks straight out of it. Only Contact (3) works this way; Resume's one
+  item draws `content/resume.ts` instead of prose.
   About Me is the exception: it still draws its own pane instead of a listing,
   which is what an absent `children` means.
   **The grid reflows on resize with no JavaScript** — `.ex-tiles` is
@@ -325,8 +325,20 @@ font weight he mistook for a font family.
     go looking again, and **don't invent the missing half** — the two
     internships beside it are transcribed off his CV and real, so a fabricated
     one next to them is worse than an obvious blank.
-  - **Resume** — links to `#` because there is no PDF. Drop one in
-    `public/letterbox/` and swap the `#` for its path.
+  - **Resume is done.** It is his real CV, transcribed from his LaTeX PDF into
+    `content/resume.ts` and drawn by `components/win7/folders/Resume.tsx` in
+    the original's layout — centred name, small-caps section headings over
+    full-width rules, title left with date right, italic employer beneath.
+    It is set in **real Computer Modern** (CMU Serif, SIL OFL, three woff2
+    faces in `public/letterbox/cmu/`), which is what his LaTeX uses.
+    **Embedding the PDF was tried first and abandoned**: browsers hand a PDF
+    to a plugin viewer or straight to the downloads folder, so the resume left
+    the window instead of living in it. The compiled PDF is still downloadable
+    from a button beside Certifications.
+    **The text and the PDF are two copies** — change the LaTeX and
+    `content/resume.ts` has to change too; nothing checks that they agree.
+    Note it publishes his phone number and email, which his PDF carries;
+    deleting either line in `contact` closes the row up.
   - **Contact / Email** — deliberately left at `#`. His address was not put on
     a public page without him saying so.
   - **Projects is done** — both project pages are written off their repos, so
