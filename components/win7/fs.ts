@@ -205,6 +205,17 @@ export const NODES = new Map(NODE_LIST.map((n) => [n.id, n]));
 export const node = (id: string) => NODES.get(id);
 
 /**
+ * Every ancestor id on the way to `id`, root first — ids are built as
+ * `parent/child` (see `fileId` and `walk` above), so splitting on `/` and
+ * re-joining each prefix walks the path without a separate parent pointer.
+ * The address bar is the only reader; it turns these into the crumb trail.
+ */
+export function crumbIds(id: string): string[] {
+  const parts = id.split("/");
+  return parts.map((_, i) => parts.slice(0, i + 1).join("/"));
+}
+
+/**
  * Adds a text file saved by Notepad to the tree, on the Desktop.
  *
  * It goes into the same map every other place lives in, rather than a second

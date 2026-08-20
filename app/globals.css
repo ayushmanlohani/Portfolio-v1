@@ -1916,6 +1916,215 @@ body {
   color: #6d6d6d;
 }
 
+/* ── The resume ─────────────────────────────────────────────────
+   Ayushman's resume is LaTeX set in Computer Modern, so the page uses the
+   real thing: CMU Serif, the Unicode successor to Knuth's fonts, under the
+   SIL Open Font License (public/letterbox/cmu/OFL.txt).
+
+   Three faces only — roman, bold, italic — because that is all the document
+   uses. They are fetched only when this page actually renders, since a
+   @font-face is lazy: a visitor who never opens Resume never pays for them.
+   ───────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "CMU Serif";
+  src: url("/letterbox/cmu/cmu-serif-roman.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CMU Serif";
+  src: url("/letterbox/cmu/cmu-serif-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CMU Serif";
+  src: url("/letterbox/cmu/cmu-serif-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* The sheet. A resume is a page, so it holds a page's measure and centres in
+   whatever width the window has rather than stretching to the edges. */
+.cv {
+  max-width: calc(760 * var(--px));
+  margin: 0 auto;
+  /* Side padding gives way before the text does, so a narrow window loses
+     margin rather than pushing the page into a horizontal scroll. */
+  padding: calc(28 * var(--px)) clamp(calc(8 * var(--px)), 4%, calc(34 * var(--px)))
+    calc(44 * var(--px));
+  font-family: "CMU Serif", "Latin Modern Roman", Georgia, "Times New Roman", serif;
+  font-size: calc(13.5 * var(--px));
+  line-height: 1.34;
+  color: #000000;
+}
+
+/* The final section's list beside the one action on the page. A real flex
+   row, not a float — a float only pushes surrounding *text* aside; its own
+   box, and every block that follows it (this section's bullets), still paints
+   over it in normal stacking order and swallows the click. It must not sit in
+   the header either: a float there steals width from the centred name and
+   pulls it off centre, which is the bug this whole approach replaced. */
+.cv-last-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: calc(16 * var(--px));
+}
+
+.cv-last-entries {
+  flex: 1;
+  min-width: 0;
+}
+
+.cv-download {
+  flex: none;
+  margin-top: calc(2 * var(--px));
+}
+
+.cv-head {
+  text-align: center;
+  margin-bottom: calc(14 * var(--px));
+}
+
+.cv-name {
+  margin: 0;
+  font-size: calc(30 * var(--px));
+  font-weight: 700;
+  letter-spacing: calc(0.2 * var(--px));
+}
+
+.cv-tagline,
+.cv-contact {
+  margin: calc(5 * var(--px)) 0 0;
+  font-size: calc(12.5 * var(--px));
+}
+
+/* Wraps between whole contacts rather than mid-address. The window is
+   resizable, so this has to survive any width the user drags it to — and a
+   media query is the wrong tool for that, since it measures the viewport
+   while the thing that actually narrows is the window inside it. */
+.cv-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+}
+
+/* A phone number or an address is one unit — it must not split. */
+.cv-contact > span {
+  white-space: nowrap;
+}
+
+/* The | separators from the original, spaced rather than butted up. */
+.cv-pipe {
+  margin: 0 calc(6 * var(--px));
+  color: #333333;
+}
+
+.cv-contact a {
+  color: #0000c0;
+  text-decoration: none;
+}
+
+.cv-contact a:hover {
+  text-decoration: underline;
+}
+
+.cv-section {
+  margin-top: calc(13 * var(--px));
+}
+
+/* LaTeX's \section: small caps over a full-width rule. */
+.cv-heading {
+  margin: 0 0 calc(4 * var(--px));
+  padding-bottom: calc(2 * var(--px));
+  border-bottom: calc(1 * var(--px)) solid #000000;
+  font-size: calc(15 * var(--px));
+  font-weight: 400;
+  font-variant: small-caps;
+  letter-spacing: calc(0.4 * var(--px));
+}
+
+.cv-entry {
+  margin-top: calc(7 * var(--px));
+}
+
+/* Title left, date right — the two-corner row the template is built on.
+   It wraps rather than collides once the window is too narrow to hold both. */
+.cv-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 calc(12 * var(--px));
+}
+
+.cv-title {
+  font-weight: 700;
+}
+
+.cv-right {
+  flex: none;
+  font-style: italic;
+}
+
+.cv-sub {
+  font-style: italic;
+}
+
+.cv-link {
+  margin-left: calc(7 * var(--px));
+  font-weight: 400;
+  font-style: normal;
+  color: #0000c0;
+  text-decoration: none;
+}
+
+.cv-link::before {
+  content: "[";
+}
+
+.cv-link::after {
+  content: "]";
+}
+
+.cv-link:hover {
+  text-decoration: underline;
+}
+
+/* The global reset strips list markers, so the bullet is drawn — same
+   approach as .project-points, sized to LaTeX's small \bullet. */
+.cv-points {
+  margin: calc(3 * var(--px)) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cv-points li {
+  position: relative;
+  margin-bottom: calc(2 * var(--px));
+  padding-left: calc(18 * var(--px));
+}
+
+.cv-points li::before {
+  content: "";
+  position: absolute;
+  top: calc(7 * var(--px));
+  left: calc(6 * var(--px));
+  width: calc(3.5 * var(--px));
+  height: calc(3.5 * var(--px));
+  border-radius: 50%;
+  background: #000000;
+}
+
+
 /* Explorer's group headings — "Hard Disk Drives (1)" — a blue label with a
    rule running off to the right of it. */
 .ex-heading {
@@ -2219,6 +2428,15 @@ body {
   border-radius: calc(4 * var(--px));
   background: #fbfcfd;
   object-fit: contain;
+}
+
+/* The pale box is the *empty* state — it stands in for a crest that hasn't
+   arrived. A real crest brings its own edges, so the box goes transparent
+   rather than being removed: the 72px stays exactly where it was and nothing
+   below shifts when an image lands. */
+img.project-crest {
+  border-color: transparent;
+  background: none;
 }
 
 /* Employer and dates on a job page. Sits between the rule and the tagline,
