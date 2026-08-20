@@ -66,11 +66,17 @@ Don't reintroduce any of it.
   resizable, minimise/maximise/close, cascading on open. Tree groups collapse,
   back and forward work.
 - **Folders hold items now.** Ayushman picked "items you click into" over a
-  single page per folder, so a folder opens to an Explorer listing and
+  single page per folder, so a folder opens to an Explorer listing (**Large
+  Icons view** — 48px icons on a grid, matching the desktop; there is no
+  Details view, no Name/Type header and no Type column) and
   double-clicking a row opens that item's writing **in the same window** —
   Back walks straight out of it. Contact has 3, Experience, Education and
   Resume 1 each. About Me is the exception: it still draws its own pane
   instead of a listing, which is what an absent `children` means.
+  **The grid reflows on resize with no JavaScript** — `.ex-tiles` is
+  `repeat(auto-fill, minmax(96px, 1fr))`, so the browser re-fits the tiles as
+  the window changes. Measured: 1240px wide → 1 row, 887px → 2, 520px → 3.
+  Don't add a ResizeObserver for this; there is nothing for it to do.
   **Those words are all in `content/folders.ts`** and several are marked
   `NEEDS YOUR WORDS` — see below.
 - **Projects holds nothing but project folders.** Two of them, **Unitwise** and

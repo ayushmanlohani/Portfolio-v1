@@ -1799,57 +1799,66 @@ body {
 }
 
 /* ── Folder listings ───────────────────────────────────────────
-   Explorer's Details view: a header row, then one row per item.
+   Windows' Large Icons view: 48px icons, name underneath, no
+   header and no Type column — a tile is a picture and a name.
    ───────────────────────────────────────────────────────────── */
 
-.ex-list {
+/* `auto-fill` + `minmax` is the whole reflow story: the grid fits as many
+   tiles per row as the window allows and re-fits them the moment it's
+   resized. No ResizeObserver, no measuring, no JavaScript at all — the
+   browser already does this better than we would. */
+.ex-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(96 * var(--px)), 1fr));
+  align-items: start;
+  gap: calc(4 * var(--px));
+  padding: calc(4 * var(--px));
+}
+
+/* Matches the desktop: a 48px icon over a centred label. */
+.ex-tile {
   display: flex;
   flex-direction: column;
-}
-
-.ex-list-head,
-.ex-row {
-  display: grid;
-  grid-template-columns: 1fr calc(140 * var(--px));
   align-items: center;
-  gap: calc(6 * var(--px));
-}
-
-.ex-list-head {
-  padding: 0 calc(6 * var(--px)) calc(4 * var(--px));
-  margin-bottom: calc(3 * var(--px));
-  border-bottom: calc(1 * var(--px)) solid #dfe6ec;
-  color: #4a6d8c;
-}
-
-/* The icon sits in the name column, so the header's first cell spans it. */
-.ex-row {
-  grid-template-columns: calc(16 * var(--px)) 1fr calc(140 * var(--px));
-  height: calc(22 * var(--px));
-  padding: 0 calc(6 * var(--px));
+  gap: calc(5 * var(--px));
+  min-height: calc(88 * var(--px));
+  padding: calc(6 * var(--px)) calc(4 * var(--px));
   border: calc(1 * var(--px)) solid transparent;
-  border-radius: calc(2 * var(--px));
+  border-radius: calc(3 * var(--px));
   background: none;
   font: inherit;
   color: inherit;
-  text-align: left;
+  text-align: center;
   cursor: default;
 }
 
-.ex-row:hover {
+.ex-tile:hover {
   border-color: #cfe6fa;
   background: linear-gradient(180deg, #f2f9ff, #dcecfa);
 }
 
-.ex-row-name,
-.ex-row-type {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.ex-tile:focus-visible {
+  outline: calc(2 * var(--px)) solid #3d7fbf;
+  outline-offset: calc(-2 * var(--px));
 }
 
-.ex-row-type {
-  color: #5f7284;
+.ex-tile-icon {
+  width: calc(48 * var(--px));
+  height: calc(48 * var(--px));
+  flex-shrink: 0;
+}
+
+/* Two lines, then ellipsis — Windows' own rule for an unselected label. A
+   name that wrapped freely would push its neighbours' baselines out of line
+   and the grid would stop reading as a grid. */
+.ex-tile-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
 }
 
 /* ── Network ───────────────────────────────────────────────────

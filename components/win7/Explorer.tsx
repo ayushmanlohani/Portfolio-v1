@@ -244,13 +244,12 @@ function Contents({
     );
   }
 
+  // Windows' Large Icons view: 48px icons on a grid that reflows as the window
+  // is resized. There is no Name/Type header and no Type column, same as the
+  // real thing — a tile is a picture and a name. `type` still reaches the
+  // reader through the details pane once the item is open.
   return (
-    <div className="ex-list">
-      <div className="ex-list-head">
-        <span>Name</span>
-        <span>Type</span>
-      </div>
-
+    <div className="ex-tiles">
       {items.map((childId) => {
         const child = node(childId);
         if (!child) return null;
@@ -258,7 +257,7 @@ function Contents({
         return (
           <button
             type="button"
-            className="ex-row"
+            className="ex-tile"
             key={childId}
             title={`Open ${child.label}`}
             // Read by the right-click menu, which decides between Delete and
@@ -267,9 +266,8 @@ function Contents({
             data-in-bin={view === "recycle" ? "true" : undefined}
             onDoubleClick={() => onOpen(childId)}
           >
-            <child.Icon className="ex-icon" />
-            <span className="ex-row-name">{child.label}</span>
-            <span className="ex-row-type">{child.type ?? "File folder"}</span>
+            <child.Icon className="ex-tile-icon" />
+            <span className="ex-tile-name">{child.label}</span>
           </button>
         );
       })}
