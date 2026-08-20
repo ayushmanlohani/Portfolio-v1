@@ -9,15 +9,15 @@
  * Education, and opening it shows that qualification's page.
  *
  * ── THE LOGOS ────────────────────────────────────────────────────
- *   Every entry has `logo: ""`, which draws an empty 72px square above the
- *   name and holds that space. To fill one in:
+ *   Both entries carry a crest now — the university's on the degree, the
+ *   school's on its one entry. To swap one:
  *
  *     1. Put the image in  public/letterbox/
- *     2. Change  logo: ""  to  logo: "/letterbox/lucknow.png"
+ *     2. Point `logo` at it, e.g.  logo: "/letterbox/lu-logo.png"
  *
- *   Nothing else moves when you do — the box is already the right size, so
- *   the page won't jump. Remove the `logo` line entirely and the space goes
- *   away with it.
+ *   `logo: ""` draws an empty 72px square instead, holding the space for a
+ *   crest that hasn't arrived. Remove the `logo` line entirely and the space
+ *   goes away with it. Either way nothing below moves.
  * ─────────────────────────────────────────────────────────────────
  *
  *   name     the folder's name, and the heading when you open it
@@ -32,7 +32,7 @@ export const EDUCATION = {
   lucknow: {
     name: "University of Lucknow",
 
-    logo: "",
+    logo: "/letterbox/lu-logo.png",
 
     meta: [
       "Bachelor of Technology — Computer Science (Artificial Intelligence)",
@@ -61,7 +61,7 @@ export const EDUCATION = {
   nirmala: {
     name: "Nirmala Convent Inter College",
 
-    logo: "",
+    logo: "/letterbox/ncic-logo.png",
 
     tagline: ["ISC · Class XI – XII · 90%", "ICSE · Class I – X · 92%"],
 
