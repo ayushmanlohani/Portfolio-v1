@@ -45,24 +45,13 @@ export type Item = {
 };
 
 export const FOLDERS: Record<string, Item[]> = {
-  // Projects is empty here on purpose. Every project has a page of its own —
-  // see content/projects.ts — so nothing in Projects is a plain text file.
-  // Adding an entry here would put a text file alongside the project folders,
+  // Projects and Experience are empty here on purpose. Everything in them has
+  // a page of its own — see content/pages.ts, which points at
+  // content/unitwise.ts, content/sentinel.ts and content/experience.ts.
+  // Adding an entry below would put a plain text file alongside those folders,
   // which is fine if you ever want one.
   projects: [],
-
-  experience: [
-    {
-      name: "Research Assistant",
-      type: "Current role",
-      // NEEDS YOUR WORDS — where, since when, and what you actually do there.
-      // This is the one thing I couldn't verify from anything you'd written,
-      // so it's deliberately vague. Replace the whole paragraph.
-      text: [
-        `Currently working as a Research Assistant.`,
-      ],
-    },
-  ],
+  experience: [],
 
   education: [
     {

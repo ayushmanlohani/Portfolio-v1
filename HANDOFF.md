@@ -70,25 +70,35 @@ Don't reintroduce any of it.
   Icons view** — 48px icons on a grid, matching the desktop; there is no
   Details view, no Name/Type header and no Type column) and
   double-clicking a row opens that item's writing **in the same window** —
-  Back walks straight out of it. Contact has 3, Experience, Education and
-  Resume 1 each. About Me is the exception: it still draws its own pane
-  instead of a listing, which is what an absent `children` means.
+  Back walks straight out of it. Contact has 3, Education and Resume 1 each.
+  About Me is the exception: it still draws its own pane instead of a listing,
+  which is what an absent `children` means.
   **The grid reflows on resize with no JavaScript** — `.ex-tiles` is
   `repeat(auto-fill, minmax(96px, 1fr))`, so the browser re-fits the tiles as
   the window changes. Measured: 1240px wide → 1 row, 887px → 2, 520px → 3.
   Don't add a ResizeObserver for this; there is nothing for it to do.
   **Those words are all in `content/folders.ts`** and several are marked
   `NEEDS YOUR WORDS` — see below.
-- **Projects holds nothing but project folders.** Two of them, **Unitwise** and
-  **RBI Sentinel**, and no text files at all — `FOLDERS.projects` is an empty
-  array on purpose. A project folder opens to a page: centred Bodoni name,
-  two-line tagline, Win7 buttons out to the live app and the repo, headed
-  sections, and a **tech-stack row of logos that name themselves on hover**.
-  - Words live one file per project — `content/unitwise.ts`,
-    `content/sentinel.ts` — and `content/projects.ts` is the short registry
-    that turns each into a folder. **Project three is a copy, an import and a
-    line.**
-  - Both were written off the actual repos, which corrected a real error:
+- **Projects and Experience hold nothing but page folders.** Projects has
+  **Unitwise** and **RBI Sentinel**; Experience has **Research Assistant**,
+  **AI & Machine Learning Intern** and **Machine Learning & Data Science
+  Intern**. No text files in either — both are empty arrays in
+  `content/folders.ts` on purpose. Such a folder opens to a page: centred
+  Bodoni name, optional grey meta lines, two-line tagline, Win7 link buttons,
+  headed sections, and a **row of logos that name themselves on hover**.
+  - **`content/pages.ts` is the registry** — one map of folder id → entries,
+    plus the `Page` type. Anything not in it falls back to
+    `content/folders.ts` and stays a plain text file. Explorer resolves a page
+    by splitting the id on `/`, so the registry is the only declaration.
+  - Long things get a file each (`content/unitwise.ts`, `content/sentinel.ts`);
+    short related things share one (`content/experience.ts` holds all three
+    roles). **Project three is a copy, an import and a line; job four is one
+    entry in the experience file and nothing else.**
+  - Two optional fields exist for jobs: **`meta`** (grey employer/date lines
+    under the rule) and **`stackHeading`** (jobs say "Worked with", projects
+    default to "Built with" — you don't *build with* a job).
+  - Both projects were written off the actual repos, which corrected a real
+    error:
     **Unitwise is a RAG chatbot for syllabus questions, not a unit converter**,
     which is what the name suggests and what an earlier placeholder claimed.
     Don't write a project's copy from its name.
@@ -214,8 +224,9 @@ Don't reintroduce any of it.
 | **`content/folders.ts`** | **What's inside every other folder. Add an item = copy a block, change the words.** |
 | **`content/unitwise.ts`** | **The Unitwise page — tagline, sections, stack. Edit this to change it.** |
 | **`content/sentinel.ts`** | **The RBI Sentinel page. Same shape as unitwise.ts.** |
-| `content/projects.ts` | Which projects get a page of their own. One line per project. |
-| `components/win7/folders/Project.tsx` | Renders a project page from its content file. |
+| **`content/experience.ts`** | **All three roles. Add a job = one entry here.** |
+| `content/pages.ts` | The registry: which folders hold pages, plus the `Page` type. |
+| `components/win7/folders/Project.tsx` | Renders any page — project or job — from its content. |
 | `components/win7/folders/Tech.tsx` | One stack logo + its hover/focus tooltip. |
 | `components/win7/folders/techLogos.ts` | Inlined Simple Icons paths. Generated, not hand-drawn. |
 | `components/win7/folders/Doc.tsx` | The one prose renderer. Heading, rule, paragraphs, `[words](url)` → links. About Me and every item go through it. |
@@ -277,8 +288,16 @@ font weight he mistook for a font family.
 - **The words in `content/folders.ts` are half his and half placeholder.**
   Every line I could verify came out of his own `content/about.ts`; everything
   else carries a `NEEDS YOUR WORDS` comment right above it. Specifically:
-  - **Experience / Research Assistant** — one vague sentence. Where, since
-    when, and what he actually does are all unknown. Rewrite entirely.
+  - **Experience / Research Assistant is a STUB and the biggest gap.** He asked
+    me to write it from "my chat history" about his YOLO 26n work — **it isn't
+    there.** All seven Claude Code sessions on this machine are this portfolio;
+    a transcript search for YOLO, ultralytics and "research assistant" returned
+    nothing, and memory has only the two files about working style. The single
+    verifiable line is one sentence in `content/about.ts`. So the page says
+    only what is known and its `meta` reads "Where — needed". **Don't invent a
+    research role for him** — the two internships next to it are transcribed
+    off his CV and real, and a fabricated one sitting beside them is worse than
+    an obvious blank. Ask.
   - **Resume** — links to `#` because there is no PDF. Drop one in
     `public/letterbox/` and swap the `#` for its path.
   - **Contact / Email** — deliberately left at `#`. His address was not put on

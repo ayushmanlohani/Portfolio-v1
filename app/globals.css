@@ -1594,6 +1594,22 @@ body {
   max-width: calc(640 * var(--px));
 }
 
+/* Employer and dates on a job page. Sits between the rule and the tagline,
+   small and grey — it is a caption on the name above it, not a claim of its
+   own, so it stays quieter than everything around it. */
+.project-meta {
+  margin: calc(-8 * var(--px)) 0 calc(18 * var(--px));
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(12 * var(--px));
+  line-height: 1.6;
+  text-align: center;
+  color: #7d868e;
+}
+
+.project-meta span {
+  display: block;
+}
+
 /* The two lines under the name. Centred with the name rather than left with
    the body, because it belongs to the masthead — it is the subtitle, not the
    first paragraph. Each line is its own block so the break lands where it was

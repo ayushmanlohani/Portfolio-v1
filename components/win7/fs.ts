@@ -8,7 +8,7 @@ import {
   StarIcon,
 } from "@/components/win7/icons";
 import { FOLDERS } from "@/content/folders";
-import { PROJECTS } from "@/content/projects";
+import { PAGES } from "@/content/pages";
 
 /**
  * The file tree.
@@ -59,12 +59,15 @@ export const DESKTOP_FOLDERS = [
 const fileId = (parent: string, name: string) =>
   `${parent}/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 
-/** A project big enough for its own page is a folder, not a text file. */
-export const projectId = (key: string) => `projects/${key}`;
+/**
+ * A thing with a page of its own is a folder, not a text file — you open it
+ * and you are somewhere, and Back walks out again.
+ */
+export const pageId = (parent: string, key: string) => `${parent}/${key}`;
 
 /**
  * What a desktop folder contains, gathered from both content files: the
- * projects that have a page of their own first, then the plain text items.
+ * entries that have a page of their own first, then the plain text items.
  *
  * `undefined` rather than an empty array when there is nothing, because the
  * two mean different things — an empty array is "empty folder", `undefined` is
@@ -72,9 +75,9 @@ export const projectId = (key: string) => `projects/${key}`;
  * draws its own pane instead of a listing.
  */
 function childrenOf(id: string): string[] | undefined {
-  const projects = id === "projects" ? Object.keys(PROJECTS).map(projectId) : [];
+  const pages = Object.keys(PAGES[id] ?? {}).map((key) => pageId(id, key));
   const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
-  const all = [...projects, ...items];
+  const all = [...pages, ...items];
   return all.length > 0 ? all : undefined;
 }
 
@@ -93,17 +96,21 @@ const folder = (id: string, label: string): FsNode => ({
 });
 
 /**
- * One folder per project page. It is a folder rather than a file because that
- * is what it behaves like — you open it and you are somewhere, and Back walks
- * back out. It just happens to have no listing inside.
+ * One folder per page, across every folder that has them. Named by the `name`
+ * in its content file, so renaming a project or a job is a one-word edit there
+ * and nothing here changes.
  */
-const PROJECT_FOLDERS: FsNode[] = Object.entries(PROJECTS).map(([key, project]) => ({
-  id: projectId(key),
-  label: project.name,
-  Icon: FolderIcon,
-  kind: "folder",
-  type: "File folder",
-}));
+const PAGE_FOLDERS: FsNode[] = Object.entries(PAGES).flatMap(([parent, entries]) =>
+  Object.entries(entries).map(
+    ([key, page]): FsNode => ({
+      id: pageId(parent, key),
+      label: page.name,
+      Icon: FolderIcon,
+      kind: "folder",
+      type: "File folder",
+    }),
+  ),
+);
 
 /** One node per item in content/folders.ts. */
 const FILES: FsNode[] = Object.entries(FOLDERS).flatMap(([parent, items]) =>
@@ -176,7 +183,7 @@ const NODE_LIST: FsNode[] = [
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },
 
-  ...PROJECT_FOLDERS,
+  ...PAGE_FOLDERS,
   ...FILES,
 ];
 

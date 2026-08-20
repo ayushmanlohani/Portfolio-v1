@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { About } from "@/components/win7/folders/About";
 import { Doc } from "@/components/win7/folders/Doc";
 import { Project } from "@/components/win7/folders/Project";
-import { contents, node, projectId, TREE } from "@/components/win7/fs";
-import { PROJECTS } from "@/content/projects";
+import { contents, node, TREE } from "@/components/win7/fs";
+import { PAGES } from "@/content/pages";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { useRecycleBin } from "@/store/recycleBin";
@@ -202,12 +202,14 @@ function Contents({
   if (view === "about") return <About />;
   if (view === "network") return <Network />;
 
-  // A project with a page of its own. Matched by id rather than by a flag on
-  // the node, so content/projects.ts stays the only place a project is
-  // declared. A plain text item under projects/ shares the prefix and simply
-  // isn't in the map, so it falls through to the Doc below.
-  const project = Object.keys(PROJECTS).find((key) => projectId(key) === view);
-  if (project) return <Project data={PROJECTS[project]} />;
+  // Anything with a page of its own — a project, a job. The id is
+  // `<folder>/<key>`, so splitting it is the whole lookup, and
+  // content/pages.ts stays the only place a page is declared. A plain text
+  // item shares that shape, simply isn't in the map, and falls through to the
+  // Doc below.
+  const [parent, key] = view.split("/");
+  const page = key ? PAGES[parent]?.[key] : undefined;
+  if (page) return <Project data={page} />;
 
   // An item from content/folders.ts. Opening one replaces the listing with its
   // words, the same way About Me does — a file "opens" into the window it was

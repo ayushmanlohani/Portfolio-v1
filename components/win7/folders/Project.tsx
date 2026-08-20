@@ -1,6 +1,6 @@
 import { inline } from "@/components/win7/folders/Doc";
 import { TechChip } from "@/components/win7/folders/Tech";
-import type { Project as ProjectData } from "@/content/projects";
+import type { Page } from "@/content/pages";
 
 /**
  * A project's page — what you see when you open its folder.
@@ -16,11 +16,19 @@ import type { Project as ProjectData } from "@/content/projects";
  *
  * Every word comes from content/, never from here.
  */
-export function Project({ data }: { data: ProjectData }) {
+export function Project({ data }: { data: Page }) {
   return (
     <article className="about project">
       <h1 className="about-name">{data.name}</h1>
       <div className="about-rule" />
+
+      {data.meta && (
+        <p className="project-meta">
+          {data.meta.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </p>
+      )}
 
       <p className="project-tagline">
         {data.tagline.map((line) => (
@@ -58,7 +66,7 @@ export function Project({ data }: { data: ProjectData }) {
         ))}
 
         <section className="project-section">
-          <h2 className="project-heading">Built with</h2>
+          <h2 className="project-heading">{data.stackHeading ?? "Built with"}</h2>
           <div className="project-stack">
             {data.stack.map((tech) => (
               <TechChip key={tech.id} id={tech.id} name={tech.name} />
