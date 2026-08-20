@@ -1,20 +1,34 @@
 "use client";
 
+import { Calculator } from "@/components/win7/Calculator";
 import { useDesk } from "@/components/win7/desk";
 import { Explorer } from "@/components/win7/Explorer";
+import { node } from "@/components/win7/fs";
+import { Notepad } from "@/components/win7/Notepad";
 import { Terminal } from "@/components/win7/Terminal";
-import { TERMINAL_ID } from "@/components/win7/apps";
+import { CALC_ID, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
 import { Win7Window } from "@/components/win7/Win7Window";
-import { useWindowStore } from "@/store/windows";
+import { useWindowStore, type OpenWindow } from "@/store/windows";
 
 /**
  * Renders every open window. Sits between the desktop icons and the taskbar,
  * so windows cover the icons but never the taskbar — same order as Windows.
  *
  * Every folder opens the same Explorer chrome; what distinguishes them is
- * their contents, which don't exist yet. The console is the one window that
- * isn't a folder.
+ * their contents. The apps are the exceptions, picked out by id — plus saved
+ * text files, which are picked out by their node's kind so that every file
+ * Notepad ever writes opens in Notepad without being listed here.
  */
+
+/** What fills a window, decided by its id. */
+function contentFor(win: OpenWindow) {
+  const { id } = win;
+  if (id === TERMINAL_ID) return <Terminal />;
+  if (id === CALC_ID) return <Calculator />;
+  if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
+  if (node(id)?.kind === "file") return <Notepad windowId={id} fileId={id} />;
+  return <Explorer id={id} title={win.title} />;
+}
 export function WindowLayer() {
   const windows = useWindowStore((s) => s.windows);
   const topZ = useWindowStore((s) => s.topZ);
@@ -34,7 +48,7 @@ export function WindowLayer() {
           desk={desk}
           focused={win.z === topZ && !win.minimized}
         >
-          {win.id === TERMINAL_ID ? <Terminal /> : <Explorer id={win.id} title={win.title} />}
+          {contentFor(win)}
         </Win7Window>
       ))}
     </div>

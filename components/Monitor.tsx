@@ -16,6 +16,9 @@ export function Monitor({ children }: { children: React.ReactNode }) {
         <div className="crt-screen">
           {children}
           <div className="crt-glass" />
+          {/* Driven by the brightness slider in the battery flyout. It sits
+              above everything, taskbar included, the way real dimming does. */}
+          <div className="crt-dim" />
         </div>
 
         <div className="crt-chin">

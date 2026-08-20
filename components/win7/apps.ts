@@ -1,3 +1,9 @@
+"use client";
+
+import { readDesk } from "@/components/win7/desk";
+import { node } from "@/components/win7/fs";
+import { useWindowStore } from "@/store/windows";
+
 /**
  * Windows that aren't folders.
  *
@@ -13,3 +19,51 @@ export const TERMINAL_SIZE = { width: 660, height: 420 };
 
 /** What the caption bar reads. */
 export const TERMINAL_TITLE = "Ayush";
+
+export const CALC_ID = "calculator";
+export const CALC_SIZE = { width: 320, height: 448 };
+
+export const NOTEPAD_ID = "notepad";
+export const NOTEPAD_SIZE = { width: 620, height: 460 };
+
+/** What a folder window opens at. */
+const FOLDER_SIZE = { width: 900, height: 600 };
+
+/**
+ * Opens any window by id, folder or app, at the size and title that id calls
+ * for. The store's own `open` already handles the re-open case: it
+ * un-minimises and refocuses rather than spawning a second window.
+ *
+ * Called outside a component in places — a pinned taskbar button, a context
+ * menu — so it reaches the store through `getState()` rather than a hook.
+ */
+export function launchWindow(id: string) {
+  const { open } = useWindowStore.getState();
+  const desk = readDesk();
+
+  if (id === TERMINAL_ID) {
+    open(id, { title: TERMINAL_TITLE, ...TERMINAL_SIZE, desk });
+    return;
+  }
+
+  if (id === CALC_ID) {
+    open(id, { title: "Calculator", ...CALC_SIZE, desk });
+    return;
+  }
+
+  if (id === NOTEPAD_ID) {
+    open(id, { title: "Untitled - Notepad", ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  const item = node(id);
+
+  // A saved text file opens in Notepad rather than Explorer. The window is
+  // keyed by the file's own id, so the same file can't open twice.
+  if (item?.kind === "file") {
+    open(id, { title: `${item.label} - Notepad`, ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  open(id, { title: item?.label ?? id, ...FOLDER_SIZE, desk });
+}

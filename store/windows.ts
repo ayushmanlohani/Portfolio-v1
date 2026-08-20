@@ -42,6 +42,18 @@ type WindowStore = {
   topZ: number;
   /** Number of windows opened this session — drives the cascade offset. */
   spawnCount: number;
+  /**
+   * Ids kept on the taskbar whether or not they are running. A pinned id with
+   * no window draws a button that launches it; a pinned id that IS running
+   * shares the one button its window already has, the way Windows merges the
+   * two rather than showing the app twice.
+   *
+   * In memory only, so a reload clears it — same choice as desktop icon
+   * positions. localStorage is a few lines if that turns out to be wrong.
+   */
+  pinned: string[];
+  pin: (id: string) => void;
+  unpin: (id: string) => void;
 
   open: (id: string, options: OpenOptions) => void;
   close: (id: string) => void;
@@ -50,6 +62,8 @@ type WindowStore = {
   focus: (id: string) => void;
   setBounds: (id: string, bounds: Partial<WindowBounds>) => void;
   minimize: (id: string) => void;
+  /** Show Desktop — minimises everything, or restores it if nothing is up. */
+  toggleShowDesktop: () => void;
   restore: (id: string) => void;
   toggleMaximize: (id: string, desk: Desk) => void;
   closeAll: () => void;
@@ -92,6 +106,14 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
   windows: [],
   topZ: 10,
   spawnCount: 0,
+  pinned: [],
+
+  pin: (id) =>
+    set((state) =>
+      state.pinned.includes(id) ? state : { pinned: [...state.pinned, id] },
+    ),
+
+  unpin: (id) => set((state) => ({ pinned: state.pinned.filter((p) => p !== id) })),
 
   open: (id, { title, width, height, desk }) => {
     // Re-opening an already-open window un-minimises it and pulls it forward.
@@ -166,6 +188,15 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
     set((state) => ({
       windows: state.windows.map((w) => (w.id === id ? { ...w, minimized: true } : w)),
     })),
+
+  /** Show Desktop. Windows toggles: if everything is already down, put it back. */
+  toggleShowDesktop: () =>
+    set((state) => {
+      const anyVisible = state.windows.some((w) => !w.minimized);
+      return {
+        windows: state.windows.map((w) => ({ ...w, minimized: anyVisible })),
+      };
+    }),
 
   restore: (id) => get().focus(id),
 

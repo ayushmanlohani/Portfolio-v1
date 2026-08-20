@@ -1,6 +1,6 @@
 "use client";
 
-import { TERMINAL_ID } from "@/components/win7/apps";
+import { CALC_ID, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
 import {
   CalculatorIcon,
   FlagIcon,
@@ -47,8 +47,8 @@ const RECENT: Program[] = [
     opens: true,
   },
   { id: "getting-started", label: "Getting Started", icon: <FlagIcon className="sm-icon" /> },
-  { id: "calculator", label: "Calculator", icon: <CalculatorIcon className="sm-icon" /> },
-  { id: "notepad", label: "Notepad", icon: <NotepadIcon className="sm-icon" /> },
+  { id: CALC_ID, label: "Calculator", icon: <CalculatorIcon className="sm-icon" />, opens: true },
+  { id: NOTEPAD_ID, label: "Notepad", icon: <NotepadIcon className="sm-icon" />, opens: true },
   { id: "paint", label: "Paint", icon: <PaintIcon className="sm-icon" /> },
   { id: "snipping-tool", label: "Snipping Tool", icon: <ScissorsIcon className="sm-icon" /> },
 ];

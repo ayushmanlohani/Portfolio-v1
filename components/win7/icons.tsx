@@ -377,3 +377,73 @@ export function RecycleBinIcon({ className, full }: IconProps & { full?: boolean
     </svg>
   );
 }
+
+/** Jump-list pin. Blue enamel head, steel needle, angled the way Windows draws it. */
+export function PinIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="pin-head" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8fd0f5" />
+          <stop offset="0.45" stopColor="#3f9de0" />
+          <stop offset="1" stopColor="#1b6aa8" />
+        </linearGradient>
+      </defs>
+      <path d="M12 20 L5 28" stroke="#8d97a0" strokeWidth="2.4" strokeLinecap="round" />
+      <path
+        d="M17.5 4.5a6.2 6.2 0 0 1 8.8 8.8l-3.1 3.1a4 4 0 0 0-1 4l.6 2.2-11.6-11.6 2.2.6a4 4 0 0 0 4-1z"
+        fill="url(#pin-head)"
+        stroke="#14507f"
+        strokeWidth="1.2"
+        strokeLinejoin="round"
+      />
+      <ellipse cx="20.5" cy="9" rx="3.4" ry="2.2" fill="#fff" opacity="0.4" transform="rotate(-45 20.5 9)" />
+    </svg>
+  );
+}
+
+/** Close — Windows' red button with a white cross. */
+export function CloseIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="close-bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f4756a" />
+          <stop offset="0.48" stopColor="#dc3b2c" />
+          <stop offset="0.52" stopColor="#c62a1c" />
+          <stop offset="1" stopColor="#e35848" />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="4" width="24" height="24" rx="3" fill="url(#close-bg)" stroke="#8f1d12" />
+      <path
+        d="M11.5 11.5 20.5 20.5M20.5 11.5 11.5 20.5"
+        stroke="#fff"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** A saved .txt on the desktop — a page with a folded corner and ruled lines. */
+export function TextFileIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="txt-page" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#e6ecf2" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M6 2h13l7 7v21a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"
+        fill="url(#txt-page)"
+        stroke="#8fa3b6"
+      />
+      <path d="M19 2v7h7" fill="#cfdae5" stroke="#8fa3b6" strokeLinejoin="round" />
+      <g stroke="#9fb2c4" strokeLinecap="round">
+        <path d="M9 14h14M9 18h14M9 22h14M9 26h9" />
+      </g>
+    </svg>
+  );
+}

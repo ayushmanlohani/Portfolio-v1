@@ -133,6 +133,18 @@ body {
 
 /* Curved-glass read: barrel vignette + a specular streak off the top
    + scanlines. Sits above the OS, ignores the mouse. */
+/* Screen dimming, driven by the brightness slider in the battery flyout.
+   Above the glass and the taskbar both — a monitor dims everything on it. */
+.crt-dim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 101;
+  background: #000000;
+  opacity: var(--screen-dim, 0);
+  transition: opacity 90ms linear;
+}
+
 .crt-glass {
   position: absolute;
   inset: 0;
@@ -365,6 +377,30 @@ body {
 .ctx-label {
   flex: 1;
   min-width: 0;
+}
+
+/* ── Jump list ─────────────────────────────────────────────────
+   The taskbar's own right-click menu. Same chrome as the desktop
+   menu, but its rows carry an icon, so they are taller and the
+   gutter is wide enough to hold one.
+   ───────────────────────────────────────────────────────────── */
+
+.ctx-menu[data-jump] {
+  min-width: calc(200 * var(--px));
+  background-image: none;
+  background: #f6f6f6;
+}
+
+.ctx-menu[data-jump] .ctx-item {
+  height: calc(30 * var(--px));
+  gap: calc(9 * var(--px));
+  padding-left: calc(8 * var(--px));
+}
+
+.ctx-icon {
+  flex: none;
+  width: calc(18 * var(--px));
+  height: calc(18 * var(--px));
 }
 
 .ctx-arrow {
@@ -1007,11 +1043,518 @@ body {
   height: calc(20 * var(--px));
 }
 
+/* Pinned with nothing running: a square of just the icon, no caption. */
+.task-button[data-idle] {
+  width: calc(38 * var(--px));
+  max-width: none;
+  justify-content: center;
+  padding: 0;
+}
+
 .task-button-label {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   text-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.7);
+}
+
+/* ── Notification area (the tray) ──────────────────────────────
+   The right end of the bar: Action Center, network, battery,
+   volume, clock, and the Show Desktop sliver hard against the
+   edge. `margin-left: auto` is what pins the block right — the
+   window buttons keep whatever room is left.
+
+   Glyphs are drawn in `currentColor`, so the same SVG reads white
+   on the glass bar and blue inside a white flyout panel.
+   ───────────────────────────────────────────────────────────── */
+
+.tray {
+  position: relative;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin-left: auto;
+  padding-left: calc(6 * var(--px));
+  color: #ffffff;
+}
+
+/* Wraps a button that owns a flyout, so the popup can anchor to it. */
+.tray-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+.tray-btn {
+  display: grid;
+  place-items: center;
+  width: calc(24 * var(--px));
+  height: calc(30 * var(--px));
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  border-radius: calc(3 * var(--px));
+  cursor: default;
+  transition: background 120ms ease;
+}
+
+.tray-btn:hover,
+.tray-btn[data-open] {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.38);
+}
+
+.tray-glyph {
+  display: block;
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+}
+
+/* Only on the bar. Inside a white flyout there is nothing to lift off. */
+.tray-btn .tray-glyph {
+  filter: drop-shadow(0 calc(1 * var(--px)) calc(1 * var(--px)) rgba(0, 0, 0, 0.55));
+}
+
+.tray-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(34 * var(--px));
+  /* Holds its width before the clock mounts, so the bar doesn't jump. */
+  min-width: calc(66 * var(--px));
+  margin-left: calc(2 * var(--px));
+  border: 0;
+  padding: 0 calc(8 * var(--px));
+  background: none;
+  color: inherit;
+  border-radius: calc(3 * var(--px));
+  font-size: calc(12 * var(--px));
+  line-height: calc(15 * var(--px));
+  cursor: default;
+  text-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.7);
+  transition: background 120ms ease;
+}
+
+.tray-clock:hover,
+.tray-clock[data-open] {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.38);
+}
+
+/* Show Desktop. A bare sliver at the very edge, lit like glass on hover. */
+.show-desktop {
+  align-self: stretch;
+  width: calc(15 * var(--px));
+  margin-left: calc(6 * var(--px));
+  border: 0;
+  border-left: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.3);
+  padding: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0.04) 46%,
+    rgba(255, 255, 255, 0.1)
+  );
+  cursor: default;
+  transition: background 120ms ease;
+}
+
+.show-desktop:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Tray flyouts ──────────────────────────────────────────────
+   Win7's popups are a glass frame around a white panel. Default
+   anchoring is the right edge of the tray, which is where the
+   calendar and the network panel sit; the volume popup overrides
+   it to centre on its own icon.
+   ───────────────────────────────────────────────────────────── */
+
+.flyout {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6 * var(--px));
+  z-index: 5;
+  padding: calc(4 * var(--px));
+  border-radius: calc(6 * var(--px));
+  backdrop-filter: blur(calc(14 * var(--px))) saturate(1.4);
+  background: rgba(226, 236, 249, 0.55);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.8),
+    inset 0 0 0 calc(2 * var(--px)) rgba(120, 160, 205, 0.45),
+    0 calc(2 * var(--px)) calc(22 * var(--px)) rgba(0, 0, 0, 0.5);
+  color: #10202f;
+  cursor: default;
+  animation: sm-in 130ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Centred on the speaker icon rather than the tray edge. A negative margin
+   does it instead of a transform, because the entrance animation owns
+   `transform` and the two would cancel out. */
+.vol-fly {
+  right: auto;
+  left: 50%;
+  margin-left: calc(-34 * var(--px));
+}
+
+.cal-link {
+  color: #0b58a6;
+  text-decoration: underline;
+  text-underline-offset: calc(2 * var(--px));
+}
+
+/* ── Volume ──────────────────────────────────────────────────── */
+
+.vol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(10 * var(--px));
+  width: calc(60 * var(--px));
+  padding: calc(12 * var(--px)) 0 calc(10 * var(--px));
+  border-radius: calc(3 * var(--px));
+  background: #ffffff;
+}
+
+/* A real range input, stood on end: drag, click, arrow keys and screen
+   reader support all come free. `vertical-lr` + `rtl` is what puts the
+   maximum at the top. */
+.vol-range {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(22 * var(--px));
+  height: calc(150 * var(--px));
+  margin: 0;
+  background: none;
+  cursor: default;
+}
+
+.vol-range::-webkit-slider-runnable-track {
+  width: calc(5 * var(--px));
+  border: calc(1 * var(--px)) solid #9099a2;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(90deg, #b9c0c7, #e7ebef 45%, #f7f9fa);
+}
+
+.vol-range::-moz-range-track {
+  width: calc(5 * var(--px));
+  border: calc(1 * var(--px)) solid #9099a2;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(90deg, #b9c0c7, #e7ebef 45%, #f7f9fa);
+}
+
+/* Win7's thumb is a pentagon pointing at the track. */
+.vol-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(22 * var(--px));
+  height: calc(13 * var(--px));
+  border: calc(1 * var(--px)) solid #6f7a85;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #ffffff, #f1f4f7 48%, #dbe1e7 52%, #eef1f4);
+  clip-path: polygon(0 0, 58% 0, 100% 50%, 58% 100%, 0 100%);
+}
+
+.vol-range::-moz-range-thumb {
+  width: calc(22 * var(--px));
+  height: calc(13 * var(--px));
+  border: calc(1 * var(--px)) solid #6f7a85;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #ffffff, #f1f4f7 48%, #dbe1e7 52%, #eef1f4);
+  clip-path: polygon(0 0, 58% 0, 100% 50%, 58% 100%, 0 100%);
+}
+
+.vol-mute {
+  display: grid;
+  place-items: center;
+  width: calc(26 * var(--px));
+  height: calc(26 * var(--px));
+  border: 0;
+  padding: 0;
+  background: none;
+  border-radius: calc(3 * var(--px));
+  color: #1a6cae;
+  cursor: default;
+}
+
+.vol-mute:hover {
+  background: #dcecfb;
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #a8cdee;
+}
+
+/* ── Battery flyout ──────────────────────────────────────────── */
+
+.bat-fly {
+  width: calc(300 * var(--px));
+  border-radius: calc(3 * var(--px));
+  background: #ffffff;
+  font-size: calc(12 * var(--px));
+}
+
+.bat-fly-top {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  padding: calc(14 * var(--px)) calc(14 * var(--px)) calc(16 * var(--px));
+}
+
+.bat-fly-icon {
+  flex: none;
+  width: calc(34 * var(--px));
+  height: calc(34 * var(--px));
+}
+
+.bat-fly-pct {
+  font-size: calc(13 * var(--px));
+  color: #10202f;
+}
+
+.bat-fly-sub {
+  color: #4a5561;
+}
+
+.bat-fly-plans {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--px));
+  border: 0;
+  border-top: calc(1 * var(--px)) solid #e2e8ee;
+  margin: 0;
+  padding: calc(12 * var(--px)) calc(14 * var(--px)) calc(14 * var(--px));
+}
+
+.bat-fly-plans legend {
+  padding: 0 0 calc(8 * var(--px));
+  color: #10202f;
+}
+
+.bat-fly-plans label {
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--px));
+}
+
+/* Native radios. Windows' own control is a blue-dotted circle, which is what
+   the platform already draws — accent-color is the whole restyle. */
+.bat-fly-plans input {
+  width: calc(13 * var(--px));
+  height: calc(13 * var(--px));
+  margin: 0;
+  accent-color: #2b7fc4;
+}
+
+.bat-fly-bright {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10 * var(--px));
+  border-top: calc(1 * var(--px)) solid #e2e8ee;
+  padding: calc(12 * var(--px)) calc(14 * var(--px)) calc(16 * var(--px));
+}
+
+.bright-range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: calc(16 * var(--px));
+  margin: 0;
+  background: none;
+  cursor: default;
+}
+
+.bright-range::-webkit-slider-runnable-track {
+  height: calc(5 * var(--px));
+  border: calc(1 * var(--px)) solid #9099a2;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #b9c0c7, #e7ebef 45%, #f7f9fa);
+}
+
+.bright-range::-moz-range-track {
+  height: calc(5 * var(--px));
+  border: calc(1 * var(--px)) solid #9099a2;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #b9c0c7, #e7ebef 45%, #f7f9fa);
+}
+
+/* Same pentagon as the volume thumb, turned to point down at the track. */
+.bright-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: calc(13 * var(--px));
+  height: calc(22 * var(--px));
+  margin-top: calc(-9 * var(--px));
+  border: calc(1 * var(--px)) solid #6f7a85;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(90deg, #ffffff, #f1f4f7 48%, #dbe1e7 52%, #eef1f4);
+  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+}
+
+.bright-range::-moz-range-thumb {
+  width: calc(13 * var(--px));
+  height: calc(22 * var(--px));
+  border: calc(1 * var(--px)) solid #6f7a85;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(90deg, #ffffff, #f1f4f7 48%, #dbe1e7 52%, #eef1f4);
+  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+}
+
+/* ── Network flyout ──────────────────────────────────────────── */
+
+.net-fly {
+  width: calc(280 * var(--px));
+  padding: calc(10 * var(--px)) calc(12 * var(--px)) 0;
+  border-radius: calc(3 * var(--px));
+  background: #ffffff;
+  font-size: calc(12 * var(--px));
+}
+
+.net-fly-head {
+  color: #4a5561;
+  padding-bottom: calc(6 * var(--px));
+  border-bottom: calc(1 * var(--px)) solid #e2e8ee;
+}
+
+.net-fly-row {
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--px));
+  padding: calc(9 * var(--px)) 0;
+  color: #1a6cae;
+}
+
+.net-fly-name {
+  color: #10202f;
+  font-weight: 600;
+}
+
+.net-fly-state {
+  color: #5b6875;
+}
+
+.net-fly-foot {
+  border-top: calc(1 * var(--px)) solid #e2e8ee;
+  margin: 0 calc(-12 * var(--px));
+  padding: calc(8 * var(--px)) calc(12 * var(--px));
+  background: #f1f6fb;
+  border-radius: 0 0 calc(3 * var(--px)) calc(3 * var(--px));
+}
+
+/* ── Date and time flyout ────────────────────────────────────── */
+
+.cal {
+  width: calc(340 * var(--px));
+  border-radius: calc(3 * var(--px));
+  background: #ffffff;
+  font-size: calc(12 * var(--px));
+}
+
+.cal-today {
+  padding: calc(9 * var(--px)) 0;
+  text-align: center;
+  color: #0b58a6;
+  font-size: calc(13 * var(--px));
+}
+
+.cal-body {
+  display: grid;
+  grid-template-columns: 1fr calc(124 * var(--px));
+  align-items: start;
+  padding: 0 calc(10 * var(--px)) calc(10 * var(--px));
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: calc(6 * var(--px));
+}
+
+.cal-page {
+  display: grid;
+  place-items: center;
+  width: calc(22 * var(--px));
+  height: calc(20 * var(--px));
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #2b3743;
+  border-radius: calc(3 * var(--px));
+  cursor: default;
+}
+
+.cal-page svg {
+  width: calc(13 * var(--px));
+  height: calc(13 * var(--px));
+}
+
+.cal-page:hover {
+  background: #dcecfb;
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #a8cdee;
+}
+
+.cal-title {
+  font-weight: 600;
+  color: #1c2833;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: calc(1 * var(--px));
+}
+
+.cal-dow {
+  padding-bottom: calc(3 * var(--px));
+  border-bottom: calc(1 * var(--px)) solid #dfe6ed;
+  color: #6b7883;
+  text-align: center;
+}
+
+.cal-day {
+  display: grid;
+  place-items: center;
+  height: calc(22 * var(--px));
+  border: calc(1 * var(--px)) dotted transparent;
+  color: #1c2833;
+}
+
+.cal-day[data-outside] {
+  color: #b3bcc4;
+}
+
+/* Windows marks today with the dotted focus box, not a filled cell. */
+.cal-day[data-today] {
+  border-color: #6f9fd0;
+  color: #0b58a6;
+}
+
+.cal-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  padding-top: calc(4 * var(--px));
+}
+
+.cal-clock {
+  width: calc(104 * var(--px));
+  height: calc(104 * var(--px));
+}
+
+.cal-digital {
+  color: #2b3743;
+}
+
+.cal-foot {
+  border-top: calc(1 * var(--px)) solid #e2e8ee;
+  padding: calc(8 * var(--px));
+  text-align: center;
+  background: #f1f6fb;
+  border-radius: 0 0 calc(3 * var(--px)) calc(3 * var(--px));
 }
 
 /* ── Explorer ──────────────────────────────────────────────────
@@ -1682,4 +2225,305 @@ body {
 .desktop-icons {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* ── App menu bar ──────────────────────────────────────────────
+   The File/Edit/View strip Calculator and Notepad both wear. Win7
+   draws it flat on a pale band, not as glass.
+   ───────────────────────────────────────────────────────────── */
+
+.app-menu {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: calc(21 * var(--px));
+  padding: 0 calc(2 * var(--px));
+  background: linear-gradient(180deg, #f4f8fb 0%, #e9eff5 100%);
+  border-bottom: calc(1 * var(--px)) solid #d3dbe3;
+  font-size: calc(12 * var(--px));
+}
+
+.app-menu-item {
+  height: calc(19 * var(--px));
+  padding: 0 calc(8 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(2 * var(--px));
+  background: none;
+  color: #12222f;
+  font: inherit;
+  cursor: default;
+}
+
+.app-menu-item:hover:not([data-disabled]),
+.app-menu-item[data-open] {
+  background: linear-gradient(180deg, #eaf5fe 0%, #cfe8fb 100%);
+  border-color: #8ec2e8;
+}
+
+.app-menu-item[data-disabled] {
+  color: #a4adb6;
+}
+
+/* ── Calculator ────────────────────────────────────────────────
+   Win7's Standard view: a menu strip, the readout, then a 5×6 key
+   grid where = is two rows tall and 0 is two columns wide.
+   ───────────────────────────────────────────────────────────── */
+
+.calc {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #eef2f6;
+  font-size: calc(12 * var(--px));
+  color: #12222f;
+  cursor: default;
+  user-select: none;
+}
+
+.calc-screen {
+  flex: none;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  height: calc(56 * var(--px));
+  margin: calc(8 * var(--px));
+  padding: calc(6 * var(--px)) calc(8 * var(--px));
+  border: calc(1 * var(--px)) solid #a8b6c2;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #eef3f7 0%, #ffffff 22%, #ffffff 100%);
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.12);
+}
+
+/* The expression line, pinned to the top of the readout. Absolute rather than
+   in the flex flow so the number below stays hard against the bottom edge
+   whether or not there is anything to show up here. */
+.calc-expression {
+  position: absolute;
+  top: calc(5 * var(--px));
+  left: calc(8 * var(--px));
+  right: calc(8 * var(--px));
+  min-height: calc(13 * var(--px));
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: calc(11 * var(--px));
+  color: #6b7a88;
+}
+
+/* Windows' little memory flag, bottom-left of the readout. */
+.calc-memory {
+  position: absolute;
+  left: calc(8 * var(--px));
+  bottom: calc(6 * var(--px));
+  min-width: calc(16 * var(--px));
+  color: #3a4a58;
+  font-size: calc(11 * var(--px));
+}
+
+.calc-display {
+  overflow: hidden;
+  font-size: calc(26 * var(--px));
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.calc-display[data-error] {
+  font-size: calc(14 * var(--px));
+}
+
+.calc-keys {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 1fr;
+  gap: calc(5 * var(--px));
+  padding: 0 calc(8 * var(--px)) calc(8 * var(--px));
+}
+
+.calc-key {
+  border: calc(1 * var(--px)) solid #b3bfc9;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(180deg, #ffffff 0%, #f2f6f9 48%, #e6ecf1 52%, #f3f7fa 100%);
+  color: #12222f;
+  font: inherit;
+  font-size: calc(13 * var(--px));
+  cursor: default;
+  transition: background 90ms ease;
+}
+
+.calc-key:hover {
+  background: linear-gradient(180deg, #f4fbff 0%, #dceffd 48%, #c9e6fb 52%, #e2f3fe 100%);
+  border-color: #7fb4dd;
+}
+
+.calc-key:active {
+  background: linear-gradient(180deg, #cfe6f7 0%, #b9daf2 100%);
+  border-color: #6ba3d0;
+}
+
+/* Memory and function keys read quieter than the digits, same as Windows. */
+.calc-key[data-kind="memory"],
+.calc-key[data-kind="fn"] {
+  color: #45535f;
+  font-size: calc(12 * var(--px));
+}
+
+.calc-key[data-kind="op"],
+.calc-key[data-kind="equals"] {
+  font-size: calc(15 * var(--px));
+}
+
+.calc-key[data-span="wide"] {
+  grid-column: span 2;
+}
+
+.calc-key[data-span="tall"] {
+  grid-row: span 2;
+}
+
+/* ── Notepad ───────────────────────────────────────────────────
+   A menu strip, the writing surface, and Ln/Col along the foot.
+   ───────────────────────────────────────────────────────────── */
+
+.np {
+  /* The Save As box is absolutely placed against this, not the desktop. */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+  font-size: calc(12 * var(--px));
+  color: #12222f;
+}
+
+.np-file {
+  position: relative;
+}
+
+/* The File menu reuses the desktop menu's chrome, dropped below the strip. */
+.np-file-menu {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  min-width: calc(150 * var(--px));
+}
+
+.np-area {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  padding: calc(2 * var(--px)) calc(4 * var(--px));
+  background: #ffffff;
+  color: #12222f;
+  /* Notepad's own face, and it does not wrap by default. */
+  font-family: Consolas, "Lucida Console", monospace;
+  font-size: calc(13 * var(--px));
+  line-height: calc(17 * var(--px));
+  resize: none;
+  outline: none;
+  white-space: pre;
+  overflow: auto;
+}
+
+.np-status {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  height: calc(23 * var(--px));
+  align-items: center;
+  padding: 0 calc(16 * var(--px));
+  border-top: calc(1 * var(--px)) solid #d3dbe3;
+  background: #f1f4f7;
+  color: #45535f;
+}
+
+/* ── Save As ───────────────────────────────────────────────────
+   Modal inside the window, not over the whole desktop: Windows
+   dims nothing, it just blocks its own parent.
+   ───────────────────────────────────────────────────────────── */
+
+.np-dialog-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 34, 48, 0.18);
+}
+
+.np-dialog {
+  width: calc(320 * var(--px));
+  border: calc(1 * var(--px)) solid #6b8ba8;
+  border-radius: calc(4 * var(--px));
+  background: #f0f4f8;
+  box-shadow: 0 calc(4 * var(--px)) calc(18 * var(--px)) rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.np-dialog-caption {
+  height: calc(26 * var(--px));
+  display: flex;
+  align-items: center;
+  padding: 0 calc(10 * var(--px));
+  background: linear-gradient(180deg, #f7fbff 0%, #dbe8f4 100%);
+  border-bottom: calc(1 * var(--px)) solid #c3d2df;
+  font-weight: 600;
+}
+
+.np-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--px));
+  padding: calc(14 * var(--px)) calc(14 * var(--px)) calc(10 * var(--px));
+}
+
+.np-dialog-input {
+  height: calc(24 * var(--px));
+  padding: 0 calc(7 * var(--px));
+  border: calc(1 * var(--px)) solid #9fb3c4;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  color: #12222f;
+  font: inherit;
+  outline: none;
+}
+
+.np-dialog-input:focus {
+  border-color: #4a90c8;
+  box-shadow: 0 0 0 calc(2 * var(--px)) rgba(90, 160, 215, 0.28);
+}
+
+.np-dialog-where {
+  margin: 0;
+  color: #5b6875;
+}
+
+.np-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: calc(8 * var(--px));
+  padding: 0 calc(14 * var(--px)) calc(14 * var(--px));
+}
+
+.np-dialog-btn {
+  min-width: calc(76 * var(--px));
+  height: calc(24 * var(--px));
+  border: calc(1 * var(--px)) solid #a8b6c2;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(180deg, #ffffff 0%, #f2f6f9 48%, #e6ecf1 52%, #f3f7fa 100%);
+  color: #12222f;
+  font: inherit;
+  cursor: default;
+}
+
+.np-dialog-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #f4fbff 0%, #dceffd 48%, #c9e6fb 52%, #e2f3fe 100%);
+  border-color: #7fb4dd;
+}
+
+.np-dialog-btn:disabled {
+  color: #a4adb6;
 }

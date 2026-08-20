@@ -5,6 +5,7 @@ import {
   NetworkIcon,
   RecycleBinIcon,
   StarIcon,
+  TextFileIcon,
 } from "@/components/win7/icons";
 
 /**
@@ -20,7 +21,7 @@ import {
  * what a place shows when you open it.
  */
 
-export type NodeKind = "folder" | "drive" | "bin" | "computer" | "network" | "group";
+export type NodeKind = "folder" | "drive" | "bin" | "computer" | "network" | "group" | "file";
 
 export type FsNode = {
   id: string;
@@ -116,6 +117,29 @@ const NODE_LIST: FsNode[] = [
 export const NODES = new Map(NODE_LIST.map((n) => [n.id, n]));
 
 export const node = (id: string) => NODES.get(id);
+
+/**
+ * Adds a text file saved by Notepad to the tree, on the Desktop.
+ *
+ * It goes into the same map every other place lives in, rather than a second
+ * list the desktop and Explorer would each have to merge: `node()` and
+ * `contents()` then keep working untouched, and a saved file is deletable,
+ * restorable and listable exactly like a folder. `store/files.ts` owns the
+ * text and is what components subscribe to for the re-render.
+ */
+export function registerFile(id: string, name: string) {
+  NODES.set(id, {
+    id,
+    label: name,
+    Icon: TextFileIcon,
+    kind: "file",
+    deletable: true,
+    type: "Text Document",
+  });
+
+  const desktop = NODES.get("desktop")!;
+  desktop.children = [...(desktop.children ?? []), id];
+}
 
 /**
  * What a place contains right now, with anything in the Recycle Bin taken out
