@@ -2,12 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { CALC_ID, launchWindow, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
+import {
+  CALC_ID,
+  launchWindow,
+  NOTEPAD_ID,
+  PDF_PREFIX,
+  PHOTOS_PREFIX,
+  TERMINAL_ID,
+  WMP_ID,
+  WMP_TITLE,
+} from "@/components/win7/apps";
 import { node } from "@/components/win7/fs";
 import {
   CalculatorIcon,
   FolderIcon,
+  MediaPlayerIcon,
   NotepadIcon,
+  PdfIcon,
+  PhotoViewerIcon,
   TerminalIcon,
 } from "@/components/win7/icons";
 import { StartMenu } from "@/components/win7/StartMenu";
@@ -21,6 +33,9 @@ const TaskIcon = ({ id }: { id: string }) => {
   if (id === TERMINAL_ID) return <TerminalIcon className="task-button-icon" />;
   if (id === CALC_ID) return <CalculatorIcon className="task-button-icon" />;
   if (id === NOTEPAD_ID) return <NotepadIcon className="task-button-icon" />;
+  if (id === WMP_ID) return <MediaPlayerIcon className="task-button-icon" />;
+  if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewerIcon className="task-button-icon" />;
+  if (id.startsWith(PDF_PREFIX)) return <PdfIcon className="task-button-icon" />;
 
   const Icon = node(id)?.Icon ?? FolderIcon;
   return <Icon className="task-button-icon" />;
@@ -31,6 +46,7 @@ const APP_NAMES: Record<string, string> = {
   [TERMINAL_ID]: "Command Prompt",
   [CALC_ID]: "Calculator",
   [NOTEPAD_ID]: "Notepad",
+  [WMP_ID]: WMP_TITLE,
 };
 
 const taskLabel = (id: string) => APP_NAMES[id] ?? node(id)?.label ?? id;

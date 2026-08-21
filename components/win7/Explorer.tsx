@@ -7,7 +7,9 @@ import { Contact } from "@/components/win7/folders/Contact";
 import { Doc } from "@/components/win7/folders/Doc";
 import { Project } from "@/components/win7/folders/Project";
 import { Resume } from "@/components/win7/folders/Resume";
+import { launchWindow } from "@/components/win7/apps";
 import { contents, crumbIds, node, TREE } from "@/components/win7/fs";
+import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { RenameField } from "@/components/win7/RenameField";
@@ -91,6 +93,13 @@ export function Explorer({ id, title }: { id: string; title: string }) {
   // `to`, not `id` — the folder this window IS arrives as a prop by that name,
   // and shadowing it here would be one rename away from a very quiet bug.
   function go(to: string) {
+    // A picture or a PDF is not a place. Walking into one would show an empty
+    // folder; it opens in its own viewer instead, and this window stays put.
+    if (to.startsWith(PHOTOS_PREFIX) || to.startsWith(PDF_PREFIX)) {
+      launchWindow(to);
+      return;
+    }
+
     if (to === view) return;
     // Anything ahead of the cursor is discarded, same as a browser.
     const next = [...history.slice(0, at + 1), to];

@@ -2674,6 +2674,11 @@ img.project-crest {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(calc(96 * var(--px)), 1fr));
   align-items: start;
+  /* Rows keep their own height instead of splitting the leftover space of the
+     stretched grid below. Without this a folder with two rows of items opened
+     with a hole between them — invisible until Pictures became the first
+     folder here with more than one row. */
+  align-content: start;
   gap: calc(4 * var(--px));
   padding: calc(4 * var(--px));
   /* The marquee needs bare space to start from, and a grid only grows as
@@ -3119,4 +3124,986 @@ img.project-crest {
 
 .win7-dialog-btn:disabled {
   color: #a4adb6;
+}
+
+/* ── Windows Media Player ──────────────────────────────────────
+   Four bands stacked in the client area: address, menu, content,
+   transport. Only the content band grows, so the controls stay
+   pinned to the bottom edge at every window size.
+   ───────────────────────────────────────────────────────────── */
+
+.wmp {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  font-size: calc(12 * var(--px));
+  color: #1a2430;
+  background: #ffffff;
+}
+
+.wmp-address {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(8 * var(--px));
+  height: calc(46 * var(--px));
+  padding: 0 calc(10 * var(--px));
+  background: linear-gradient(180deg, #fdfeff, #eef3f9);
+  border-bottom: calc(1 * var(--px)) solid #c3d2e0;
+}
+
+.wmp-nav {
+  display: flex;
+  gap: calc(4 * var(--px));
+}
+
+/* The two round glass buttons WMP borrows from Explorer. */
+.wmp-nav-btn {
+  width: calc(26 * var(--px));
+  height: calc(26 * var(--px));
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  border: calc(1 * var(--px)) solid #9db4cb;
+  background: radial-gradient(circle at 50% 28%, #ffffff, #dfeaf6 62%, #b9cde0);
+  color: #26527d;
+  cursor: pointer;
+}
+
+.wmp-nav-btn svg {
+  width: calc(14 * var(--px));
+  height: calc(14 * var(--px));
+}
+
+.wmp-nav-btn:hover:not(:disabled) {
+  border-color: #6f9dc9;
+  background: radial-gradient(circle at 50% 28%, #ffffff, #e9f5ff 60%, #a9d2f2);
+}
+
+.wmp-nav-btn:disabled {
+  color: #9fb0c1;
+  border-color: #cbd7e3;
+  background: radial-gradient(circle at 50% 28%, #fbfcfe, #eef2f6 62%, #dfe6ed);
+  cursor: default;
+}
+
+.wmp-crumbs {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.wmp-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding-right: calc(6 * var(--px));
+  font-size: calc(15 * var(--px));
+  color: #14385e;
+  white-space: nowrap;
+}
+
+/* The blue chevron between crumbs, drawn rather than typed so it keeps its
+   weight at any --px. */
+.wmp-crumb-arrow {
+  width: 0;
+  height: 0;
+  border-left: calc(5 * var(--px)) solid #2f6fa8;
+  border-top: calc(4 * var(--px)) solid transparent;
+  border-bottom: calc(4 * var(--px)) solid transparent;
+}
+
+.wmp-menu {
+  position: relative;
+  z-index: 3;
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  height: calc(30 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  background: linear-gradient(180deg, #ffffff, #f2f6fb);
+  border-bottom: calc(1 * var(--px)) solid #cdd9e5;
+}
+
+.wmp-menu-wrap {
+  position: relative;
+  display: flex;
+}
+
+.wmp-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5 * var(--px));
+  padding: 0 calc(12 * var(--px));
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(13 * var(--px));
+  color: #22303e;
+  cursor: pointer;
+}
+
+.wmp-menu-btn:hover,
+.wmp-menu-btn[aria-expanded="true"] {
+  background: linear-gradient(180deg, #ffffff, #dcebfa);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #b6d3ee;
+}
+
+/* Greyed the way Windows greys a command it cannot run. */
+.wmp-menu-off,
+.wmp-menu-off:hover {
+  color: #9aa7b4;
+  background: none;
+  box-shadow: none;
+  cursor: default;
+}
+
+.wmp-menu-caret {
+  width: 0;
+  height: 0;
+  border-top: calc(4 * var(--px)) solid currentColor;
+  border-left: calc(3.5 * var(--px)) solid transparent;
+  border-right: calc(3.5 * var(--px)) solid transparent;
+}
+
+.wmp-dropdown,
+.pv-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 5;
+  min-width: calc(150 * var(--px));
+  margin: 0;
+  padding: calc(3 * var(--px));
+  list-style: none;
+  background: #fbfdff;
+  border: calc(1 * var(--px)) solid #a3b6c8;
+  box-shadow: 0 calc(4 * var(--px)) calc(12 * var(--px)) rgba(0, 0, 0, 0.28);
+}
+
+.wmp-dropdown button,
+.pv-dropdown button {
+  display: block;
+  width: 100%;
+  padding: calc(5 * var(--px)) calc(10 * var(--px));
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #1a2430;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wmp-dropdown button:hover,
+.pv-dropdown button:hover {
+  background: linear-gradient(180deg, #eaf4ff, #cfe6fb);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #a8cdee;
+}
+
+.wmp-dropdown [aria-checked="true"]::before,
+.pv-dropdown [aria-checked="true"]::before {
+  content: "\2022";
+  margin-right: calc(5 * var(--px));
+}
+
+.wmp-dropdown-div {
+  margin-top: calc(3 * var(--px));
+  padding-top: calc(3 * var(--px));
+  border-top: calc(1 * var(--px)) solid #d6dfe8;
+}
+
+.wmp-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  background: linear-gradient(180deg, #ffffff 0%, #eef2f8 55%, #e2e9f3 100%);
+}
+
+.wmp-library {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.wmp-library[hidden],
+.wmp-stage[hidden] {
+  display: none;
+}
+
+.wmp-cols,
+.wmp-row {
+  display: grid;
+  grid-template-columns: 1fr calc(140 * var(--px)) calc(70 * var(--px));
+  align-items: center;
+  gap: calc(10 * var(--px));
+  padding: 0 calc(14 * var(--px));
+}
+
+.wmp-cols {
+  flex: none;
+  height: calc(26 * var(--px));
+  font-size: calc(11 * var(--px));
+  color: #5b6b7b;
+  background: linear-gradient(180deg, #fafcfe, #e9eef5);
+  border-bottom: calc(1 * var(--px)) solid #d3dce6;
+}
+
+.wmp-col-len {
+  text-align: right;
+}
+
+.wmp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wmp-row {
+  width: 100%;
+  height: calc(40 * var(--px));
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #1a2430;
+  text-align: left;
+  cursor: default;
+}
+
+.wmp-row:hover {
+  background: linear-gradient(180deg, #f2f9ff, #dcecfa);
+}
+
+.wmp-row[aria-current] {
+  background: linear-gradient(180deg, #dcecfb, #c2ddf4);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #9cc4e6;
+  font-weight: 600;
+}
+
+.wmp-row-title {
+  display: flex;
+  align-items: center;
+  gap: calc(9 * var(--px));
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.wmp-row-album {
+  color: #5b6b7b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wmp-thumb {
+  width: calc(38 * var(--px));
+  height: calc(24 * var(--px));
+  object-fit: cover;
+  border: calc(1 * var(--px)) solid #9fb2c4;
+  background: #000;
+}
+
+.wmp-hint {
+  margin: calc(10 * var(--px)) calc(14 * var(--px));
+  font-size: calc(11 * var(--px));
+  color: #7b8896;
+}
+
+/* Now Playing: black behind the video, the way every player does it. */
+.wmp-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  background: #000000;
+}
+
+.wmp-video {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  cursor: pointer;
+}
+
+.wmp-transport {
+  flex: none;
+  padding: calc(8 * var(--px)) calc(12 * var(--px)) calc(10 * var(--px));
+  background: linear-gradient(180deg, #f7fafd, #e4ebf3);
+  border-top: calc(1 * var(--px)) solid #c3d2e0;
+}
+
+.wmp-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--px));
+  margin-top: calc(8 * var(--px));
+}
+
+.wmp-time {
+  min-width: calc(42 * var(--px));
+  font-size: calc(11 * var(--px));
+  color: #5b6b7b;
+  font-variant-numeric: tabular-nums;
+}
+
+.wmp-time-total {
+  text-align: right;
+}
+
+.wmp-btn {
+  width: calc(30 * var(--px));
+  height: calc(30 * var(--px));
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #3d6c96;
+  cursor: pointer;
+}
+
+.wmp-btn svg {
+  width: calc(19 * var(--px));
+  height: calc(19 * var(--px));
+}
+
+.wmp-btn:hover {
+  background: radial-gradient(circle, rgba(150, 200, 240, 0.5), rgba(150, 200, 240, 0));
+  color: #1d5183;
+}
+
+/* A latched toggle keeps the Aero blue glow, so Shuffle and Repeat read as on
+   without needing a caption. */
+.wmp-btn[aria-pressed="true"] {
+  color: #0b6fc4;
+  background: radial-gradient(circle, rgba(120, 190, 245, 0.75), rgba(120, 190, 245, 0.05));
+}
+
+.wmp-pill {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  margin: 0 calc(6 * var(--px));
+  padding: calc(2 * var(--px)) calc(10 * var(--px));
+  border-radius: calc(22 * var(--px));
+  border: calc(1 * var(--px)) solid #b9cadb;
+  background: linear-gradient(180deg, #ffffff, #e7eef6);
+  box-shadow: inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.9);
+}
+
+/* The blue orb. The same drawing in both viewers — the one thing the eye
+   lands on in either window, so it is the only saturated colour in view. */
+.wmp-play,
+.pv-play {
+  width: calc(46 * var(--px));
+  height: calc(46 * var(--px));
+  display: grid;
+  place-items: center;
+  padding: 0;
+  margin: 0 calc(4 * var(--px));
+  border-radius: 50%;
+  border: calc(1 * var(--px)) solid #2f6ea6;
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #79c3f2 0%, #2f8fdc 48%, #1668b4 52%, #4aa6e8 100%);
+  box-shadow:
+    0 calc(1 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, 0.35),
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.wmp-play svg,
+.pv-play svg {
+  width: calc(30 * var(--px));
+  height: calc(30 * var(--px));
+  filter: drop-shadow(0 calc(1 * var(--px)) calc(1 * var(--px)) rgba(0, 0, 0, 0.35));
+}
+
+.wmp-play:hover,
+.pv-play:hover {
+  background:
+    radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, #97d5ff 0%, #46a3ee 48%, #1f79c8 52%, #63b8f4 100%);
+}
+
+/* ── Sliders ───────────────────────────────────────────────────
+   Seek, volume and zoom are one control at three widths: a sunken
+   track with a small glass lozenge riding it, like WMP's.
+   ───────────────────────────────────────────────────────────── */
+
+.wmp-seek,
+.wmp-volume,
+.pv-zoom-pop input {
+  -webkit-appearance: none;
+  appearance: none;
+  height: calc(14 * var(--px));
+  background: none;
+  cursor: pointer;
+}
+
+.wmp-seek {
+  display: block;
+  width: 100%;
+}
+
+.wmp-volume {
+  width: calc(84 * var(--px));
+}
+
+.wmp-seek::-webkit-slider-runnable-track,
+.wmp-volume::-webkit-slider-runnable-track,
+.pv-zoom-pop input::-webkit-slider-runnable-track {
+  height: calc(4 * var(--px));
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #b9c6d3, #dfe7ef);
+  box-shadow: inset 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.25);
+}
+
+.wmp-seek::-moz-range-track,
+.wmp-volume::-moz-range-track,
+.pv-zoom-pop input::-moz-range-track {
+  height: calc(4 * var(--px));
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #b9c6d3, #dfe7ef);
+}
+
+.wmp-seek::-webkit-slider-thumb,
+.wmp-volume::-webkit-slider-thumb,
+.pv-zoom-pop input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: calc(15 * var(--px));
+  height: calc(11 * var(--px));
+  margin-top: calc(-3.5 * var(--px));
+  border-radius: calc(6 * var(--px));
+  border: calc(1 * var(--px)) solid #2b6ea8;
+  background: linear-gradient(180deg, #ffffff, #a8d4f4 55%, #4b9ede);
+}
+
+.wmp-seek::-moz-range-thumb,
+.wmp-volume::-moz-range-thumb,
+.pv-zoom-pop input::-moz-range-thumb {
+  width: calc(13 * var(--px));
+  height: calc(9 * var(--px));
+  border-radius: calc(6 * var(--px));
+  border: calc(1 * var(--px)) solid #2b6ea8;
+  background: linear-gradient(180deg, #ffffff, #a8d4f4 55%, #4b9ede);
+}
+
+/* ── Windows Photo Viewer ─────────────────────────────────────
+   Menu strip, the picture, and a floating pill of controls on a
+   dark band — the one place in this desktop where the chrome goes
+   dark, because the picture is the subject and everything around
+   it should recede.
+   ───────────────────────────────────────────────────────────── */
+
+.pv {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #ffffff;
+  outline: none;
+}
+
+.pv-empty {
+  display: grid;
+  place-items: center;
+  color: #6b7886;
+  font-size: calc(13 * var(--px));
+}
+
+.pv-menu {
+  position: relative;
+  z-index: 3;
+  flex: none;
+  display: flex;
+  height: calc(30 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  background: linear-gradient(180deg, #ffffff, #eef2f7);
+  border-bottom: calc(1 * var(--px)) solid #ccd6e0;
+}
+
+.pv-menu-wrap {
+  position: relative;
+  display: flex;
+}
+
+.pv-menu-btn {
+  padding: 0 calc(14 * var(--px));
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(13 * var(--px));
+  color: #1f2c39;
+  cursor: pointer;
+}
+
+/* The E-mail entry is a link, so it needs the menu button's own box back. */
+.pv-menu-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.pv-menu-btn:hover,
+.pv-menu-btn[aria-expanded="true"] {
+  background: linear-gradient(180deg, #ffffff, #dcebfa);
+  box-shadow: inset 0 0 0 calc(1 * var(--px)) #b6d3ee;
+}
+
+/* Flex, not grid: a grid track sizes itself to the picture, so a tall image
+   pushed the track past the frame and the bottom of the picture disappeared
+   behind the toolbar. Flex centring lets max-height: 100% actually bind. */
+.pv-frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(10 * var(--px));
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* Zoomed past fit, the frame becomes the scroller and the picture keeps its
+   true size — fit is a state here, not a max-width. */
+.pv-frame[data-zoomed] {
+  align-items: flex-start;
+  overflow: auto;
+}
+
+.pv-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  transition: transform 160ms ease;
+}
+
+.pv-frame[data-zoomed] .pv-image {
+  max-width: none;
+  max-height: none;
+  height: auto;
+}
+
+.pv-bar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: calc(8 * var(--px));
+  background: linear-gradient(180deg, #38434f, #232c36);
+  border-top: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.12);
+}
+
+.pv-pill {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding: calc(3 * var(--px)) calc(10 * var(--px));
+  border-radius: calc(26 * var(--px));
+  border: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.22);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.18);
+}
+
+.pv-btn {
+  position: relative;
+  width: calc(32 * var(--px));
+  height: calc(32 * var(--px));
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #cfe4f6;
+  cursor: pointer;
+}
+
+.pv-btn svg {
+  width: calc(19 * var(--px));
+  height: calc(19 * var(--px));
+}
+
+.pv-btn:hover {
+  color: #ffffff;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0));
+}
+
+.pv-btn[aria-pressed="true"] {
+  color: #8fd0ff;
+}
+
+/* Delete is the one destructive control, so it is the one that turns red. */
+.pv-delete:hover {
+  color: #ffd4cd;
+  background: radial-gradient(circle, rgba(226, 78, 58, 0.65), rgba(226, 78, 58, 0));
+}
+
+.pv-sep {
+  width: calc(1 * var(--px));
+  height: calc(20 * var(--px));
+  margin: 0 calc(6 * var(--px));
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.pv-caret {
+  position: absolute;
+  right: calc(3 * var(--px));
+  bottom: calc(6 * var(--px));
+  width: 0;
+  height: 0;
+  border-top: calc(3.5 * var(--px)) solid currentColor;
+  border-left: calc(3 * var(--px)) solid transparent;
+  border-right: calc(3 * var(--px)) solid transparent;
+}
+
+.pv-zoom-wrap {
+  position: relative;
+  display: flex;
+}
+
+.pv-zoom-pop {
+  position: absolute;
+  bottom: calc(38 * var(--px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(8 * var(--px)) calc(10 * var(--px));
+  border-radius: calc(4 * var(--px));
+  border: calc(1 * var(--px)) solid #9fb3c6;
+  background: #f7fafd;
+  box-shadow: 0 calc(4 * var(--px)) calc(12 * var(--px)) rgba(0, 0, 0, 0.4);
+  font-size: calc(11 * var(--px));
+  color: #22303e;
+}
+
+.pv-zoom-pop input {
+  width: calc(120 * var(--px));
+}
+
+/* The slide show hides the chrome and fills the client area, which is as far
+   as a window can go towards Windows' full-screen version. */
+.pv[data-slideshow] .pv-menu,
+.pv[data-slideshow] .pv-bar {
+  display: none;
+}
+
+.pv[data-slideshow] .pv-frame {
+  padding: 0;
+  background: #000000;
+}
+
+/* Properties reuses the OS dialog; only its two-column list is local. */
+.pv-props {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: calc(3 * var(--px)) calc(12 * var(--px));
+  margin: 0;
+}
+
+.pv-props dt {
+  color: #5b6875;
+}
+
+.pv-props dd {
+  margin: 0;
+}
+
+/* Print sends the picture and nothing else: no desktop, no chrome. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .pv-image {
+    visibility: visible;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    max-width: 100%;
+    max-height: 100%;
+  }
+}
+
+/* ── PDF viewer ────────────────────────────────────────────────
+   A reader, not an editor: one quiet toolbar, then the pages on a
+   neutral grey so the paper is the brightest thing in the window.
+   ───────────────────────────────────────────────────────────── */
+
+.pdf {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #6f7b87;
+}
+
+.pdf-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(10 * var(--px));
+  height: calc(34 * var(--px));
+  padding: 0 calc(10 * var(--px));
+  background: linear-gradient(180deg, #fbfdff, #e3eaf2);
+  border-bottom: calc(1 * var(--px)) solid #a9bacb;
+}
+
+.pdf-group {
+  display: flex;
+  align-items: center;
+  gap: calc(2 * var(--px));
+}
+
+.pdf-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: calc(12 * var(--px));
+  color: #33475b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdf-btn {
+  width: calc(26 * var(--px));
+  height: calc(24 * var(--px));
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  color: #2b4257;
+  cursor: pointer;
+}
+
+.pdf-btn svg {
+  width: calc(15 * var(--px));
+  height: calc(15 * var(--px));
+}
+
+.pdf-btn:hover:not(:disabled) {
+  border-color: #a9cbe8;
+  background: linear-gradient(180deg, #ffffff, #dcecfb);
+}
+
+.pdf-btn:disabled {
+  color: #a7b4c1;
+  cursor: default;
+}
+
+.pdf-page-field {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(5 * var(--px));
+  margin: 0 calc(4 * var(--px));
+  font-size: calc(12 * var(--px));
+  color: #33475b;
+}
+
+.pdf-page-field input {
+  width: calc(38 * var(--px));
+  padding: calc(2 * var(--px)) calc(4 * var(--px));
+  border: calc(1 * var(--px)) solid #a3b5c6;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #1a2430;
+  text-align: center;
+}
+
+.pdf-zoom {
+  min-width: calc(48 * var(--px));
+  height: calc(24 * var(--px));
+  padding: 0 calc(6 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  font-variant-numeric: tabular-nums;
+  color: #33475b;
+  cursor: pointer;
+}
+
+.pdf-zoom:hover,
+.pdf-zoom[aria-pressed="true"] {
+  border-color: #a9cbe8;
+  background: linear-gradient(180deg, #ffffff, #dcecfb);
+}
+
+.pdf-download {
+  margin-left: calc(4 * var(--px));
+  text-decoration: none;
+}
+
+.pdf-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: calc(16 * var(--px)) 0 calc(24 * var(--px));
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0) 60%),
+    #6f7b87;
+}
+
+.pdf-page {
+  display: grid;
+  place-items: center;
+  margin: 0 auto calc(16 * var(--px));
+  width: fit-content;
+  background: #ffffff;
+  box-shadow: 0 calc(3 * var(--px)) calc(14 * var(--px)) rgba(0, 0, 0, 0.4);
+}
+
+.pdf-page canvas {
+  display: block;
+}
+
+.pdf-status {
+  display: grid;
+  justify-items: center;
+  gap: calc(10 * var(--px));
+  margin: calc(40 * var(--px)) auto;
+  text-align: center;
+  font-size: calc(13 * var(--px));
+  color: #eef3f8;
+}
+
+.pdf-status a {
+  padding: calc(5 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(3 * var(--px));
+  border: calc(1 * var(--px)) solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.pdf-status a:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+/* The resume's two buttons, stacked in the space beside the last section. */
+.cv-actions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(6 * var(--px));
+}
+
+/* Keyboard focus stays visible in all three apps — their controls are round
+   and, in the photo viewer, dark, so they would otherwise lose the ring. */
+.wmp button:focus-visible,
+.wmp input:focus-visible,
+.pv button:focus-visible,
+.pv input:focus-visible,
+.pdf button:focus-visible,
+.pdf input:focus-visible,
+.pdf a:focus-visible {
+  outline: calc(2 * var(--px)) solid #4aa3ec;
+  outline-offset: calc(1 * var(--px));
+}
+
+/* ── Media Player: caption icon, empty library, dead controls ──
+   An application window carries its icon at the left of the
+   caption with the title beside it; Explorer's folders keep the
+   centred title. `--px` measurements as everywhere else.
+   ───────────────────────────────────────────────────────────── */
+
+.w7-window:has(.w7-caption-icon) .w7-caption {
+  justify-content: flex-start;
+  gap: calc(6 * var(--px));
+  padding-left: calc(8 * var(--px));
+}
+
+.w7-caption-icon {
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+  margin-top: calc(6 * var(--px));
+  flex: none;
+}
+
+.w7-window:has(.w7-caption-icon) .w7-title {
+  max-width: calc(100% - calc(120 * var(--px)));
+}
+
+/* The first-run library. Windows sets this message near the top of the pane,
+   not at its centre — it is an instruction, not a placeholder. */
+.wmp-empty {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(2 * var(--px));
+  padding-top: calc(34 * var(--px));
+  text-align: center;
+  font-size: calc(13 * var(--px));
+  color: #3c4a58;
+}
+
+.wmp-empty[hidden] {
+  display: none;
+}
+
+.wmp-empty p {
+  margin: 0;
+}
+
+/* Nothing loaded: the controls that would act on a track go grey and stop
+   responding, rather than looking live and doing nothing. */
+.wmp-btn:disabled {
+  color: #adbbc8;
+  background: none;
+  cursor: default;
+}
+
+.wmp-seek:disabled {
+  cursor: default;
+}
+
+.wmp-seek:disabled::-webkit-slider-thumb {
+  border-color: #a9b7c4;
+  background: linear-gradient(180deg, #ffffff, #dee6ed 55%, #c3ced9);
+}
+
+/* WMP's volume track fills to the level; the seek track does not. */
+.wmp-volume::-webkit-slider-runnable-track {
+  background:
+    linear-gradient(90deg, #2f8fdc 0 var(--fill, 70%), transparent var(--fill, 70%)),
+    linear-gradient(180deg, #b9c6d3, #dfe7ef);
+}
+
+.wmp-volume::-moz-range-progress {
+  height: calc(4 * var(--px));
+  border-radius: calc(2 * var(--px));
+  background: #2f8fdc;
+}
+
+/* A picture file is its own icon in Explorer. `contain` so a wide photo keeps
+   its shape inside the square an icon is given, and the pale card behind it
+   reads as a thumbnail rather than as a floating cut-out. */
+.fs-thumb {
+  object-fit: contain;
+  background: #ffffff;
+  border: calc(1 * var(--px)) solid #b6c4d1;
+  box-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.25);
 }

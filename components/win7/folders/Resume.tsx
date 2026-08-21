@@ -1,3 +1,4 @@
+import { launchWindow, PDF_PREFIX } from "@/components/win7/apps";
 import { inline } from "@/components/win7/folders/Doc";
 import { RESUME } from "@/content/resume";
 
@@ -97,9 +98,20 @@ export function Resume() {
             {isLast ? (
               <div className="cv-last-row">
                 <div className="cv-last-entries">{entries}</div>
-                <a className="project-link cv-download" href={RESUME.pdf} download>
-                  Download the PDF
-                </a>
+                <div className="cv-actions">
+                  {/* Reading it shouldn't cost a download. This opens the same
+                      file in the desktop's own PDF viewer instead. */}
+                  <button
+                    type="button"
+                    className="project-link cv-download"
+                    onClick={() => launchWindow(PDF_PREFIX + RESUME.pdf)}
+                  >
+                    Open the PDF
+                  </button>
+                  <a className="project-link cv-download" href={RESUME.pdf} download>
+                    Download
+                  </a>
+                </div>
               </div>
             ) : (
               entries

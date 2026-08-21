@@ -1,11 +1,14 @@
 "use client";
 
-import { CALC_ID, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
+import { CALC_ID, NOTEPAD_ID, PDF_PREFIX, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
+import { RESUME } from "@/content/resume";
 import {
   CalculatorIcon,
   FlagIcon,
+  MediaPlayerIcon,
   NotepadIcon,
   PaintIcon,
+  PdfIcon,
   PowerIcon,
   ScissorsIcon,
   TerminalIcon,
@@ -19,9 +22,10 @@ import {
  * search box, a pale blue right column of text-only shortcuts, and the shut
  * down button in the bottom-right corner.
  *
- * The left column's "recently used" block starts with Command Prompt, the
- * only entry wired to anything so far; the rest are placeholders holding the
- * shape.
+ * The left column's "recently used" block lists what actually runs here; the
+ * rest are placeholders holding the shape. Windows Photo Viewer is deliberately
+ * absent, the same as in Windows: it has no Start entry because it is what a
+ * picture opens in, not something you launch on its own.
  */
 
 type Program = {
@@ -43,21 +47,39 @@ const RECENT: Program[] = [
   { id: "getting-started", label: "Getting Started", icon: <FlagIcon className="sm-icon" /> },
   { id: CALC_ID, label: "Calculator", icon: <CalculatorIcon className="sm-icon" />, opens: true },
   { id: NOTEPAD_ID, label: "Notepad", icon: <NotepadIcon className="sm-icon" />, opens: true },
+  {
+    id: WMP_ID,
+    label: "Windows Media Player",
+    icon: <MediaPlayerIcon className="sm-icon" />,
+    opens: true,
+  },
+  {
+    id: PDF_PREFIX + RESUME.pdf,
+    label: "Resume (PDF)",
+    icon: <PdfIcon className="sm-icon" />,
+    opens: true,
+  },
   { id: "paint", label: "Paint", icon: <PaintIcon className="sm-icon" /> },
   { id: "snipping-tool", label: "Snipping Tool", icon: <ScissorsIcon className="sm-icon" /> },
 ];
 
-/** Right column. Windows renders these as text only — no icons. */
-const SHORTCUTS = [
-  "Documents",
-  "Pictures",
-  "Music",
-  "Games",
-  "Computer",
-  "Control Panel",
-  "Devices and Printers",
-  "Default Programs",
-  "Help and Support",
+/**
+ * Right column. Windows renders these as text only — no icons.
+ *
+ * Pictures and Music are the two that lead somewhere: they open the viewer and
+ * the player, which is what those shortcuts do in Windows. The rest hold the
+ * shape of the menu and are deliberately inert.
+ */
+const SHORTCUTS: { label: string; opens?: string }[] = [
+  { label: "Documents" },
+  { label: "Pictures", opens: "pictures" },
+  { label: "Music", opens: WMP_ID },
+  { label: "Games" },
+  { label: "Computer" },
+  { label: "Control Panel" },
+  { label: "Devices and Printers" },
+  { label: "Default Programs" },
+  { label: "Help and Support" },
 ];
 
 /** Where Windows draws a divider in the right column. */
@@ -109,9 +131,14 @@ export function StartMenu({ id, onLaunch }: { id: string; onLaunch: (id: string)
           </div>
 
           <ul className="sm-links">
-            {SHORTCUTS.map((label) => (
+            {SHORTCUTS.map(({ label, opens }) => (
               <li key={label} className={SHORTCUT_DIVIDERS.has(label) ? "sm-link-div" : undefined}>
-                <button type="button" className="sm-link" role="menuitem">
+                <button
+                  type="button"
+                  className="sm-link"
+                  role="menuitem"
+                  onClick={opens ? () => onLaunch(opens) : undefined}
+                >
                   {label}
                 </button>
               </li>
