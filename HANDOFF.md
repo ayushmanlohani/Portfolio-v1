@@ -12,8 +12,10 @@ CSS but toggled off — see CLAUDE.md "Decisions already made").
 - Real Win7 Explorer windows, inline rename, marquee multi-select, permanent
   (recoverable-via-git) delete, working Start menu.
 - Taskbar has notification tray, pinning, and apps: Calculator, Notepad
-  (saves real desktop files), Windows Media Player, Photo Viewer, and a
-  read-only PDF viewer (pdf.js).
+  (saves real desktop files), Windows Media Player, Photo Viewer, a
+  read-only PDF viewer (pdf.js), and Google Chrome, dressed as it looked
+  circa 2011 — trapezoid tabs, a wrench menu, Aero glass. Chrome has its
+  own desktop icon and Start menu entry, same as any installed program.
 - PDF Viewer is its own Start-menu app now (opens empty, like WMP opens on
   an empty Music library) instead of a "Resume (PDF)" shortcut. PDF links
   are clickable — blue overlay boxes over pdf.js's canvas, tracking zoom.
@@ -25,12 +27,14 @@ CSS but toggled off — see CLAUDE.md "Decisions already made").
 
 **Content per folder**
 - About Me — has content.
-- Projects — folders only; RBI Sentinel and Unitwise each have a project
-  page with a GitHub source button; Unitwise also has a hovering tech stack
-  and a "Problem" section. Also two design-experiment folders that open as
-  plain chrome-only windows instead of file listings: Creative (a custom
-  dither-cursor effect) and Clouds (Aceternity UI's WebGL cloud shader) —
-  these two exist only on the CREATIVE worktree/branch, not yet merged.
+- Projects — RBI Sentinel and Unitwise each have a project page with a
+  GitHub source button; Unitwise also has a hovering tech stack and a
+  "Problem" section. `unitwise.interactive` sits alongside them as a
+  document, not a folder — double-clicking it opens Chrome already on a
+  from-scratch rebuild of the Unitwise marketing page (`components/win7/
+  clouds/`), reachable the same way from Chrome's own new-tab bookmarks.
+  Chrome's tabs live in `store/chrome.ts`, not component state, so either
+  entry point reaches the same running browser.
 - Experience — three role folders; Research Assistant has dates.
 - Education — three folders (Nirmala Convent merged into one, holding ISC
   and ICSE); University of Lucknow and NCIC crest logos added, sized up,
@@ -46,5 +50,6 @@ CSS but toggled off — see CLAUDE.md "Decisions already made").
 - Taskbar: no clock, no pinned-apps beyond the current set — deferred.
 - Whether the CRT frame comes back on (`data-frame` toggle) — his call.
 - No mobile/small-screen layout yet.
-- Creative and Clouds (see above) exist only on the CREATIVE branch —
-  merge into main once approved.
+- A third Projects tile, Creative (a custom dither-cursor canvas), exists
+  only on the CREATIVE worktree/branch — held back on request, not yet
+  merged.

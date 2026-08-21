@@ -1045,8 +1045,12 @@ body {
   stroke: #ffffff;
 }
 
-/* The client area: opaque, inset inside the glass frame. */
+/* The client area: opaque, inset inside the glass frame. `position: relative`
+   so a window's content can use `absolute inset-0` to fill exactly this box
+   (and get its own scroll) without escaping to the Rnd root and covering the
+   caption — Clouds does this for its scrollable page. */
 .w7-body {
+  position: relative;
   flex: 1;
   min-height: 0;
   margin: 0 calc(6 * var(--px)) calc(6 * var(--px));
@@ -2315,6 +2319,34 @@ body {
 .w7-window[data-app="terminal"] .w7-body {
   background: #000000;
   box-shadow: none;
+}
+
+/* Chrome doesn't get a title bar.
+   Every other window here stacks a glass caption on top of its contents, and
+   for Chrome that reads as two frames — a band with the name on it, then the
+   tab strip. Chrome on Windows 7 has one band: the tabs sit straight on the
+   Aero glass, the caption buttons float at the top right of it, and the
+   window's name appears nowhere but the taskbar. So: no title, a caption
+   just tall enough to hold the buttons, and a transparent client area so the
+   glass shows through behind the tabs. */
+.w7-window[data-app="chrome"] .w7-caption {
+  /* Nothing left in it: no title, and the buttons are absolutely positioned,
+     so they drop onto the tab strip's line — where Chrome has always put
+     them. `z-index` because .w7-body is positioned and comes after. */
+  height: 0;
+  padding: 0;
+  z-index: 2;
+}
+
+.w7-window[data-app="chrome"] .w7-title {
+  display: none;
+}
+
+.w7-window[data-app="chrome"] .w7-body {
+  margin: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 

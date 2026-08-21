@@ -9,6 +9,11 @@ import { maximizedBounds, useWindowStore, type Desk, type OpenWindow } from "@/s
  * A Windows 7 Aero window: translucent frame, glass caption bar, the three
  * caption buttons, draggable by the title and resizable from all eight edges.
  *
+ * `w7-drag` is what Rnd drags by, kept separate from `w7-caption`, which is
+ * only styling. An app that draws its own top strip — Chrome puts its tabs
+ * up there, so there is no caption left to grab — can wear `w7-drag` itself
+ * and stay movable.
+ *
  * Sizes are written as their real Win7 pixel values times `--px`, same rule as
  * the rest of the chrome. Nothing here knows what it contains — the contents
  * are just children, so they can be rebuilt without touching the window.
@@ -42,7 +47,7 @@ export function Win7Window({
       minWidth={MIN_W}
       minHeight={MIN_H}
       bounds="parent"
-      dragHandleClassName="w7-caption"
+      dragHandleClassName="w7-drag"
       // Maximised windows are pinned, exactly like the real thing: the only way
       // to move one is to restore it first.
       disableDragging={win.maximized}
@@ -70,7 +75,7 @@ export function Win7Window({
         onPointerDown={() => focus(win.id)}
       >
         <div
-          className="w7-caption"
+          className="w7-caption w7-drag"
           onDoubleClick={() => toggleMaximize(win.id, desk)}
         >
           {CaptionIcon && <CaptionIcon className="w7-caption-icon" />}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Calculator } from "@/components/win7/Calculator";
+import { Chrome } from "@/components/win7/chrome/Chrome";
 import { useDesk } from "@/components/win7/desk";
 import { Explorer } from "@/components/win7/Explorer";
 import { node } from "@/components/win7/fs";
@@ -11,6 +12,7 @@ import { PhotoViewer } from "@/components/win7/PhotoViewer";
 import { Terminal } from "@/components/win7/Terminal";
 import {
   CALC_ID,
+  CHROME_ID,
   mediaSrc,
   NOTEPAD_ID,
   PDF_ID,
@@ -42,6 +44,7 @@ function contentFor(win: OpenWindow) {
   if (id === PDF_ID) return <PdfViewer />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
   if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;
+  if (id === CHROME_ID) return <Chrome windowId={id} />;
   if (node(id)?.kind === "file") return <Notepad windowId={id} fileId={id} />;
   return <Explorer id={id} title={win.title} />;
 }

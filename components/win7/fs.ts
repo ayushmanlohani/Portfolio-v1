@@ -1,6 +1,7 @@
 import { createElement } from "react";
 
 import {
+  ChromeIcon,
   ComputerIcon,
   DriveIcon,
   FolderIcon,
@@ -29,7 +30,15 @@ import { RESUME } from "@/content/resume";
  * what a place shows when you open it.
  */
 
-export type NodeKind = "folder" | "file" | "drive" | "bin" | "computer" | "network" | "group";
+export type NodeKind =
+  | "folder"
+  | "file"
+  | "drive"
+  | "bin"
+  | "computer"
+  | "network"
+  | "group"
+  | "app";
 
 export type FsNode = {
   id: string;
@@ -112,12 +121,25 @@ const PAGE_CHILDREN: Record<string, string[]> = Object.fromEntries(
 function childrenOf(id: string): string[] | undefined {
   const pages = PAGE_CHILDREN[id] ?? [];
   const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
-  const all = [...pages, ...items];
+  // unitwise.interactive isn't content from the page files — it opens in
+  // Chrome rather than being navigated into (see Explorer.tsx) — so it's
+  // added by hand rather than through content/pages.ts like Unitwise and
+  // RBI Sentinel.
+  const extra = id === "projects" ? [UNITWISE_FILE_ID] : [];
+  const all = [...pages, ...items, ...extra];
   // The Resume folder holds the real PDF, not a text item — its node id is
   // its viewer window id, the same trick the Pictures folder uses.
   if (id === "resume") all.push(PDF_PREFIX + RESUME.pdf);
   return all.length > 0 ? all : undefined;
 }
+
+/**
+ * The Unitwise mockup, sitting in Projects as a document rather than a folder.
+ * Double-clicking it opens it in Chrome — see Explorer.tsx — which is why it
+ * wears Chrome's icon, the same way Windows badges an .html file with
+ * whichever browser opens it.
+ */
+export const UNITWISE_FILE_ID = "projects/unitwise.interactive";
 
 /**
  * A desktop folder. Its children come from the content files, so adding an
@@ -199,6 +221,18 @@ const NODE_LIST: FsNode[] = [
   folder("resume", "Resume"),
   folder("contact", "Contact"),
 
+  // An installed program, not a place. Double-clicking it launches a window
+  // rather than listing anything, so it has no `children` — see
+  // `launchWindow` in components/win7/apps.ts.
+  {
+    id: "chrome",
+    label: "Google Chrome",
+    Icon: ChromeIcon,
+    kind: "app",
+    type: "Application",
+    deletable: true,
+  },
+
   {
     id: "recycle",
     label: "Recycle Bin",
@@ -216,7 +250,7 @@ const NODE_LIST: FsNode[] = [
     label: "Desktop",
     Icon: FolderIcon,
     kind: "folder",
-    children: [...DESKTOP_FOLDERS, "recycle"],
+    children: [...DESKTOP_FOLDERS, "chrome", "recycle"],
     type: "File folder",
   },
   { id: "downloads", label: "Downloads", Icon: FolderIcon, kind: "folder", type: "File folder" },
@@ -248,6 +282,13 @@ const NODE_LIST: FsNode[] = [
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },
 
+  {
+    id: UNITWISE_FILE_ID,
+    label: "unitwise.interactive",
+    Icon: ChromeIcon,
+    kind: "folder",
+    type: "Chrome HTML Document",
+  },
   ...PAGE_FOLDERS,
   ...FILES,
 ];

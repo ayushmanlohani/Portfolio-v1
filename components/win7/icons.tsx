@@ -553,3 +553,50 @@ export function LinkedInIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Google Chrome, the 2011 logo — the beveled wheel with a glossy dome over
+ * it, not the flat circle Google moved to later. Same reason as the rest of
+ * this file: drawn here rather than shipping Google's artwork.
+ */
+export function ChromeIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="chr-red" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f26d5b" />
+          <stop offset="1" stopColor="#c9392a" />
+        </linearGradient>
+        <linearGradient id="chr-green" x1="1" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#63c96f" />
+          <stop offset="1" stopColor="#2c8c3f" />
+        </linearGradient>
+        <linearGradient id="chr-yellow" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffd44e" />
+          <stop offset="1" stopColor="#e0a01a" />
+        </linearGradient>
+        <linearGradient id="chr-blue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#7db4f6" />
+          <stop offset="1" stopColor="#2f6fd0" />
+        </linearGradient>
+        <linearGradient id="chr-gloss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      {/* The three coloured segments of the wheel. */}
+      <path d="M16 2a14 14 0 0 1 12.1 7H16a7 7 0 0 0-6.1 3.6L4.8 6.9A14 14 0 0 1 16 2z" fill="url(#chr-red)" />
+      <path d="M28.1 9A14 14 0 0 1 16 30l6.1-10.5A7 7 0 0 0 22 9z" fill="url(#chr-green)" />
+      <path d="M4.8 6.9 9.9 12.6a7 7 0 0 0 6.1 10.4L16 30A14 14 0 0 1 4.8 6.9z" fill="url(#chr-yellow)" />
+
+      {/* The blue hub, with Chrome's white ring around it. */}
+      <circle cx="16" cy="16" r="7" fill="#f4f6f8" />
+      <circle cx="16" cy="16" r="5.6" fill="url(#chr-blue)" />
+
+      {/* Aero's glossy top dome, the same highlight the other icons carry. */}
+      <path d="M16 2.6a13.4 13.4 0 0 1 11.9 7.2A24 24 0 0 0 16 12.8 24 24 0 0 0 4.1 9.8 13.4 13.4 0 0 1 16 2.6z" fill="url(#chr-gloss)" />
+      <circle cx="16" cy="16" r="14" fill="none" stroke="#00000022" />
+    </svg>
+  );
+}

@@ -1,8 +1,9 @@
 "use client";
 
-import { CALC_ID, NOTEPAD_ID, PDF_ID, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
+import { CALC_ID, CHROME_ID, NOTEPAD_ID, PDF_ID, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
 import {
   CalculatorIcon,
+  ChromeIcon,
   FlagIcon,
   MediaPlayerIcon,
   NotepadIcon,
@@ -37,6 +38,12 @@ type Program = {
 
 /** The "recently used" block Windows fills in for you. */
 const RECENT: Program[] = [
+  {
+    id: CHROME_ID,
+    label: "Google Chrome",
+    icon: <ChromeIcon className="sm-icon" />,
+    opens: true,
+  },
   {
     id: TERMINAL_ID,
     label: "Command Prompt",

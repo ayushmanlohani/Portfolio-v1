@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { readDesk } from "@/components/win7/desk";
+import { launchWindow } from "@/components/win7/apps";
 import { DESKTOP_FOLDERS, node } from "@/components/win7/fs";
 import { RecycleBinIcon } from "@/components/win7/icons";
 import { RenameField } from "@/components/win7/RenameField";
@@ -10,7 +10,6 @@ import { useMarquee } from "@/components/win7/useMarquee";
 import { useFiles } from "@/store/files";
 import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
-import { useWindowStore } from "@/store/windows";
 
 /**
  * Desktop icons, draggable on an invisible grid.
@@ -30,9 +29,10 @@ import { useWindowStore } from "@/store/windows";
  */
 
 /* What sits on the desktop, from the shared tree — the same list Explorer
-   shows inside the Desktop folder. The bin goes last, where Windows keeps it,
-   and anything Notepad has saved lands after it. */
-const FIXED_ITEMS = [...DESKTOP_FOLDERS, "recycle"];
+   shows inside the Desktop folder. Chrome is a program rather than a place,
+   the one installed app with a desktop shortcut. The bin goes last, where
+   Windows keeps it, and anything Notepad has saved lands after it. */
+const FIXED_ITEMS = [...DESKTOP_FOLDERS, "chrome", "recycle"];
 
 type Cell = { c: number; r: number };
 type Layout = Record<string, Cell>;
@@ -54,7 +54,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  *   ┌───────────┬───────────┐
  * r0│ Recycle   │ Resume    │
  * r1│ About Me  │ Contact   │
- * r2│ Experience│           │
+ * r2│ Experience│ Chrome    │
  * r3│ Projects  │           │
  * r4│ Education │           │
  *   └───────────┴───────────┘
@@ -65,6 +65,7 @@ const DEFAULT_LAYOUT: Layout = {
   about: { c: 0, r: 1 },
   contact: { c: 1, r: 1 },
   experience: { c: 0, r: 2 },
+  chrome: { c: 1, r: 2 },
   projects: { c: 0, r: 3 },
   education: { c: 0, r: 4 },
 };
@@ -88,7 +89,7 @@ function computeCells(moved: Layout, rows: number, items: readonly string[]): La
 
   // Every icon keeps its default slot whether or not it is currently on the
   // desktop, so deleting one does not shuffle the ones below it up a row.
-  // DEFAULT_LAYOUT only names the seven fixed items — a file Notepad just
+  // DEFAULT_LAYOUT only names the eight fixed items — a file Notepad just
   // saved isn't in it, so it falls through to the column-major position like
   // everything does when the window's too short for the named arrangement.
   items.forEach((id, i) => {
@@ -100,13 +101,8 @@ function computeCells(moved: Layout, rows: number, items: readonly string[]): La
   return cells;
 }
 
-/** Opening size of a folder window. Cascade and clamping happen in the store. */
-const WINDOW_W = 900;
-const WINDOW_H = 600;
-
 export function DesktopIcons() {
   const rootRef = useRef<HTMLDivElement>(null);
-  const openWindow = useWindowStore((s) => s.open);
   const deleted = useRecycleBin((s) => s.deleted);
   // Saved text files join the desktop the moment Notepad writes one. The store
   // is what makes this re-render; the file itself lives in the shared tree.
@@ -400,17 +396,9 @@ export function DesktopIcons() {
     };
   };
 
-  const openItem = useCallback(
-    (id: string) => {
-      openWindow(id, {
-        title: node(id)?.label ?? id,
-        width: WINDOW_W,
-        height: WINDOW_H,
-        desk: readDesk(),
-      });
-    },
-    [openWindow],
-  );
+  // `launchWindow` already knows every id's title and opening size, folder or
+  // program, so the desktop doesn't keep a second copy of that table.
+  const openItem = useCallback((id: string) => launchWindow(id), []);
 
   const cells = computeCells(layout, grid.rows, items);
   const onDesktop = items.filter((id) => !deleted.includes(id));
