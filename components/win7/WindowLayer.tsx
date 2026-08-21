@@ -1,12 +1,18 @@
 "use client";
 
 import { Calculator } from "@/components/win7/Calculator";
+import { Chrome } from "@/components/win7/chrome/Chrome";
 import { useDesk } from "@/components/win7/desk";
 import { Explorer } from "@/components/win7/Explorer";
 import { node } from "@/components/win7/fs";
 import { Notepad } from "@/components/win7/Notepad";
 import { Terminal } from "@/components/win7/Terminal";
-import { CALC_ID, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
+import {
+  CALC_ID,
+  CHROME_ID,
+  NOTEPAD_ID,
+  TERMINAL_ID,
+} from "@/components/win7/apps";
 import { Win7Window } from "@/components/win7/Win7Window";
 import { useWindowStore, type OpenWindow } from "@/store/windows";
 
@@ -26,6 +32,7 @@ function contentFor(win: OpenWindow) {
   if (id === TERMINAL_ID) return <Terminal />;
   if (id === CALC_ID) return <Calculator />;
   if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
+  if (id === CHROME_ID) return <Chrome windowId={id} />;
   if (node(id)?.kind === "file") return <Notepad windowId={id} fileId={id} />;
   return <Explorer id={id} title={win.title} />;
 }

@@ -7,7 +7,9 @@ import { Contact } from "@/components/win7/folders/Contact";
 import { Doc } from "@/components/win7/folders/Doc";
 import { Project } from "@/components/win7/folders/Project";
 import { Resume } from "@/components/win7/folders/Resume";
-import { contents, crumbIds, node, TREE } from "@/components/win7/fs";
+import { CHROME_ID, launchWindow } from "@/components/win7/apps";
+import { contents, crumbIds, node, TREE, UNITWISE_FILE_ID } from "@/components/win7/fs";
+import { UNITWISE, useChrome } from "@/store/chrome";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { RenameField } from "@/components/win7/RenameField";
@@ -345,7 +347,21 @@ function Contents({
                 return [childId];
               });
             }}
-            onDoubleClick={() => onOpen(childId)}
+            onDoubleClick={() => {
+              // A program launches; only places are navigated into.
+              if (node(childId)?.kind === "app") {
+                launchWindow(childId);
+                return;
+              }
+              // A web page opens in the browser, not in Explorer — load the
+              // tab first so Chrome comes up already on it.
+              if (childId === UNITWISE_FILE_ID) {
+                useChrome.getState().visit(UNITWISE);
+                launchWindow(CHROME_ID);
+                return;
+              }
+              onOpen(childId);
+            }}
           >
             <child.Icon className="ex-tile-icon" />
             {editingId === childId ? (

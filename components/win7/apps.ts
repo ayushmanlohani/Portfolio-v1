@@ -26,6 +26,15 @@ export const CALC_SIZE = { width: 320, height: 448 };
 export const NOTEPAD_ID = "notepad";
 export const NOTEPAD_SIZE = { width: 620, height: 460 };
 
+/**
+ * A cosmetic Chrome browser — an installed program, so it has a desktop
+ * shortcut and a Start menu entry rather than living inside a folder. Its
+ * icon and label come from the `chrome` node in fs.ts, which is what the
+ * desktop and the taskbar read.
+ */
+export const CHROME_ID = "chrome";
+export const CHROME_SIZE = { width: 1040, height: 680 };
+
 /** What a folder window opens at. */
 const FOLDER_SIZE = { width: 900, height: 600 };
 
@@ -53,6 +62,11 @@ export function launchWindow(id: string) {
 
   if (id === NOTEPAD_ID) {
     open(id, { title: "Untitled - Notepad", ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  if (id === CHROME_ID) {
+    open(id, { title: "New Tab - Google Chrome", ...CHROME_SIZE, desk });
     return;
   }
 
