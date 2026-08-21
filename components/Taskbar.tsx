@@ -6,6 +6,7 @@ import {
   CALC_ID,
   launchWindow,
   NOTEPAD_ID,
+  PDF_ID,
   PDF_PREFIX,
   PHOTOS_PREFIX,
   TERMINAL_ID,
@@ -34,8 +35,8 @@ const TaskIcon = ({ id }: { id: string }) => {
   if (id === CALC_ID) return <CalculatorIcon className="task-button-icon" />;
   if (id === NOTEPAD_ID) return <NotepadIcon className="task-button-icon" />;
   if (id === WMP_ID) return <MediaPlayerIcon className="task-button-icon" />;
+  if (id === PDF_ID || id.startsWith(PDF_PREFIX)) return <PdfIcon className="task-button-icon" />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewerIcon className="task-button-icon" />;
-  if (id.startsWith(PDF_PREFIX)) return <PdfIcon className="task-button-icon" />;
 
   const Icon = node(id)?.Icon ?? FolderIcon;
   return <Icon className="task-button-icon" />;

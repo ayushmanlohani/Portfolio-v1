@@ -39,6 +39,10 @@ export const WMP_ID = "wmp";
 export const WMP_SIZE = { width: 826, height: 586 };
 export const WMP_TITLE = "Windows Media Player";
 
+/** The PDF viewer as an app: one window, opens on nothing. */
+export const PDF_ID = "pdfviewer";
+export const PDF_TITLE = "PDF Viewer";
+
 export { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 
 export const PHOTOS_SIZE = { width: 640, height: 512 };
@@ -92,6 +96,11 @@ export function launchWindow(id: string) {
 
   if (id === WMP_ID) {
     open(id, { title: WMP_TITLE, ...WMP_SIZE, desk });
+    return;
+  }
+
+  if (id === PDF_ID) {
+    open(id, { title: PDF_TITLE, ...PDF_SIZE, desk });
     return;
   }
 

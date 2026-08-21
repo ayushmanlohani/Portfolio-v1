@@ -81,10 +81,25 @@ export type Page = {
    */
   logo?: string;
   /**
+   * The crest's size in Win7 pixels. Leave it off for the default 72; give a
+   * bigger number to just one entry without touching the others.
+   */
+  logoSize?: number;
+  /**
    * Small grey lines under the name, before the tagline. Where a job was and
    * when — an employer and a date range, one per line. Projects skip it.
    */
   meta?: string[];
+  /**
+   * The name's size in Win7 pixels, for long names that would otherwise wrap
+   * at the default 50. Leave off for the default.
+   */
+  nameSize?: number;
+  /**
+   * The tagline's size in Win7 pixels (default 15), bumped line spacing
+   * included. Leave off for the default.
+   */
+  taglineSize?: number;
   /** Two lines, centred. Keep each under roughly 80 characters or it wraps. */
   tagline: string[];
   /** Buttons under the tagline. An empty list renders nothing. */

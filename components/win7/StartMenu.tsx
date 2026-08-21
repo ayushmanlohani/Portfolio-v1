@@ -1,7 +1,6 @@
 "use client";
 
-import { CALC_ID, NOTEPAD_ID, PDF_PREFIX, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
-import { RESUME } from "@/content/resume";
+import { CALC_ID, NOTEPAD_ID, PDF_ID, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
 import {
   CalculatorIcon,
   FlagIcon,
@@ -54,8 +53,8 @@ const RECENT: Program[] = [
     opens: true,
   },
   {
-    id: PDF_PREFIX + RESUME.pdf,
-    label: "Resume (PDF)",
+    id: PDF_ID,
+    label: "PDF Viewer",
     icon: <PdfIcon className="sm-icon" />,
     opens: true,
   },

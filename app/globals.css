@@ -1902,13 +1902,22 @@ body {
 
 .ex-content {
   /* Anchors `.win7-warn-bin` — the Recycle Bin's restore-collision balloon —
-     against this box rather than whatever tile was right-clicked. */
+      against this box rather than whatever tile was right-clicked. */
   position: relative;
   flex: 1;
   min-width: 0;
   padding: calc(10 * var(--px)) calc(14 * var(--px));
   overflow: auto;
+  /* No scrollbar bar — at fractional DPIs it used to appear even when
+     everything fit. The pane still scrolls if content ever outgrows it. */
+  scrollbar-width: none;
+  /* Wheel over a pane with nothing to scroll stays dead — no chaining. */
+  overscroll-behavior: none;
   background: #ffffff;
+}
+
+.ex-content::-webkit-scrollbar {
+  display: none;
 }
 
 .ex-empty {
@@ -2402,6 +2411,32 @@ body {
   color: #1c1f22;
 }
 
+/* ── Contact rows ──────────────────────────────────────────────
+   The two contact lines: icon, then the words. Roomy windows spread
+   them to the edges — email left, LinkedIn right; a narrow window
+   wraps them instead. */
+
+.contact-rows {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: calc(12 * var(--px));
+}
+
+.contact-row {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(12 * var(--px));
+  font-size: calc(17 * var(--px));
+  color: #1f5a8f;
+}
+
+.contact-icon {
+  width: calc(26 * var(--px));
+  height: calc(26 * var(--px));
+  flex: none;
+}
+
 /* ── A project page ────────────────────────────────────────────
    Everything above the stack row is deliberately quiet, so the
    logos are the one thing the eye lands on.
@@ -2471,6 +2506,19 @@ img.project-crest {
 
 .project-tagline span {
   display: block;
+}
+
+/* A short page's own bottom margin is scrollable slack, not content — when
+   nothing follows the tagline, drop the gap so the pane can't scroll air.
+   Project always renders the .about-body wrapper, so an empty one is
+   hidden outright; :has() catches the tagline before it, since :last-child
+   still sees the hidden node. */
+.about-body:empty {
+  display: none;
+}
+
+.project-tagline:has(+ .about-body:empty) {
+  margin-bottom: 0;
 }
 
 .project-links {
@@ -3881,6 +3929,32 @@ img.project-crest {
   text-overflow: ellipsis;
 }
 
+/* The resume's own download button, sitting where the file name used to be.
+   Every other PDF keeps the plain icon on the right. */
+.pdf-resume-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(3 * var(--px)) calc(14 * var(--px));
+  border-radius: calc(3 * var(--px));
+  border: calc(1 * var(--px)) solid #a61b1b;
+  background: linear-gradient(180deg, #e8574f, #c9302c);
+  color: #fff;
+  font-size: calc(12 * var(--px));
+  line-height: 1.4;
+  text-decoration: none;
+  text-shadow: 0 calc(1 * var(--px)) 0 rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.35);
+}
+
+.pdf-resume-dl:hover {
+  background: linear-gradient(180deg, #ef6b64, #d43f3a);
+}
+
+.pdf-resume-dl:active {
+  background: linear-gradient(180deg, #c9302c, #b02a26);
+}
+
 .pdf-btn {
   width: calc(26 * var(--px));
   height: calc(24 * var(--px));
@@ -3966,6 +4040,8 @@ img.project-crest {
 }
 
 .pdf-page {
+  /* The anchor overlay for link annotations positions against this box. */
+  position: relative;
   display: grid;
   place-items: center;
   margin: 0 auto calc(16 * var(--px));
@@ -3976,6 +4052,22 @@ img.project-crest {
 
 .pdf-page canvas {
   display: block;
+}
+
+/* One hit-box per link annotation, sitting exactly where pdf.js drew the
+   underlined text. The fill uses "lighten" blending so only the dark glyphs
+   underneath pick it up — black words read as link blue, the white page
+   around them stays untouched. */
+.pdf-link {
+  position: absolute;
+  z-index: 1;
+  cursor: pointer;
+  background: #0066cc;
+  mix-blend-mode: lighten;
+}
+
+.pdf-link:hover {
+  background: #1a7aff;
 }
 
 .pdf-status {
