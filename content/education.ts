@@ -34,14 +34,14 @@ export const EDUCATION = {
 
     logo: "/letterbox/lu-logo.png",
 
+    logoSize: 132,
+
     meta: [
-      "Bachelor of Technology — Computer Science (Artificial Intelligence)",
-      "October 2023 – September 2027 · Lucknow, Uttar Pradesh",
+      "October 2023 – September 2027 · Lucknow, Uttar Pradesh, India",
     ],
 
     tagline: [
-      `Computer Science with an Artificial Intelligence specialisation.`,
-      `Final year, and where the research assistantship sits.`,
+      `Bachelor of Technology — Computer Science (Artificial Intelligence)`,
     ],
 
     links: [],
@@ -63,7 +63,14 @@ export const EDUCATION = {
 
     logo: "/letterbox/ncic-logo.png",
 
+    logoSize: 132,
+
+    // Long name — sized to hold one line at the default window width.
+    nameSize: 38,
+
     tagline: ["ISC · Class XI – XII · 90%", "ICSE · Class I – X · 92%"],
+
+    taglineSize: 18,
 
     links: [],
 

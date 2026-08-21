@@ -13,6 +13,7 @@ import {
   CALC_ID,
   mediaSrc,
   NOTEPAD_ID,
+  PDF_ID,
   PDF_PREFIX,
   PHOTOS_PREFIX,
   TERMINAL_ID,
@@ -38,6 +39,7 @@ function contentFor(win: OpenWindow) {
   if (id === CALC_ID) return <Calculator />;
   if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
   if (id === WMP_ID) return <MediaPlayer />;
+  if (id === PDF_ID) return <PdfViewer />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
   if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;
   if (node(id)?.kind === "file") return <Notepad windowId={id} fileId={id} />;

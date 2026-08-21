@@ -6,7 +6,6 @@ import { About } from "@/components/win7/folders/About";
 import { Contact } from "@/components/win7/folders/Contact";
 import { Doc } from "@/components/win7/folders/Doc";
 import { Project } from "@/components/win7/folders/Project";
-import { Resume } from "@/components/win7/folders/Resume";
 import { launchWindow } from "@/components/win7/apps";
 import { contents, crumbIds, node, TREE } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
@@ -35,15 +34,8 @@ import { useWindowStore } from "@/store/windows";
 /* ── The drive ─────────────────────────────────────────────────
    Everything about the meter is derived from these two numbers,
    so the bar, its caption and the details pane can never end up
-   disagreeing with each other.
+    disagreeing with each other.
    ───────────────────────────────────────────────────────────── */
-
-/**
- * The one file that draws the resume. Its id follows from the folder and the
- * item's name in content/folders.ts — rename that item and this must follow,
- * which is why it is named here rather than buried in a comparison.
- */
-const RESUME_ID = "resume/resume";
 
 const DRIVE = { total: 69, free: 2 };
 const USED_FRACTION = (DRIVE.total - DRIVE.free) / DRIVE.total;
@@ -259,9 +251,6 @@ function Contents({
   if (view === "about") return <About />;
   if (view === "contact") return <Contact />;
   if (view === "network") return <Network />;
-  // The resume is a document of its own shape — LaTeX's layout, not prose —
-  // so it gets a component rather than going through Doc like other items.
-  if (view === RESUME_ID) return <Resume />;
 
   // Anything with a page of its own — a project, a job, a qualification.
   // content/pages.ts stays the only place a page is declared, and `entryAt`

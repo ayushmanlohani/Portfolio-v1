@@ -25,19 +25,39 @@ export function Project({ data }: { data: Page }) {
           so adding the file later doesn't move anything below it. */}
       {data.logo !== undefined &&
         (data.logo ? (
-          // 72 is the intrinsic hint; the real size is --px-scaled in CSS.
+          // A sized crest grows upward: the negative top margin cancels the
+          // extra height, so the name and everything below stay put. Only
+          // ~34px of padding sits above — past that the crest would clip.
           <Image
             className="project-crest"
             src={data.logo}
             alt={`${data.name} logo`}
-            width={72}
-            height={72}
+            width={data.logoSize ?? 72}
+            height={data.logoSize ?? 72}
+            style={{
+              width: `calc(${data.logoSize ?? 72} * var(--px))`,
+              height: `calc(${data.logoSize ?? 72} * var(--px))`,
+              ...(data.logoSize && {
+                margin: `calc(${110 - data.logoSize} * var(--px)) auto calc(18 * var(--px))`,
+              }),
+            }}
           />
         ) : (
           <div className="project-crest" aria-hidden="true" />
         ))}
 
-      <h1 className="about-name">{data.name}</h1>
+      <h1
+        className="about-name"
+        style={
+          data.nameSize
+            ? {
+                fontSize: `calc(${data.nameSize} * var(--px))`,
+              }
+            : undefined
+        }
+      >
+        {data.name}
+      </h1>
       <div className="about-rule" />
 
       {data.meta && (
@@ -48,7 +68,17 @@ export function Project({ data }: { data: Page }) {
         </p>
       )}
 
-      <p className="project-tagline">
+      <p
+        className="project-tagline"
+        style={
+          data.taglineSize
+            ? {
+                fontSize: `calc(${data.taglineSize} * var(--px))`,
+                lineHeight: 2,
+              }
+            : undefined
+        }
+      >
         {data.tagline.map((line) => (
           <span key={line}>{inline(line)}</span>
         ))}

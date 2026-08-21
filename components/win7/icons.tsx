@@ -520,3 +520,36 @@ export function PdfIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** An envelope — white face, blue flap, the way Win7 drew mail. */
+export function MailIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="mail-face" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#dfe9f3" />
+        </linearGradient>
+      </defs>
+      <rect x="3" y="8" width="26" height="17" rx="1.5" fill="url(#mail-face)" stroke="#5b7a8b" />
+      <path d="M4 9.5l12 9 12-9" fill="none" stroke="#4a6fa5" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M4 24l9.5-8M28 24l-9.5-8" fill="none" stroke="#a8bdd2" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+/** The LinkedIn mark — rounded blue square with "in". */
+export function LinkedInIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <rect x="3" y="3" width="26" height="26" rx="3" fill="#0a66c2" />
+      <rect x="3" y="3" width="26" height="13" rx="3" fill="#ffffff" opacity="0.14" />
+      <circle cx="10" cy="10.5" r="2.1" fill="#ffffff" />
+      <path d="M8.2 14h3.6v11H8.2z" fill="#ffffff" />
+      <path
+        d="M14.6 14h3.4v1.6c.7-1.1 2-1.9 3.7-1.9 3 0 4.3 1.9 4.3 5V25h-3.6v-5.6c0-1.6-.6-2.6-1.9-2.6-1.4 0-2.3 1-2.3 2.7V25h-3.6z"
+        fill="#ffffff"
+      />
+    </svg>
+  );
+}

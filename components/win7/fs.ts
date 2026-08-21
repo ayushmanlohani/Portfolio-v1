@@ -6,13 +6,15 @@ import {
   FolderIcon,
   NetworkIcon,
   NotepadIcon,
+  PdfIcon,
   RecycleBinIcon,
   StarIcon,
   TextFileIcon,
 } from "@/components/win7/icons";
-import { fileName, PHOTOS_PREFIX, PICTURES } from "@/components/win7/media";
+import { fileName, PDF_PREFIX, PHOTOS_PREFIX, PICTURES } from "@/components/win7/media";
 import { FOLDERS } from "@/content/folders";
 import { type Entry, isGroup, PAGES } from "@/content/pages";
+import { RESUME } from "@/content/resume";
 
 /**
  * The file tree.
@@ -111,6 +113,9 @@ function childrenOf(id: string): string[] | undefined {
   const pages = PAGE_CHILDREN[id] ?? [];
   const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
   const all = [...pages, ...items];
+  // The Resume folder holds the real PDF, not a text item — its node id is
+  // its viewer window id, the same trick the Pictures folder uses.
+  if (id === "resume") all.push(PDF_PREFIX + RESUME.pdf);
   return all.length > 0 ? all : undefined;
 }
 
@@ -166,6 +171,15 @@ const PICTURE_NODES: FsNode[] = PICTURES.map((picture) => ({
   type: picture.src.endsWith(".png") ? "PNG image" : "JPEG image",
 }));
 
+/** The resume as a file in the Resume folder. Opening it opens the viewer. */
+const RESUME_PDF_NODE: FsNode = {
+  id: PDF_PREFIX + RESUME.pdf,
+  label: fileName(RESUME.pdf),
+  Icon: PdfIcon,
+  kind: "file",
+  type: "PDF Document",
+};
+
 const NODE_LIST: FsNode[] = [
   {
     id: "pictures",
@@ -176,6 +190,7 @@ const NODE_LIST: FsNode[] = [
     children: PICTURE_NODES.map((n) => n.id),
   },
   ...PICTURE_NODES,
+  RESUME_PDF_NODE,
 
   folder("about", "About Me"),
   folder("projects", "Projects"),

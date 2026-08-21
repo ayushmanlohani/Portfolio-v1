@@ -54,15 +54,9 @@ export const FOLDERS: Record<string, Item[]> = {
   experience: [],
   education: [],
 
-  // The one item here draws content/resume.ts instead of these words — see
-  // Explorer's Contents. The text below is the fallback nobody should see.
-  resume: [
-    {
-      name: "Resume",
-      type: "Document",
-      text: [`The full thing, on one page.`],
-    },
-  ],
+  // The Resume folder's one file is the real PDF, wired in fs.ts
+  // (RESUME_PDF_NODE) so it opens in the PDF viewer, not Notepad.
+  resume: [],
 
   // Contact draws content/contact.ts instead of listing files — its three
   // items were each a single link, which wasn't worth a double-click apiece.

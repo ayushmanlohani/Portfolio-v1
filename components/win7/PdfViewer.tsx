@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask, PDFPageProxy } from "pdfjs-dist";
 
 import { fileName } from "@/components/win7/media";
+import { RESUME } from "@/content/resume";
 
 /**
  * A PDF reader, and only a reader.
@@ -33,6 +34,8 @@ const STOPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3];
 /** One page, drawn at whatever scale the toolbar is currently asking for. */
 function Page({ page, scale, label }: { page: PDFPageProxy; scale: number; label: number }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  /** Link annotations as viewport-space boxes; empty until measured. */
+  const [links, setLinks] = useState<{ href: string; x: number; y: number; w: number; h: number }[]>([]);
 
   useEffect(() => {
     const el = canvas.current;
@@ -57,6 +60,31 @@ function Page({ page, scale, label }: { page: PDFPageProxy; scale: number; label
       transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0],
     });
 
+    // pdf.js paints links as pixels; without this overlay they aren't
+    // clickable. Each annotation's rect is converted into the same viewport
+    // space the canvas was drawn in, so it tracks zoom and fit-width.
+    let alive = true;
+    page.getAnnotations().then((annots) => {
+      if (!alive) return;
+      setLinks(
+        annots
+          .filter((a): a is typeof a & { url: string } => a.subtype === "Link" && typeof a.url === "string")
+          .map((a) => {
+            // This pdfjs build has no rectangle helper; two corners give the
+            // same box once you take the min corner and the size.
+            const [ax, ay] = viewport.convertToViewportPoint(a.rect[0], a.rect[1]);
+            const [bx, by] = viewport.convertToViewportPoint(a.rect[2], a.rect[3]);
+            return {
+              href: a.url,
+              x: Math.min(ax, bx),
+              y: Math.min(ay, by),
+              w: Math.abs(bx - ax),
+              h: Math.abs(by - ay),
+            };
+          }),
+      );
+    });
+
     // Cancelling is the normal path, not an error: every zoom change replaces
     // a render that may still be running. Anything else is worth surfacing.
     task.promise.catch((err: unknown) => {
@@ -65,17 +93,31 @@ function Page({ page, scale, label }: { page: PDFPageProxy; scale: number; label
       }
     });
 
-    return () => task.cancel();
+    return () => {
+      alive = false;
+      task.cancel();
+    };
   }, [page, scale]);
 
   return (
     <div className="pdf-page" data-page={label}>
       <canvas ref={canvas} aria-label={`Page ${label}`} />
+      {links.map((l, i) => (
+        <a
+          key={i}
+          className="pdf-link"
+          href={l.href}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Open ${l.href}`}
+          style={{ left: l.x, top: l.y, width: l.w, height: l.h }}
+        />
+      ))}
     </div>
   );
 }
 
-export function PdfViewer({ src }: { src: string }) {
+export function PdfViewer({ src }: { src?: string }) {
   const scroller = useRef<HTMLDivElement>(null);
   const [pages, setPages] = useState<PDFPageProxy[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +126,7 @@ export function PdfViewer({ src }: { src: string }) {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    if (!src) return;
     let cancelled = false;
     // Closing the window has to tear the worker down with it, and it is the
     // loading task — not the document — that owns the worker.
@@ -203,10 +246,20 @@ export function PdfViewer({ src }: { src: string }) {
           </button>
         </div>
 
-        <div className="pdf-title">{fileName(src)}</div>
+        {/* The caption bar already names the file, so the toolbar doesn't
+            repeat it. The resume — and only the resume — gets a big red
+            download in its place; every other PDF downloads via the icon on
+            the right. */}
+        <div className="pdf-title">
+          {src === RESUME.pdf && (
+            <a className="pdf-resume-dl" href={src} download>
+              Download Resume
+            </a>
+          )}
+        </div>
 
         <div className="pdf-group">
-          <button type="button" className="pdf-btn" aria-label="Zoom out" onClick={() => stepZoom(-1)}>
+          <button type="button" className="pdf-btn" aria-label="Zoom out" disabled={!src} onClick={() => stepZoom(-1)}>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M4 8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
@@ -217,27 +270,31 @@ export function PdfViewer({ src }: { src: string }) {
             className="pdf-zoom"
             aria-label="Fit to width"
             aria-pressed={fitWidth}
+            disabled={!src}
             onClick={() => setFitWidth(true)}
           >
             {Math.round(scale * 100)}%
           </button>
 
-          <button type="button" className="pdf-btn" aria-label="Zoom in" onClick={() => stepZoom(1)}>
+          <button type="button" className="pdf-btn" aria-label="Zoom in" disabled={!src} onClick={() => stepZoom(1)}>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M8 4v8M4 8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </button>
 
-          <a className="pdf-btn pdf-download" href={src} download aria-label="Download">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M8 2.5v7m0 0L5 6.8M8 9.5l3-2.7M3.5 12.5h9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </a>
+          {src && (
+            <a className="pdf-btn pdf-download" href={src} download aria-label="Download">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M8 2.5v7m0 0L5 6.8M8 9.5l3-2.7M3.5 12.5h9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </a>
+          )}
         </div>
       </div>
 
       <div className="pdf-scroll" ref={scroller} onScroll={onScroll}>
-        {error && (
+        {!src && <p className="pdf-status">Open a PDF to view it here.</p>}
+        {src && error && (
           <p className="pdf-status">
             {error}
             {/* A download manager extension can swallow a .pdf request before
@@ -247,7 +304,7 @@ export function PdfViewer({ src }: { src: string }) {
             </a>
           </p>
         )}
-        {!error && pages.length === 0 && <p className="pdf-status">Opening {fileName(src)}…</p>}
+        {src && !error && pages.length === 0 && <p className="pdf-status">Opening {fileName(src)}…</p>}
         {pages.map((p, i) => (
           <Page key={p.pageNumber} page={p} scale={scale} label={i + 1} />
         ))}
