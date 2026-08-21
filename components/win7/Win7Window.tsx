@@ -2,6 +2,7 @@
 
 import { Rnd } from "react-rnd";
 
+import { CAPTION_ICONS } from "@/components/win7/apps";
 import { maximizedBounds, useWindowStore, type Desk, type OpenWindow } from "@/store/windows";
 
 /**
@@ -31,6 +32,7 @@ export function Win7Window({
   const { close, focus, setBounds, minimize, toggleMaximize } = useWindowStore();
 
   const box = win.maximized ? { ...win, ...maximizedBounds(desk) } : win;
+  const CaptionIcon = CAPTION_ICONS[win.id];
 
   return (
     <Rnd
@@ -71,6 +73,7 @@ export function Win7Window({
           className="w7-caption"
           onDoubleClick={() => toggleMaximize(win.id, desk)}
         >
+          {CaptionIcon && <CaptionIcon className="w7-caption-icon" />}
           <span className="w7-title">{win.title}</span>
 
           <div className="w7-caption-buttons">

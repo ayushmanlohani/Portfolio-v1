@@ -69,6 +69,23 @@ is the Windows 7 redesign. Old files are in the session scratchpad, not the repo
   Contact — plus a Recycle Bin. Each opens a real Win7 Explorer window.
   **Only About Me has content**; the other five read "This folder is empty."
 
+- **Three media apps** (2026-08-21, Start menu updated 2026-08-21): Windows
+  Media Player (video, real transport controls, opens on an empty Music
+  library like real WMP — Organize ▸ Manage libraries reaches the videos),
+  Windows Photo Viewer (pictures, the pill toolbar), and a read-only PDF
+  viewer built on pdf.js. WMP and Resume (PDF) launch from the Start menu;
+  Photo Viewer does not — like real Windows, it has no launcher entry and is
+  only what a picture opens in. Every PNG lives in a real **Pictures** folder
+  (desktop's Start ▸ Pictures, and C:\Pictures), each tile its own thumbnail;
+  double-clicking one opens Photo Viewer. `components/win7/media.ts` is the
+  library index — drop a file in `public/letterbox/`, add a line there.
+- **PDFs are blocked by his Internet Download Manager.** IDM's browser
+  integration intercepts anything served as `application/pdf` and hands the
+  page a 204 with no body, so the viewer shows "This document could not be
+  opened" on his machine while working everywhere else. Verified: the same
+  bytes at a non-PDF URL render fine. The fix is in IDM's file-type list, not
+  in the code.
+
 ## Project rules
 
 - **Assets go in `public/letterbox/`.** He drops files there, I wire them up.

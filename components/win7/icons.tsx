@@ -447,3 +447,76 @@ export function TextFileIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** Windows Media Player — the orange-ringed blue orb with a white play arrow. */
+export function MediaPlayerIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <radialGradient id="wmp-orb" cx="0.38" cy="0.3" r="0.85">
+          <stop offset="0" stopColor="#8fd3ff" />
+          <stop offset="0.55" stopColor="#2b8fe0" />
+          <stop offset="1" stopColor="#0b4a86" />
+        </radialGradient>
+        <linearGradient id="wmp-ring" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffcf6b" />
+          <stop offset="0.5" stopColor="#f08a1c" />
+          <stop offset="1" stopColor="#c25a06" />
+        </linearGradient>
+        <linearGradient id="wmp-gloss" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.85" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <circle cx="16" cy="16" r="14" fill="url(#wmp-ring)" />
+      <circle cx="16" cy="16" r="11" fill="url(#wmp-orb)" />
+      <path d="M13 10.5l9.5 5.5-9.5 5.5z" fill="#ffffff" />
+      <path d="M16 3.5c6 0 11 4.2 12.2 9.6C25 9.6 20.8 7.6 16 7.6S7 9.6 3.8 13.1C5 7.7 10 3.5 16 3.5z" fill="url(#wmp-gloss)" />
+    </svg>
+  );
+}
+
+/** Windows Photo Viewer — a framed photo of a hill under a sun. */
+export function PhotoViewerIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="pv-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#bfe6ff" />
+          <stop offset="1" stopColor="#6fb6e8" />
+        </linearGradient>
+      </defs>
+      <rect x="3" y="6" width="26" height="20" rx="2" fill="#ffffff" stroke="#7e93a6" />
+      <rect x="5.5" y="8.5" width="21" height="15" fill="url(#pv-sky)" />
+      <circle cx="10.5" cy="13" r="2.6" fill="#ffd964" />
+      <path d="M5.5 23.5l6-7 4.5 4.5 4-3.5 6.5 6z" fill="#5c9c4e" />
+      <path d="M5.5 8.5h21v4.5c-6-2.6-15-2.6-21 0z" fill="#ffffff" opacity="0.3" />
+    </svg>
+  );
+}
+
+/** A PDF document — the page every resume link opens into. */
+export function PdfIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path
+        d="M6 2h13l7 7v21a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"
+        fill="#ffffff"
+        stroke="#8fa3b6"
+      />
+      <path d="M19 2v7h7" fill="#cfdae5" stroke="#8fa3b6" strokeLinejoin="round" />
+      <rect x="4" y="17" width="20" height="9" rx="1.5" fill="#c8362b" />
+      <text
+        x="14"
+        y="24"
+        textAnchor="middle"
+        fontFamily="Segoe UI, Tahoma, sans-serif"
+        fontSize="7"
+        fontWeight="700"
+        fill="#ffffff"
+      >
+        PDF
+      </text>
+    </svg>
+  );
+}

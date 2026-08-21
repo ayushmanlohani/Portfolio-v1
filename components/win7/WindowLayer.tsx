@@ -4,9 +4,20 @@ import { Calculator } from "@/components/win7/Calculator";
 import { useDesk } from "@/components/win7/desk";
 import { Explorer } from "@/components/win7/Explorer";
 import { node } from "@/components/win7/fs";
+import { MediaPlayer } from "@/components/win7/MediaPlayer";
 import { Notepad } from "@/components/win7/Notepad";
+import { PdfViewer } from "@/components/win7/PdfViewer";
+import { PhotoViewer } from "@/components/win7/PhotoViewer";
 import { Terminal } from "@/components/win7/Terminal";
-import { CALC_ID, NOTEPAD_ID, TERMINAL_ID } from "@/components/win7/apps";
+import {
+  CALC_ID,
+  mediaSrc,
+  NOTEPAD_ID,
+  PDF_PREFIX,
+  PHOTOS_PREFIX,
+  TERMINAL_ID,
+  WMP_ID,
+} from "@/components/win7/apps";
 import { Win7Window } from "@/components/win7/Win7Window";
 import { useWindowStore, type OpenWindow } from "@/store/windows";
 
@@ -26,6 +37,9 @@ function contentFor(win: OpenWindow) {
   if (id === TERMINAL_ID) return <Terminal />;
   if (id === CALC_ID) return <Calculator />;
   if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
+  if (id === WMP_ID) return <MediaPlayer />;
+  if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
+  if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;
   if (node(id)?.kind === "file") return <Notepad windowId={id} fileId={id} />;
   return <Explorer id={id} title={win.title} />;
 }

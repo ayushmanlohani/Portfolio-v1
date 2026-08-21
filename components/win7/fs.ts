@@ -1,3 +1,5 @@
+import { createElement } from "react";
+
 import {
   ComputerIcon,
   DriveIcon,
@@ -8,6 +10,7 @@ import {
   StarIcon,
   TextFileIcon,
 } from "@/components/win7/icons";
+import { fileName, PHOTOS_PREFIX, PICTURES } from "@/components/win7/media";
 import { FOLDERS } from "@/content/folders";
 import { type Entry, isGroup, PAGES } from "@/content/pages";
 
@@ -139,7 +142,41 @@ const FILES: FsNode[] = Object.entries(FOLDERS).flatMap(([parent, items]) =>
   ),
 );
 
+/**
+ * The Pictures folder.
+ *
+ * A picture's node id is its viewer window id — `photos:/letterbox/...` — so
+ * opening one from a folder and opening it from anywhere else land on the
+ * same window instead of two. Its icon is the picture itself, which is what
+ * Windows does with an image file and is the whole reason a Pictures folder
+ * looks different from every other folder.
+ */
+const thumbnail = (src: string) => {
+  const Thumbnail = ({ className }: { className?: string }) =>
+    createElement("img", { className: `fs-thumb ${className ?? ""}`.trim(), src, alt: "" });
+  Thumbnail.displayName = `Thumbnail(${fileName(src)})`;
+  return Thumbnail;
+};
+
+const PICTURE_NODES: FsNode[] = PICTURES.map((picture) => ({
+  id: PHOTOS_PREFIX + picture.src,
+  label: fileName(picture.src),
+  Icon: thumbnail(picture.src),
+  kind: "file",
+  type: picture.src.endsWith(".png") ? "PNG image" : "JPEG image",
+}));
+
 const NODE_LIST: FsNode[] = [
+  {
+    id: "pictures",
+    label: "Pictures",
+    Icon: FolderIcon,
+    kind: "folder",
+    type: "File folder",
+    children: PICTURE_NODES.map((n) => n.id),
+  },
+  ...PICTURE_NODES,
+
   folder("about", "About Me"),
   folder("projects", "Projects"),
   folder("experience", "Experience"),
@@ -191,7 +228,7 @@ const NODE_LIST: FsNode[] = [
     label: "Local Disk (C:)",
     Icon: DriveIcon,
     kind: "drive",
-    children: ["desktop", "downloads"],
+    children: ["desktop", "downloads", "pictures"],
     type: "Local Disk",
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },

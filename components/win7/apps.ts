@@ -1,7 +1,9 @@
 "use client";
 
 import { readDesk } from "@/components/win7/desk";
+import { MediaPlayerIcon } from "@/components/win7/icons";
 import { node } from "@/components/win7/fs";
+import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 import { useWindowStore } from "@/store/windows";
 
 /**
@@ -25,6 +27,38 @@ export const CALC_SIZE = { width: 320, height: 448 };
 
 export const NOTEPAD_ID = "notepad";
 export const NOTEPAD_SIZE = { width: 620, height: 460 };
+
+/**
+ * The media apps are opened per file, so their window id carries the file:
+ * `photos:/letterbox/pngs/kitten.png`. Two pictures then open as two windows,
+ * each with its own caption, and re-opening one refocuses it instead of
+ * spawning a duplicate — all of that falls out of the store's existing rule
+ * that a window is its id. Windows Media Player has one window, like WMP.
+ */
+export const WMP_ID = "wmp";
+export const WMP_SIZE = { width: 826, height: 586 };
+export const WMP_TITLE = "Windows Media Player";
+
+export { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
+
+export const PHOTOS_SIZE = { width: 640, height: 512 };
+export const PDF_SIZE = { width: 780, height: 680 };
+
+/**
+ * Windows that put their icon in the caption bar beside a left-aligned title,
+ * rather than taking the centred title the rest of the desktop uses. Windows 7
+ * does this for its own applications and not for Explorer folders, and Media
+ * Player is the one here that reads as an application.
+ */
+export const CAPTION_ICONS: Record<string, (props: { className?: string }) => React.ReactElement> = {
+  [WMP_ID]: MediaPlayerIcon,
+};
+
+/** The file a `photos:` or `pdf:` window is showing. */
+export const mediaSrc = (id: string) => id.slice(id.indexOf(":") + 1);
+
+/** What Windows would call the file — the caption bar of both viewers. */
+const baseName = (src: string) => src.slice(src.lastIndexOf("/") + 1);
 
 /** What a folder window opens at. */
 const FOLDER_SIZE = { width: 900, height: 600 };
@@ -53,6 +87,21 @@ export function launchWindow(id: string) {
 
   if (id === NOTEPAD_ID) {
     open(id, { title: "Untitled - Notepad", ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  if (id === WMP_ID) {
+    open(id, { title: WMP_TITLE, ...WMP_SIZE, desk });
+    return;
+  }
+
+  if (id.startsWith(PHOTOS_PREFIX)) {
+    open(id, { title: baseName(mediaSrc(id)), ...PHOTOS_SIZE, desk });
+    return;
+  }
+
+  if (id.startsWith(PDF_PREFIX)) {
+    open(id, { title: baseName(mediaSrc(id)), ...PDF_SIZE, desk });
     return;
   }
 
