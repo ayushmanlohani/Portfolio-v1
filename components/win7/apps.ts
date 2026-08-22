@@ -43,6 +43,14 @@ export const WMP_TITLE = "Windows Media Player";
 export const PDF_ID = "pdfviewer";
 export const PDF_TITLE = "PDF Viewer";
 
+/**
+ * The Control Panel's Personalization page, opened from the desktop
+ * right-click menu. It keeps the centred caption Explorer folders use —
+ * no caption icon — so its title sits dead centre of the bar.
+ */
+export const PERSONALIZE_ID = "personalize";
+export const PERSONALIZE_SIZE = { width: 820, height: 600 };
+
 export { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 
 export const PHOTOS_SIZE = { width: 640, height: 512 };
@@ -110,6 +118,11 @@ export function launchWindow(id: string) {
 
   if (id === PDF_ID) {
     open(id, { title: PDF_TITLE, ...PDF_SIZE, desk });
+    return;
+  }
+
+  if (id === PERSONALIZE_ID) {
+    open(id, { title: "Personalization", ...PERSONALIZE_SIZE, desk });
     return;
   }
 

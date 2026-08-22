@@ -600,3 +600,30 @@ export function ChromeIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Personalization — a monitor wearing the Harmony wallpaper in miniature:
+ * sky above a rolling green hill, the sun up in the corner.
+ */
+export function PersonalizeIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="pz-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#9ed4f3" />
+          <stop offset="1" stopColor="#3579bd" />
+        </linearGradient>
+        <linearGradient id="pz-hill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8cc063" />
+          <stop offset="1" stopColor="#54873b" />
+        </linearGradient>
+      </defs>
+      <rect x="3" y="5" width="26" height="18" rx="1.6" fill="#e8eef4" stroke="#4a6a86" strokeWidth="1.5" />
+      <rect x="5" y="7" width="22" height="14" fill="url(#pz-sky)" />
+      <circle cx="23.2" cy="10.8" r="2.2" fill="#fff3c4" />
+      <path d="M5 21c4.5-5.5 8.5-6.5 12.5-3.8 3.6-2.4 7-1.6 9.5 1.2V21z" fill="url(#pz-hill)" />
+      <path d="M13 23l-1.5 4h9L19 23z" fill="#b9c9d8" stroke="#4a6a86" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M9 27h14" stroke="#4a6a86" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}

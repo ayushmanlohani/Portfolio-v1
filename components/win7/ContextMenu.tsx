@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type FsNode, node, unregisterFile } from "@/components/win7/fs";
+import { launchWindow, PERSONALIZE_ID } from "@/components/win7/apps";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
 import { useFiles } from "@/store/files";
 import { useFolders } from "@/store/folders";
@@ -66,7 +67,8 @@ type Action =
   | "open"
   | "pin"
   | "unpin"
-  | "close";
+  | "close"
+  | "personalize";
 
 /** Bare desktop. Gadgets was removed on request. */
 const DESKTOP_ENTRIES: Entry[] = [
@@ -80,7 +82,7 @@ const DESKTOP_ENTRIES: Entry[] = [
   { kind: "item", label: "New", submenu: true },
   { kind: "sep" },
   { kind: "item", label: "Screen resolution" },
-  { kind: "item", label: "Personalize" },
+  { kind: "item", label: "Personalize", action: "personalize" },
 ];
 
 /**
@@ -275,7 +277,13 @@ export function DesktopContextMenu({
 
   const run = (action?: Action) => {
     if (!action) return;
+    // Both bare-desktop actions fire with `target` null, so they run before
+    // the guard below rather than behind it.
     if (action === "refresh") onRefresh?.();
+    if (action === "personalize") {
+      launchWindow(PERSONALIZE_ID);
+      return;
+    }
     if (!target) return;
 
     if (action === "open") onOpen?.(target.id);

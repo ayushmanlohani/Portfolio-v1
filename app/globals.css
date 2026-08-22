@@ -234,6 +234,19 @@ body {
   background-position: center;
   /* Shows through only if the image fails to load. */
   background-color: #1b5b98;
+  transition: filter 0.6s ease, opacity 0.6s ease;
+}
+
+.win7-wallpaper--video {
+  background: none;
+}
+
+.win7-wallpaper--video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ── Desktop icons ─────────────────────────────────────────────
@@ -973,7 +986,10 @@ body {
 
 .w7-caption-buttons {
   position: absolute;
-  top: 0;
+  /* Vertically centred in the caption bar rather than glued to its top edge,
+     so the button group and the title read as one aligned line. */
+  top: 50%;
+  transform: translateY(-50%);
   /* Inset past the window's own 6px corner radius, not just 2px into it — a
      button sitting closer than the radius pokes its square corner past the
      curve once anything (overflow:hidden, a render at a slightly different
@@ -2354,7 +2370,11 @@ body {
    opens up below. 6px down to that edge, another 4.5px to centre on the
    30px-tall tab row (30 tall, 21 tall button block, (30-21)/2). */
 .w7-window[data-app="chrome"] .w7-caption-buttons {
+  /* Chrome's caption has no height to centre within — transform: none
+     overrides the base rule's translateY(-50%), which is written for a
+     caption tall enough to centre inside. */
   top: calc(10.5 * var(--px));
+  transform: none;
 }
 
 /* The generic caption buttons are cut for Aero glass — translucent, tinted
@@ -4368,4 +4388,219 @@ img.project-crest {
   background: #ffffff;
   border: calc(1 * var(--px)) solid #b6c4d1;
   box-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.25);
+}
+
+/* ── Control Panel — Personalization ──────────────────────────
+   Explorer chrome (the address row is reused wholesale) with the
+   tree and command bar gone, and a white page below. The theme
+   thumbnails are placeholders until real wallpapers arrive.
+   ───────────────────────────────────────────────────────────── */
+
+.cp {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  /* Same base ink as .ex — without it every inherited-colour string (the
+     address crumb above all) picks up the window's pale glass colour and
+     disappears into the white bars. */
+  font-size: calc(12 * var(--px));
+  color: #1a1a1a;
+  background: #ffffff;
+}
+
+.cp-body {
+  flex: 1;
+  min-height: 0;
+  padding: calc(12 * var(--px)) calc(18 * var(--px)) calc(14 * var(--px));
+  overflow-y: auto;
+  /* Same discipline as .ex-content — no visible scrollbar bar. */
+  scrollbar-width: none;
+  overscroll-behavior: none;
+}
+
+.cp-body::-webkit-scrollbar {
+  display: none;
+}
+
+.cp-title {
+  margin: calc(2 * var(--px)) 0 calc(16 * var(--px));
+  font-size: calc(17 * var(--px));
+  font-weight: 400;
+  color: #1f5a8f;
+}
+
+.cp-group-heading {
+  margin: calc(10 * var(--px)) 0 calc(8 * var(--px));
+  font-size: calc(12 * var(--px));
+  font-weight: 600;
+  color: #26466b;
+}
+
+.cp-count {
+  font-weight: 400;
+  color: #64798d;
+}
+
+.cp-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(8 * var(--px));
+}
+
+.cp-theme {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(4 * var(--px));
+  padding: calc(4 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(3 * var(--px));
+  background: none;
+  font: inherit;
+  cursor: default;
+}
+
+/* Aero's soft blue hover, the same wash desktop icons get. */
+.cp-theme:hover {
+  border-color: rgba(120, 190, 245, 0.55);
+  background: rgba(120, 190, 245, 0.18);
+}
+
+/* The applied theme carries a glass-blue ring with a faint outer glow. */
+.cp-theme[data-selected] {
+  border-color: rgba(90, 165, 235, 0.9);
+  background: rgba(90, 165, 235, 0.22);
+  box-shadow: 0 0 calc(6 * var(--px)) rgba(90, 165, 235, 0.45);
+}
+
+/* Placeholder thumbnails — gradients standing in for wallpapers nobody
+   has supplied yet. `aero` hints at the Harmony sky so the default theme
+   still reads as "the blue one". */
+.cp-thumb {
+  width: calc(124 * var(--px));
+  height: calc(78 * var(--px));
+  border: calc(1 * var(--px)) solid #7e99b1;
+  border-radius: calc(2 * var(--px));
+  background: linear-gradient(180deg, #eaf0f5, #cfdae4);
+  box-shadow:
+    inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.65),
+    0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.18);
+}
+
+.cp-thumb--image {
+  background-size: cover;
+  background-position: center;
+}
+
+.cp-thumb--video {
+  padding: 0;
+  overflow: hidden;
+}
+
+.cp-thumb--video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.cp-name {
+  max-width: calc(132 * var(--px));
+  overflow: hidden;
+  font-size: calc(12 * var(--px));
+  line-height: 1.25;
+  color: #1e2a36;
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ── Confirm dialog ─────────────────────────────────────────── */
+
+.cp-confirm-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(calc(6 * var(--px)));
+}
+
+.cp-confirm-dialog {
+  width: calc(360 * var(--px));
+  padding: calc(20 * var(--px)) calc(24 * var(--px));
+  border: calc(1 * var(--px)) solid #7a9bb5;
+  border-radius: calc(6 * var(--px));
+  background: linear-gradient(180deg, #f6f9fc 0%, #e8eef4 100%);
+  box-shadow:
+    0 calc(4 * var(--px)) calc(18 * var(--px)) rgba(0, 0, 0, 0.28),
+    inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.cp-confirm-text {
+  margin: 0 0 calc(14 * var(--px));
+  font-size: calc(13 * var(--px));
+  font-weight: 400;
+  color: #1a1a1a;
+}
+
+.cp-confirm-preview {
+  margin: 0 auto calc(18 * var(--px));
+  width: calc(280 * var(--px));
+  height: calc(175 * var(--px));
+  border: calc(1 * var(--px)) solid #7e99b1;
+  border-radius: calc(3 * var(--px));
+  overflow: hidden;
+  background: #1b5b98;
+}
+
+.cp-confirm-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cp-confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: calc(10 * var(--px));
+}
+
+.cp-confirm-btn {
+  min-width: calc(75 * var(--px));
+  padding: calc(5 * var(--px)) calc(16 * var(--px));
+  border: calc(1 * var(--px)) solid #7a9bb5;
+  border-radius: calc(3 * var(--px));
+  background: linear-gradient(180deg, #f5f8fb 0%, #dfe8f0 100%);
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.cp-confirm-btn:hover {
+  background: linear-gradient(180deg, #eaf1f7 0%, #d0dde8 100%);
+}
+
+.cp-confirm-btn:active {
+  background: linear-gradient(180deg, #d0dde8 0%, #c0cfdb 100%);
+}
+
+.cp-confirm-btn--ok {
+  font-weight: 600;
+  border-color: #4a8cb8;
+  background: linear-gradient(180deg, #d4e8f7 0%, #a8cde4 50%, #8fb8d8 100%);
+  color: #1a3a54;
+  text-shadow: 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.45);
+}
+
+.cp-confirm-btn--ok:hover {
+  background: linear-gradient(180deg, #c4ddf1 0%, #94bdd8 50%, #7dabc8 100%);
+}
+
+.cp-confirm-btn--ok:active {
+  background: linear-gradient(180deg, #94bdd8 0%, #7dabc8 100%);
 }
