@@ -912,6 +912,7 @@ body {
   flex-direction: column;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   border-radius: calc(6 * var(--px)) calc(6 * var(--px)) calc(4 * var(--px))
     calc(4 * var(--px));
   /* Aero's frame is a thick pane of tinted glass with the desktop showing
@@ -973,7 +974,11 @@ body {
 .w7-caption-buttons {
   position: absolute;
   top: 0;
-  right: calc(2 * var(--px));
+  /* Inset past the window's own 6px corner radius, not just 2px into it — a
+     button sitting closer than the radius pokes its square corner past the
+     curve once anything (overflow:hidden, a render at a slightly different
+     scale) clips less generously than expected. */
+  right: calc(8 * var(--px));
   display: flex;
   align-items: stretch;
   height: calc(21 * var(--px));
@@ -2342,10 +2347,66 @@ body {
   display: none;
 }
 
-.w7-window[data-app="chrome"] .w7-body {
-  margin: 0;
+/* The caption's own height collapsed to 0 above, so the buttons' `top: 0`
+   (set for every other window, where it flushes them to the caption's top
+   edge) instead needs to land on the *tab strip's* top edge — which itself
+   now sits 6px down, past the sliver of glass .w7-body's own top margin
+   opens up below. 6px down to that edge, another 4.5px to centre on the
+   30px-tall tab row (30 tall, 21 tall button block, (30-21)/2). */
+.w7-window[data-app="chrome"] .w7-caption-buttons {
+  top: calc(10.5 * var(--px));
+}
+
+/* The generic caption buttons are cut for Aero glass — translucent, tinted
+   blue by whatever's blurred behind them. Chrome's own toolbar sits behind
+   them instead (opaque white), so that translucency just reads as flat grey
+   slabs with a dead gap around them. Chrome drew these flush with its own
+   chrome: plain icons, a light grey hover, and red that only shows up once
+   you're on the close button — the same treatment its tab's own × already
+   gets a few pixels to the left. */
+.w7-window[data-app="chrome"] .w7-cap-btn {
   border: none;
-  box-shadow: none;
+  background: none;
+  border-radius: calc(2 * var(--px));
+}
+
+.w7-window[data-app="chrome"] .w7-cap-btn:hover {
+  background: linear-gradient(180deg, #fdfdfd, #e3e3e3);
+}
+
+.w7-window[data-app="chrome"] .w7-cap-btn svg {
+  fill: #4d4d4d;
+  stroke: #4d4d4d;
+}
+
+.w7-window[data-app="chrome"] .w7-cap-close {
+  background: none;
+}
+
+.w7-window[data-app="chrome"] .w7-cap-close:hover {
+  background: #d24a3d;
+}
+
+.w7-window[data-app="chrome"] .w7-cap-close svg {
+  fill: #4d4d4d;
+  stroke: #4d4d4d;
+}
+
+.w7-window[data-app="chrome"] .w7-cap-close:hover svg {
+  fill: #ffffff;
+  stroke: #ffffff;
+}
+
+/* Real Aero Chrome still shows the tinted glass frame on all four sides —
+   only the title bar is gone, not the bezel, so the tab strip sits a few
+   pixels down from the top edge the same way it sits in from the sides and
+   above the bottom, rather than flush against it. This keeps the base
+   rule's side/bottom margin and gives the top the same value instead of
+   zeroing it — zeroing it, as an earlier version of this rule did, left
+   Chrome the one window with a plain white top edge instead of Aero's
+   glass one. */
+.w7-window[data-app="chrome"] .w7-body {
+  margin: calc(6 * var(--px));
   background: transparent;
 }
 
@@ -2520,6 +2581,53 @@ img.project-crest {
 
 .project-meta span {
   display: block;
+}
+
+/* The employer badge beside its name — the alternative to .project-meta
+   above, chosen by giving an entry an `orgLogo`. Centred as a unit, same as
+   everything else on the masthead, but the mark and its two lines read
+   left-to-right rather than stacking as another centred caption: the point
+   is to read as a name with a mark next to it, not a third centred block. */
+.project-org {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(11 * var(--px));
+  margin: calc(-2 * var(--px)) 0 calc(22 * var(--px));
+}
+
+/* Height comes from Project.tsx's inline style, per `orgLogoSize`; width is
+   whatever that produces at the logo's own aspect ratio, which is why
+   there's no `border-radius` forcing it into a circle the way the crest
+   above sometimes is — most of these badges aren't circular marks. */
+.project-org-logo {
+  flex: none;
+  max-width: calc(140 * var(--px));
+  object-fit: contain;
+}
+
+.project-org-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+/* Louder than the old .project-meta caption — the badge earns this row a
+   real weight instead of a footnote's. */
+.project-org-name {
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(15 * var(--px));
+  font-weight: 600;
+  line-height: 1.35;
+  color: #1c1f22;
+}
+
+.project-org-date {
+  font-family: var(--font-body), "Segoe UI", Tahoma, sans-serif;
+  font-size: calc(13 * var(--px));
+  line-height: 1.35;
+  color: #6b7580;
 }
 
 /* The two lines under the name. Centred with the name rather than left with
@@ -3089,6 +3197,36 @@ img.project-crest {
   outline: none;
   white-space: pre;
   overflow: auto;
+}
+
+/* Unitwise and RBI Sentinel's writeups: the styled project page, scrolling
+   inside Notepad's body instead of a plain textarea. */
+.np-project {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #ffffff;
+  /* Room for the tech tooltip below — see the flip just under this rule. */
+  padding-bottom: calc(30 * var(--px));
+}
+
+/* The stack row's tooltip normally opens upward, with the page above it as
+   headroom (see .tech-name). Notepad's window is short enough that the row
+   can end up scrolled flush to the top, and an upward tooltip there gets cut
+   off by the window's own edge — so here it opens downward instead, into the
+   padding just added above. */
+.np-project .tech-name {
+  bottom: auto;
+  top: calc(100% + 6 * var(--px));
+}
+
+/* The centred tooltip on the row's first chip runs past the window's own
+   left edge — a long name has nowhere to overflow into out here, unlike the
+   roomier Explorer window this component was built for. Anchored to the
+   chip's left edge instead of its centre keeps it on screen. */
+.np-project .tech:first-child .tech-name {
+  left: 0;
+  transform: none;
 }
 
 .np-status {

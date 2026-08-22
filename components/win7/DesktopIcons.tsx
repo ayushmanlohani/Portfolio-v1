@@ -46,28 +46,26 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * Where the icons sit when the page loads — Ayushman's own arrangement, taken
  * from a screenshot of how he'd dragged them.
  *
- * Two columns. The bin and Resume share the top row, About Me and Contact the
- * next, and the remaining three run down the first column. Cells are adjacent;
- * there are no gaps.
+ * Two full columns, four rows each, no gaps: the bin leads, Chrome and the
+ * six content folders fill in around it.
  *
  *     c0          c1
  *   ┌───────────┬───────────┐
- * r0│ Recycle   │ Resume    │
- * r1│ About Me  │ Contact   │
- * r2│ Experience│ Chrome    │
- * r3│ Projects  │           │
- * r4│ Education │           │
+ * r0│ Recycle   │ About Me  │
+ * r1│ Chrome    │ Experience│
+ * r2│ Contact   │ Education │
+ * r3│ Resume    │ Projects  │
  *   └───────────┴───────────┘
  */
 const DEFAULT_LAYOUT: Layout = {
   recycle: { c: 0, r: 0 },
-  resume: { c: 1, r: 0 },
-  about: { c: 0, r: 1 },
-  contact: { c: 1, r: 1 },
-  experience: { c: 0, r: 2 },
-  chrome: { c: 1, r: 2 },
-  projects: { c: 0, r: 3 },
-  education: { c: 0, r: 4 },
+  about: { c: 1, r: 0 },
+  chrome: { c: 0, r: 1 },
+  experience: { c: 1, r: 1 },
+  contact: { c: 0, r: 2 },
+  education: { c: 1, r: 2 },
+  resume: { c: 0, r: 3 },
+  projects: { c: 1, r: 3 },
 };
 
 /** How many rows the arrangement above needs to fit. */
@@ -106,10 +104,14 @@ export function DesktopIcons() {
   const deleted = useRecycleBin((s) => s.deleted);
   // Saved text files join the desktop the moment Notepad writes one. The store
   // is what makes this re-render; the file itself lives in the shared tree.
+  // Not every file in the store lives on the desktop, though — Unitwise and
+  // RBI Sentinel's writeups are seeded here too, but they belong to their own
+  // folders, so this only takes the ones `registerFile` actually put there.
   const files = useFiles((s) => s.files);
+  const desktopIds = new Set(node("desktop")?.children);
   // Everything the desktop can show, in slot order. Declared here rather than
   // at render because the drag handlers below need the same list.
-  const items = [...FIXED_ITEMS, ...files.map((f) => f.id)];
+  const items = [...FIXED_ITEMS, ...files.filter((f) => desktopIds.has(f.id)).map((f) => f.id)];
   const remove = useRecycleBin((s) => s.remove);
   const binEmpty = deleted.length === 0;
   // A set, not a single id: the marquee below can pick up several at once.
@@ -479,7 +481,16 @@ export function DesktopIcons() {
             ) : (
               <span className="di-label">{item.label}</span>
             )}
-            {warning?.id === id && <div className="win7-warn">{warning.text}</div>}
+            {/* `warning.id` is the desktop icon's own id for a rename
+                collision here, but it's the *parent folder's* id for New
+                Folder's limit warning raised from inside an Explorer window
+                — and one of the six content folders can be both at once
+                (Education is a desktop icon AND a valid New Folder parent),
+                so this only lights up for the collision that's actually
+                its own. */}
+            {warning?.id === id && warning.kind === "rename" && (
+              <div className="win7-warn">{warning.text}</div>
+            )}
           </button>
         );
       })}

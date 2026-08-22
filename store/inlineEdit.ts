@@ -4,6 +4,7 @@ import { create } from "zustand";
 
 import { node } from "@/components/win7/fs";
 import { useFiles } from "@/store/files";
+import { useFolders } from "@/store/folders";
 import { useRecycleBin } from "@/store/recycleBin";
 
 /**
@@ -25,9 +26,11 @@ type Warning = {
   id: string;
   text: string;
   /** Which action raised it — Rename's collision stays under the field it
-      belongs to, while Restore's is drawn at the foot of the bin's content
-      area instead, so a tile near the left edge never buries it. */
-  kind: "rename" | "restore";
+      belongs to; Restore's and New Folder's are drawn at the foot of the
+      window's content area instead, since neither has a field of its own to
+      sit under (Restore has no open editor, and New Folder's limit is hit
+      before there's a folder to name). */
+  kind: "rename" | "restore" | "folder-limit";
 };
 
 type InlineEdit = {
@@ -36,12 +39,16 @@ type InlineEdit = {
 
   start: (id: string) => void;
   cancel: () => void;
-  /** Tries to commit whatever `editingId` is holding. A collision leaves
-      edit mode open with a warning instead of closing it. */
+  /** Tries to commit whatever `editingId` is holding — as a folder's name if
+      that's what it is, a file's otherwise. A collision leaves edit mode
+      open with a warning instead of closing it. */
   commit: (id: string, value: string) => void;
   /** Tries to restore `id`. A name collision on the Desktop blocks the
       restore and raises the warning instead. */
   tryRestore: (id: string) => void;
+  /** Raises the "10 folders" warning under `parentId`'s own window — called
+      when New Folder finds that parent already full. */
+  folderLimitReached: (parentId: string) => void;
 };
 
 let warningTimer: ReturnType<typeof setTimeout> | null = null;
@@ -60,13 +67,18 @@ export const useInlineEdit = create<InlineEdit>((set, get) => ({
       return;
     }
 
-    // Same rule Notepad's own Save As uses: no extension typed gets .txt.
-    const value = /\.[^.]+$/.test(typed) ? typed : `${typed}.txt`;
+    const isFolder = node(id)?.kind === "folder";
+    // A folder's name is exactly what was typed — no extension to protect,
+    // unlike a Notepad save, where no extension typed gets .txt.
+    const value = isFolder ? typed : /\.[^.]+$/.test(typed) ? typed : `${typed}.txt`;
 
-    const ok = useFiles.getState().rename(id, value);
+    const ok = isFolder ? useFolders.getState().rename(id, value) : useFiles.getState().rename(id, value);
     if (!ok) {
       if (warningTimer) clearTimeout(warningTimer);
-      set({ warning: { id, text: `"${value}" is already in use.`, kind: "rename" } });
+      const text = isFolder
+        ? `A folder named "${value}" already exists.`
+        : `"${value}" is already in use.`;
+      set({ warning: { id, text, kind: "rename" } });
       warningTimer = setTimeout(() => {
         set((s) => (s.warning?.id === id ? { warning: null } : s));
       }, 2600);
@@ -96,5 +108,15 @@ export const useInlineEdit = create<InlineEdit>((set, get) => ({
     useRecycleBin.getState().restore(id);
     // Only meaningful if a stale warning from an earlier attempt is still up.
     if (get().warning?.id === id) set({ warning: null });
+  },
+
+  folderLimitReached: (parentId) => {
+    if (warningTimer) clearTimeout(warningTimer);
+    set({
+      warning: { id: parentId, text: "This folder can only hold 10 new folders.", kind: "folder-limit" },
+    });
+    warningTimer = setTimeout(() => {
+      set((s) => (s.warning?.id === parentId ? { warning: null } : s));
+    }, 2600);
   },
 }));

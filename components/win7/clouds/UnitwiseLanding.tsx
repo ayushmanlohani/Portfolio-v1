@@ -125,7 +125,7 @@ function AppPreview() {
     if (!rect) return;
     const px = (e.clientX - rect.left) / rect.width - 0.5;
     const py = (e.clientY - rect.top) / rect.height - 0.5;
-    setTilt({ x: py * -4, y: px * 6 });
+    setTilt({ x: py * -9, y: px * 14 });
   }
 
   return (
@@ -270,11 +270,10 @@ export function UnitwiseLanding() {
         <div className="relative mx-auto max-w-[1180px] px-8 pt-[68px] pb-10 sm:px-12 sm:pt-[84px]">
           {/* Header */}
           <div className="mb-10 flex flex-col items-center">
-            <div className="flex items-center justify-center gap-4">
-              {/* filter, not box-shadow: the file is a transparent PNG, so a
-                  box-shadow would draw a rectangle around empty space instead
-                  of following the U's own silhouette. */}
-              <Logo size={64} className="drop-shadow-[0_4px_8px_rgba(90,35,10,0.4)]" />
+            <div className="flex items-end justify-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center -my-10 translate-y-[-44px] overflow-visible">
+                <Logo size={128} className="h-[128px] w-[128px] max-w-none shrink-0 drop-shadow-[0_4px_8px_rgba(90,35,10,0.4)]" />
+              </div>
               <span
                 className="font-[family-name:var(--font-uw-serif)] text-[46px] leading-none font-semibold tracking-tight text-[#171412] sm:text-[54px]"
                 style={{ textShadow: "0 3px 10px rgba(60,25,10,0.28)" }}
@@ -364,7 +363,9 @@ export function UnitwiseLanding() {
               <span className="text-[12.5px] text-[#6b6459]">Understand more. Study less. Score better.</span>
             </div>
             <a
-              href="#"
+              href="https://unitwise-weld.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-1 text-[12.5px] font-medium text-[#D9662E] transition-colors duration-300 hover:text-[#C6511F]"
             >
               unitwise.in
