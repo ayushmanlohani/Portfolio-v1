@@ -18,9 +18,9 @@ import type { Page } from "@/content/pages";
  *
  * Every word comes from content/, never from here.
  */
-export function Project({ data }: { data: Page }) {
+export function Project({ data, size }: { data: Page; size?: "file" }) {
   return (
-    <article className="about project">
+    <article className="about project" data-doc={size}>
       {/* An empty string means "the crest is coming" — the box holds its size
           so adding the file later doesn't move anything below it. */}
       {data.logo !== undefined &&
@@ -60,13 +60,43 @@ export function Project({ data }: { data: Page }) {
       </h1>
       <div className="about-rule" />
 
-      {data.meta && (
-        <p className="project-meta">
-          {data.meta.map((line) => (
-            <span key={line}>{line}</span>
-          ))}
-        </p>
-      )}
+      {data.meta &&
+        (data.orgLogo ? (
+          <div className="project-org">
+            {/* Sized by height, not by a fixed square like the crest above —
+                these badges arrive at whatever aspect ratio their source
+                logo has (NIELIT's is a wide wordmark, IBI's is closer to
+                square), and forcing them square would crop or squash
+                whichever ones aren't. `width` here is a placeholder for
+                Next's own sizing math; `width: "auto"` in the style is what
+                actually governs the rendered size, from the file's real
+                aspect ratio. */}
+            <Image
+              className="project-org-logo"
+              src={data.orgLogo}
+              alt=""
+              width={200}
+              height={data.orgLogoSize ?? 40}
+              style={{
+                height: `calc(${data.orgLogoSize ?? 40} * var(--px))`,
+                width: "auto",
+              }}
+            />
+            <div className="project-org-text">
+              {data.meta.map((line, i) => (
+                <span key={line} className={i === 0 ? "project-org-name" : "project-org-date"}>
+                  {line}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="project-meta">
+            {data.meta.map((line) => (
+              <span key={line}>{line}</span>
+            ))}
+          </p>
+        ))}
 
       <p
         className="project-tagline"

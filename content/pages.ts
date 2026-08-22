@@ -1,7 +1,5 @@
 import { EDUCATION } from "@/content/education";
 import { EXPERIENCE } from "@/content/experience";
-import { SENTINEL } from "@/content/sentinel";
-import { UNITWISE } from "@/content/unitwise";
 
 /**
  * Folders whose children are pages rather than text files.
@@ -27,10 +25,10 @@ import { UNITWISE } from "@/content/unitwise";
  *   site currently uses this, but it nests to any depth if something needs to.
  */
 export const PAGES: Record<string, Record<string, Entry>> = {
-  projects: {
-    unitwise: UNITWISE,
-    sentinel: SENTINEL,
-  },
+  // Unitwise and RBI Sentinel used to live here as pages of their own. They're
+  // now plain folders (see fs.ts) holding a .txt writeup and the .interactive
+  // shortcut, so there's nothing for this file to say about them.
+  projects: {},
   experience: EXPERIENCE,
   education: EDUCATION,
 };
@@ -73,6 +71,14 @@ export function entryAt(path: string): Entry | undefined {
 export type Page = {
   name: string;
   /**
+   * What the file itself is called in the folder listing — its .txt name,
+   * without the extension. Leave it off and the entry's own key is used
+   * (research, ai-ml, ml-data, …), which is the filename-safe slug every id
+   * in fs.ts is built from. Set this when that slug reads worse as a
+   * filename than as a few real words would.
+   */
+  fileLabel?: string;
+  /**
    * A crest above the name — a university or school badge.
    *
    * Omit it entirely and nothing is drawn. Set it to `""` and the page holds
@@ -86,10 +92,24 @@ export type Page = {
    */
   logoSize?: number;
   /**
-   * Small grey lines under the name, before the tagline. Where a job was and
-   * when — an employer and a date range, one per line. Projects skip it.
+   * Lines under the name, before the tagline. Where a job was and when — an
+   * employer and a date range, one per line. Projects skip it.
    */
   meta?: string[];
+  /**
+   * A small badge to the left of `meta`, instead of `meta` drawing as plain
+   * centred caption text — the employer's own mark, sized to sit beside its
+   * name rather than above it like `logo` does. Leave it off and `meta`
+   * renders the plain way.
+   */
+  orgLogo?: string;
+  /**
+   * The badge's height in Win7 pixels — width follows automatically from the
+   * logo's own aspect ratio, so a wide wordmark and a round seal both come
+   * out a natural size rather than one of them being squashed or cropped to
+   * fit a square. Leave it off for the default 40.
+   */
+  orgLogoSize?: number;
   /**
    * The name's size in Win7 pixels, for long names that would otherwise wrap
    * at the default 50. Leave off for the default.

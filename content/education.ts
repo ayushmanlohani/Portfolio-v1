@@ -31,6 +31,7 @@
 export const EDUCATION = {
   lucknow: {
     name: "University of Lucknow",
+    fileLabel: "Lucknow University",
 
     logo: "/letterbox/lu-logo.png",
 
@@ -60,6 +61,7 @@ export const EDUCATION = {
 
   nirmala: {
     name: "Nirmala Convent Inter College",
+    fileLabel: "Nirmala Convent Inter College",
 
     logo: "/letterbox/ncic-logo.png",
 

@@ -20,6 +20,7 @@ export type Site = { url: string; title: string };
  * pretending to be one.
  */
 export const UNITWISE: Site = { url: "unitwise.interactive", title: "Unitwise" };
+export const SENTINEL: Site = { url: "sentinel.interactive", title: "RBI Sentinel" };
 
 /** A tab with no site is a new tab, showing the search page. */
 export type ChromeTab = { id: number; site: Site | null };

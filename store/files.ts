@@ -2,7 +2,8 @@
 
 import { create } from "zustand";
 
-import { registerFile, relabel } from "@/components/win7/fs";
+import { registerFile, relabel, UNITWISE_TXT_ID, SENTINEL_TXT_ID } from "@/components/win7/fs";
+import { SENTINEL_TEXT, UNITWISE_TEXT } from "@/content/projectText";
 import { useRecycleBin } from "@/store/recycleBin";
 
 /**
@@ -40,7 +41,13 @@ type FileStore = {
 let nextId = 0;
 
 export const useFiles = create<FileStore>((set, get) => ({
-  files: [],
+  // Unitwise and RBI Sentinel's writeups: real Notepad files from the moment
+  // the desktop loads, rather than something Save has to create first — see
+  // fs.ts for the folder nodes that list them.
+  files: [
+    { id: UNITWISE_TXT_ID, name: "unitwise.txt", text: UNITWISE_TEXT },
+    { id: SENTINEL_TXT_ID, name: "sentinel.txt", text: SENTINEL_TEXT },
+  ],
 
   save: (name, text) => {
     const deleted = useRecycleBin.getState().deleted;

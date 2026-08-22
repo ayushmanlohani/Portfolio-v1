@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Clouds } from "@/components/win7/clouds/Clouds";
-import { UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
+import { SentinelLanding } from "@/components/win7/sentinel/SentinelLanding";
+import { SENTINEL, UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
 import { useWindowStore } from "@/store/windows";
 
 import {
@@ -54,7 +55,7 @@ const NUB_CLIP =
  */
 const SHORTCUTS = [
   { label: "Unitwise", hue: "#d9662e", site: UNITWISE },
-  { label: "RBI Sentinel", hue: "#1f3a5f" },
+  { label: "RBI Sentinel", hue: "#0d1b26", site: SENTINEL },
   { label: "GitHub", hue: "#24292f" },
   { label: "LinkedIn", hue: "#0a66c2" },
   { label: "Gmail", hue: "#d93025" },
@@ -131,7 +132,7 @@ function TabStrip({
   onAdd: () => void;
 }) {
   return (
-    <div className="w7-drag flex h-[30px] shrink-0 items-end pl-[6px] pr-[96px]">
+    <div className="w7-drag flex h-[30px] shrink-0 items-end pl-[6px] pr-[116px]">
       {tabs.map((tab) => {
         const active = tab.id === activeId;
         return (
@@ -313,10 +314,21 @@ function NewTabPage() {
 
 export function Chrome({ windowId }: { windowId: string }) {
   const close = useWindowStore((s) => s.close);
+  const setTitle = useWindowStore((s) => s.setTitle);
   const { tabs, activeId, select, addTab, closeTab, reset } = useChrome();
   const [loading, setLoading] = useState(false);
 
   const active = tabs.find((t) => t.id === activeId);
+
+  // The taskbar button reads the window's title, not the tab strip, so it has
+  // to be kept in sync with whichever tab is active — otherwise every Chrome
+  // window says "New Tab" forever, since that's the title it opened with.
+  useEffect(() => {
+    setTitle(
+      windowId,
+      active?.site ? `${active.site.title} - Google Chrome` : "New Tab - Google Chrome",
+    );
+  }, [windowId, active?.site, setTitle]);
 
   // The tab strip lives in a store, not component state, so that a
   // double-click on unitwise.interactive in Explorer can load a tab whether
@@ -368,9 +380,17 @@ export function Chrome({ windowId }: { windowId: string }) {
       <TabStrip tabs={tabs} activeId={activeId} onSelect={select} onClose={onClose} onAdd={addTab} />
       <Toolbar onReload={reload} loading={loading} tab={active} />
       {/* `relative` because a page can fill itself with `absolute inset-0` —
-          the Unitwise one does. Without it that anchors to .w7-body instead
+          both project pages do. Without it that anchors to .w7-body instead
           and the page covers the tabs and the toolbar. */}
-      <div className="relative min-h-0 flex-1">{active?.site ? <Clouds /> : <NewTabPage />}</div>
+      <div className="relative min-h-0 flex-1">
+        {active?.site?.url === SENTINEL.url ? (
+          <SentinelLanding />
+        ) : active?.site ? (
+          <Clouds />
+        ) : (
+          <NewTabPage />
+        )}
+      </div>
     </div>
   );
 }

@@ -30,8 +30,10 @@
 export const EXPERIENCE = {
   research: {
     name: "Research Assistant",
+    nameSize: 36,
 
     meta: ["University of Lucknow", "July 2026 – Present"],
+    orgLogo: "/letterbox/lu-logo.png",
 
     tagline: [
       `Building a lightweight computer vision model on YOLO 26n.`,
@@ -69,11 +71,17 @@ export const EXPERIENCE = {
 
   "ai-ml": {
     name: "AI & Machine Learning Intern",
+    nameSize: 32,
+    fileLabel: "AI-ML Intern",
 
     meta: [
       "National Institute of Electronics & Information Technology (NIELIT)",
       "July 2025 – September 2025 · Online",
     ],
+    orgLogo: "/letterbox/nielit.png",
+    // NIELIT's mark is a wide wordmark, not a seal — shorter than the
+    // default so it doesn't crowd a two-line institution name this long.
+    orgLogoSize: 32,
 
     tagline: [
       `Built a sequence-to-sequence Transformer from scratch in PyTorch —`,
@@ -108,8 +116,11 @@ export const EXPERIENCE = {
 
   "ml-data": {
     name: "Machine Learning & Data Science Intern",
+    nameSize: 26,
+    fileLabel: "ML Intern",
 
     meta: ["Info Bharat Interns", "July 2025 – August 2025 · Online"],
+    orgLogo: "/letterbox/IBI.png",
 
     tagline: [
       `A time-series forecasting pipeline over 17,000+ records —`,

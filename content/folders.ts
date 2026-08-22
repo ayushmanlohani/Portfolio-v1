@@ -45,11 +45,12 @@ export type Item = {
 };
 
 export const FOLDERS: Record<string, Item[]> = {
-  // Projects, Experience and Education are empty here on purpose. Everything
-  // in them has a page of its own — see content/pages.ts, which points at
-  // content/unitwise.ts, content/sentinel.ts, content/experience.ts and
-  // content/education.ts. Adding an entry below would put a plain text file
-  // alongside those folders, which is fine if you ever want one.
+  // Experience and Education are empty here on purpose — everything in them
+  // has a page of its own; see content/pages.ts, content/experience.ts and
+  // content/education.ts. Projects is empty here too: Unitwise and RBI
+  // Sentinel are real folders now, wired by hand in fs.ts rather than through
+  // this file. Adding an entry below would put a plain text file alongside
+  // them, which is fine if you ever want one.
   projects: [],
   experience: [],
   education: [],

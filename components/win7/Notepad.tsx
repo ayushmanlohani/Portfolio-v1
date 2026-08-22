@@ -2,8 +2,42 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { About } from "@/components/win7/folders/About";
+import { Contact } from "@/components/win7/folders/Contact";
+import { Project } from "@/components/win7/folders/Project";
+import { launchWindow, NOTEPAD_ID } from "@/components/win7/apps";
+import { ABOUT_TXT_ID, CONTACT_TXT_ID, SENTINEL_TXT_ID, UNITWISE_TXT_ID } from "@/components/win7/fs";
+import { entryAt, isGroup } from "@/content/pages";
+import { SENTINEL as SENTINEL_PAGE } from "@/content/sentinel";
+import { UNITWISE as UNITWISE_PAGE } from "@/content/unitwise";
 import { useFiles } from "@/store/files";
 import { useWindowStore } from "@/store/windows";
+
+/**
+ * Every writeup that moved out of a folder and into Notepad keeps the styled
+ * page it had before — headings, taglines, link buttons, whatever that page
+ * drew — rather than showing as raw text. Nothing else opened here gets
+ * this: it's keyed on the file's own id, and every other file falls through
+ * to the plain textarea below.
+ *
+ * About Me, Contact, Unitwise and RBI Sentinel are hand-built pages with no
+ * entry in content/pages.ts, so they're matched by id here. Every role in
+ * Experience and every qualification in Education *is* in content/pages.ts,
+ * and its file's id is exactly the path `entryAt` expects — walk() in fs.ts
+ * built it that way — so those are read straight back out rather than
+ * hand-listed one by one.
+ */
+function richContent(fileId: string | undefined) {
+  if (fileId === ABOUT_TXT_ID) return <About />;
+  if (fileId === CONTACT_TXT_ID) return <Contact />;
+  if (fileId === UNITWISE_TXT_ID) return <Project data={UNITWISE_PAGE} size="file" />;
+  if (fileId === SENTINEL_TXT_ID) return <Project data={SENTINEL_PAGE} size="file" />;
+
+  const entry = fileId ? entryAt(fileId) : undefined;
+  if (entry && !isGroup(entry)) return <Project data={entry} />;
+
+  return undefined;
+}
 
 /**
  * Windows 7 Notepad.
@@ -25,6 +59,7 @@ import { useWindowStore } from "@/store/windows";
 const UNTITLED = "Untitled";
 
 export function Notepad({ windowId, fileId }: { windowId: string; fileId?: string }) {
+  const rich = richContent(fileId);
   const saved = useFiles((s) => (fileId ? s.files.find((f) => f.id === fileId) : undefined));
   const save = useFiles((s) => s.save);
   const setTitle = useWindowStore((s) => s.setTitle);
@@ -62,9 +97,14 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
   }, [menu]);
 
   // The caption follows the filename, the way Explorer's follows the folder.
+  // A rich file's name never changes — there's no Save to rename it with —
+  // so this leaves alone the caption `launchWindow` already set correctly;
+  // without the guard, `name`'s empty-string default (nothing here is a
+  // saved file) would overwrite it with "Untitled - Notepad".
   useEffect(() => {
+    if (rich) return;
     setTitle(windowId, `${name || UNTITLED} - Notepad`);
-  }, [windowId, name, setTitle]);
+  }, [windowId, name, setTitle, rich]);
 
   // Select-all belongs to the moment the dialog opens, not to every
   // keystroke after — depending on `saveAs` itself re-ran this (and
@@ -119,14 +159,19 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
 
           {menu && (
             <div className="ctx-menu np-file-menu" role="menu">
+              {/* A separate blank window, not this one cleared in place — a
+                  rich file's window is permanently that file (its id is the
+                  file's id), so there's no "blank" for it to become. Reusing
+                  the one mechanism for every Notepad window, rich or plain,
+                  means New always does the same obvious thing wherever it's
+                  clicked from. */}
               <button
                 type="button"
                 role="menuitem"
                 className="ctx-item"
                 onClick={() => {
                   setMenu(false);
-                  setText("");
-                  setName("");
+                  launchWindow(NOTEPAD_ID);
                 }}
               >
                 <span className="ctx-label">New</span>
@@ -134,10 +179,17 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
               <button type="button" role="menuitem" className="ctx-item" data-disabled disabled>
                 <span className="ctx-label">Open...</span>
               </button>
+              {/* A rich file — About Me, a job, a degree — has no text behind
+                  it to save; `text` is only ever the plain-text fallback
+                  nothing here shows. Saving it would silently create an
+                  empty "Untitled" file on the desktop instead of doing
+                  anything to the page you're actually looking at. */}
               <button
                 type="button"
                 role="menuitem"
                 className="ctx-item"
+                data-disabled={rich || undefined}
+                disabled={!!rich}
                 onClick={() => {
                   setMenu(false);
                   onSave();
@@ -149,6 +201,8 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
                 type="button"
                 role="menuitem"
                 className="ctx-item"
+                data-disabled={rich || undefined}
+                disabled={!!rich}
                 onClick={() => {
                   setMenu(false);
                   setSaveAs(name || UNTITLED);
@@ -182,25 +236,31 @@ export function Notepad({ windowId, fileId }: { windowId: string; fileId?: strin
         </button>
       </div>
 
-      <textarea
-        ref={areaRef}
-        className="np-area"
-        value={text}
-        spellCheck={false}
-        aria-label="Text"
-        onChange={(e) => {
-          setText(e.target.value);
-          updateCaret();
-        }}
-        onKeyUp={updateCaret}
-        onClick={updateCaret}
-      />
+      {rich ? (
+        <div className="np-project">{rich}</div>
+      ) : (
+        <>
+          <textarea
+            ref={areaRef}
+            className="np-area"
+            value={text}
+            spellCheck={false}
+            aria-label="Text"
+            onChange={(e) => {
+              setText(e.target.value);
+              updateCaret();
+            }}
+            onKeyUp={updateCaret}
+            onClick={updateCaret}
+          />
 
-      <div className="np-status">
-        <span>
-          Ln {caret.line}, Col {caret.col}
-        </span>
-      </div>
+          <div className="np-status">
+            <span>
+              Ln {caret.line}, Col {caret.col}
+            </span>
+          </div>
+        </>
+      )}
 
       {saveAs !== null && (
         <div className="win7-dialog-layer">

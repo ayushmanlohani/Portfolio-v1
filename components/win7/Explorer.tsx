@@ -2,20 +2,17 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 
-import { About } from "@/components/win7/folders/About";
-import { Contact } from "@/components/win7/folders/Contact";
 import { Doc } from "@/components/win7/folders/Doc";
-import { Project } from "@/components/win7/folders/Project";
 import { CHROME_ID, launchWindow } from "@/components/win7/apps";
-import { contents, crumbIds, node, TREE, UNITWISE_FILE_ID } from "@/components/win7/fs";
+import { contents, crumbIds, node, SENTINEL_FILE_ID, TREE, UNITWISE_FILE_ID } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
-import { UNITWISE, useChrome } from "@/store/chrome";
+import { SENTINEL, UNITWISE, useChrome } from "@/store/chrome";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { RenameField } from "@/components/win7/RenameField";
 import { useMarquee } from "@/components/win7/useMarquee";
-import { entryAt, isGroup } from "@/content/pages";
 import { useFiles } from "@/store/files";
+import { useFolders } from "@/store/folders";
 import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
@@ -50,9 +47,10 @@ const LOW_SPACE = DRIVE.free / DRIVE.total < 0.1;
 /** Windows writes drive sizes to two decimals. */
 const gb = (n: number) => `${n.toFixed(2)} GB`;
 
-/* Burn is gone, on request. */
-const COMMANDS = ["Organize", "Include in library", "Share with", "New folder"];
-const HAS_MENU = new Set(["Organize", "Include in library", "Share with"]);
+/* Burn is gone, on request. "Include in library" and "Share with" followed
+   it — neither did anything, and New Folder now does. */
+const COMMANDS = ["Organize", "New folder"];
+const HAS_MENU = new Set(["Organize"]);
 
 export function Explorer({ id, title }: { id: string; title: string }) {
   // Which tree groups are expanded. Windows opens with the tree showing.
@@ -70,10 +68,14 @@ export function Explorer({ id, title }: { id: string; title: string }) {
   // file is saved, renamed or forgotten while it's open, the same way
   // DesktopIcons already does for the desktop itself.
   useFiles((s) => s.files);
-  // The bin's Restore-collision balloon is drawn at the foot of the content
-  // area by this component (see `.win7-warn-bin` below), so the window needs
-  // its own subscription rather than borrowing `Contents`'.
+  // Same reason, for folders New Folder has made.
+  useFolders((s) => s.folders);
+  // The bin's Restore-collision balloon and New Folder's limit warning are
+  // both drawn at the foot of the content area by this component (see
+  // `.win7-warn-bin` below), so the window needs its own subscription
+  // rather than borrowing `Contents`'.
   const warning = useInlineEdit((s) => s.warning);
+  const startRename = useInlineEdit((s) => s.start);
 
   const here = node(view);
   const label = here?.label ?? title;
@@ -98,6 +100,19 @@ export function Explorer({ id, title }: { id: string; title: string }) {
     const next = [...history.slice(0, at + 1), to];
     setHistory(next);
     setAt(next.length - 1);
+  }
+
+  // Made in `view` itself — wherever this window is standing, not wherever
+  // it was opened from. Handed straight to rename-in-place so typing the
+  // real name over "New folder" is the whole "ask for its name" step; a full
+  // parent gets the limit warning instead of a folder nobody asked for.
+  function newFolder() {
+    const created = useFolders.getState().create(view);
+    if (!created) {
+      useInlineEdit.getState().folderLimitReached(view);
+      return;
+    }
+    startRename(created);
   }
 
   const Icon = here?.Icon ?? FolderIcon;
@@ -151,7 +166,12 @@ export function Explorer({ id, title }: { id: string; title: string }) {
 
       <div className="ex-commands">
         {COMMANDS.map((command) => (
-          <button type="button" className="ex-cmd" key={command}>
+          <button
+            type="button"
+            className="ex-cmd"
+            key={command}
+            onClick={command === "New folder" ? newFolder : undefined}
+          >
             {command}
             {HAS_MENU.has(command) && <span className="ex-cmd-caret" />}
           </button>
@@ -218,6 +238,9 @@ export function Explorer({ id, title }: { id: string; title: string }) {
           {view === "recycle" && warning?.kind === "restore" && (
             <div className="win7-warn win7-warn-bin">{warning.text}</div>
           )}
+          {warning?.kind === "folder-limit" && warning.id === view && (
+            <div className="win7-warn win7-warn-bin">{warning.text}</div>
+          )}
         </div>
       </div>
 
@@ -249,23 +272,11 @@ function Contents({
   const commitRename = useInlineEdit((s) => s.commit);
   const cancelRename = useInlineEdit((s) => s.cancel);
 
-  if (view === "about") return <About />;
-  if (view === "contact") return <Contact />;
   if (view === "network") return <Network />;
 
-  // Anything with a page of its own — a project, a job, a qualification.
-  // content/pages.ts stays the only place a page is declared, and `entryAt`
-  // walks the id whatever its depth, so `education/nirmala/isc` resolves the
-  // same way `projects/unitwise` does.
-  //
-  // A group falls through on purpose: Nirmala Convent is a folder holding ISC
-  // and ICSE, so it should list them rather than draw a page.
-  const entry = entryAt(view);
-  if (entry && !isGroup(entry)) return <Project data={entry} />;
-
-  // An item from content/folders.ts. Opening one replaces the listing with its
-  // words, the same way About Me does — a file "opens" into the window it was
-  // clicked in rather than spawning a second one, so Back still walks out of it.
+  // An item from content/folders.ts, navigated into — nothing currently in
+  // that file has words, but adding some there is meant to work without
+  // touching this component.
   const here = node(view);
   if (here?.body) return <Doc title={here.label} body={here.body} size="file" />;
 
@@ -352,9 +363,16 @@ function Contents({
               }
               // A web page opens in the browser, not in Explorer — load the
               // tab first so Chrome comes up already on it.
-              if (childId === UNITWISE_FILE_ID) {
-                useChrome.getState().visit(UNITWISE);
+              if (childId === UNITWISE_FILE_ID || childId === SENTINEL_FILE_ID) {
+                useChrome.getState().visit(childId === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
                 launchWindow(CHROME_ID);
+                return;
+              }
+              // A text file opens in Notepad rather than being navigated
+              // into — the same rule DesktopIcons already applies to every
+              // file kind of node.
+              if (node(childId)?.kind === "file") {
+                launchWindow(childId);
                 return;
               }
               onOpen(childId);

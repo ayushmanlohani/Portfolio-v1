@@ -74,13 +74,19 @@ export const DESKTOP_FOLDERS = [
 const fileId = (parent: string, name: string) =>
   `${parent}/${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 
+/** A filename read off a slug, Windows-cased: capitalised, not upper-cased —
+ *  `research` becomes `Research`, not `RESEARCH`. */
+const capitalize = (slug: string) => slug.charAt(0).toUpperCase() + slug.slice(1);
+
 /**
  * Every folder that comes from content/pages.ts, and what each one holds.
  *
- * Walked once at module load rather than looked up per render. A page becomes
- * a childless folder — you open it and you are somewhere, and Back walks out
- * again — and a group becomes a folder holding more of them, to whatever depth
- * the content file nests.
+ * Walked once at module load rather than looked up per render. A group
+ * becomes a folder holding more of them, to whatever depth the content file
+ * nests. A page becomes a .txt file — Research Assistant and every other
+ * role or qualification opens in Notepad now, not by navigating into a
+ * folder — styled exactly as it was, since Notepad reads it straight back
+ * out of content/pages.ts via `entryAt` (see Notepad.tsx).
  */
 const PAGE_FOLDERS: FsNode[] = [];
 
@@ -88,18 +94,26 @@ function walk(parent: string, entries: Record<string, Entry>): string[] {
   return Object.entries(entries).map(([key, entry]) => {
     const id = `${parent}/${key}`;
 
-    // Children first: a group's own node needs the ids of what's inside it,
-    // and those only exist once its children have been walked.
-    const children = isGroup(entry) ? walk(id, entry.children) : undefined;
-
-    PAGE_FOLDERS.push({
-      id,
-      label: entry.name,
-      Icon: FolderIcon,
-      kind: "folder",
-      type: "File folder",
-      children,
-    });
+    if (isGroup(entry)) {
+      // Children first: the group's own node needs their ids, and those
+      // only exist once its children have been walked.
+      PAGE_FOLDERS.push({
+        id,
+        label: entry.name,
+        Icon: FolderIcon,
+        kind: "folder",
+        type: "File folder",
+        children: walk(id, entry.children),
+      });
+    } else {
+      PAGE_FOLDERS.push({
+        id,
+        label: `${entry.fileLabel ?? capitalize(key)}.txt`,
+        Icon: TextFileIcon,
+        kind: "file",
+        type: "Text Document",
+      });
+    }
 
     return id;
   });
@@ -118,15 +132,40 @@ const PAGE_CHILDREN: Record<string, string[]> = Object.fromEntries(
  * "somewhere that doesn't list things at all". About Me is the second kind: it
  * draws its own pane instead of a listing.
  */
+/**
+ * The Unitwise mockup, sitting inside the Unitwise folder as a document
+ * rather than a folder of its own. Double-clicking it opens it in Chrome —
+ * see Explorer.tsx — which is why it wears Chrome's icon, the same way
+ * Windows badges an .html file with whichever browser opens it.
+ */
+export const UNITWISE_FILE_ID = "projects/unitwise/unitwise.interactive";
+export const SENTINEL_FILE_ID = "projects/sentinel/sentinel.interactive";
+
+/** The writeup that used to be Unitwise/RBI Sentinel's own page — see
+ *  content/projectText.ts — now a real Notepad file, seeded into
+ *  `useFiles` at store creation rather than created through Save. */
+export const UNITWISE_TXT_ID = "projects/unitwise/unitwise.txt";
+export const SENTINEL_TXT_ID = "projects/sentinel/sentinel.txt";
+
+/** About Me and Contact, each now the one file inside its folder rather
+ *  than something the folder draws in place of a listing. */
+export const ABOUT_TXT_ID = "about/about.txt";
+export const CONTACT_TXT_ID = "contact/contact.txt";
+
+// Unitwise, RBI Sentinel, About Me and Contact aren't pages from
+// content/pages.ts — each is a hand-built component with its own layout —
+// so their files are added by hand here, the same way the desktop folders
+// themselves are.
+const EXTRA_CHILDREN: Record<string, string[]> = {
+  projects: ["projects/unitwise", "projects/sentinel"],
+  about: [ABOUT_TXT_ID],
+  contact: [CONTACT_TXT_ID],
+};
+
 function childrenOf(id: string): string[] | undefined {
   const pages = PAGE_CHILDREN[id] ?? [];
   const items = FOLDERS[id]?.map((item) => fileId(id, item.name)) ?? [];
-  // unitwise.interactive isn't content from the page files — it opens in
-  // Chrome rather than being navigated into (see Explorer.tsx) — so it's
-  // added by hand rather than through content/pages.ts like Unitwise and
-  // RBI Sentinel.
-  const extra = id === "projects" ? [UNITWISE_FILE_ID] : [];
-  const all = [...pages, ...items, ...extra];
+  const all = [...pages, ...items, ...(EXTRA_CHILDREN[id] ?? [])];
   // The Resume folder holds the real PDF, not a text item — its node id is
   // its viewer window id, the same trick the Pictures folder uses.
   if (id === "resume") all.push(PDF_PREFIX + RESUME.pdf);
@@ -134,12 +173,42 @@ function childrenOf(id: string): string[] | undefined {
 }
 
 /**
- * The Unitwise mockup, sitting in Projects as a document rather than a folder.
- * Double-clicking it opens it in Chrome — see Explorer.tsx — which is why it
- * wears Chrome's icon, the same way Windows badges an .html file with
- * whichever browser opens it.
+ * Unitwise and RBI Sentinel as ordinary folders — like any drive folder,
+ * not the styled project page they used to be — each holding its writeup
+ * and its Chrome shortcut.
  */
-export const UNITWISE_FILE_ID = "projects/unitwise.interactive";
+const PROJECT_FOLDERS: FsNode[] = [
+  {
+    id: "projects/unitwise",
+    label: "Unitwise",
+    Icon: FolderIcon,
+    kind: "folder",
+    type: "File folder",
+    children: [UNITWISE_TXT_ID, UNITWISE_FILE_ID],
+  },
+  {
+    id: UNITWISE_TXT_ID,
+    label: "Unitwise.txt",
+    Icon: TextFileIcon,
+    kind: "file",
+    type: "Text Document",
+  },
+  {
+    id: "projects/sentinel",
+    label: "RBI Sentinel",
+    Icon: FolderIcon,
+    kind: "folder",
+    type: "File folder",
+    children: [SENTINEL_TXT_ID, SENTINEL_FILE_ID],
+  },
+  {
+    id: SENTINEL_TXT_ID,
+    label: "Sentinel.txt",
+    Icon: TextFileIcon,
+    kind: "file",
+    type: "Text Document",
+  },
+];
 
 /**
  * A desktop folder. Its children come from the content files, so adding an
@@ -289,6 +358,28 @@ const NODE_LIST: FsNode[] = [
     kind: "folder",
     type: "Chrome HTML Document",
   },
+  {
+    id: SENTINEL_FILE_ID,
+    label: "sentinel.interactive",
+    Icon: ChromeIcon,
+    kind: "folder",
+    type: "Chrome HTML Document",
+  },
+  {
+    id: ABOUT_TXT_ID,
+    label: "About.txt",
+    Icon: TextFileIcon,
+    kind: "file",
+    type: "Text Document",
+  },
+  {
+    id: CONTACT_TXT_ID,
+    label: "Contact.txt",
+    Icon: TextFileIcon,
+    kind: "file",
+    type: "Text Document",
+  },
+  ...PROJECT_FOLDERS,
   ...PAGE_FOLDERS,
   ...FILES,
 ];
@@ -331,23 +422,57 @@ export function registerFile(id: string, name: string) {
   desktop.children = [...(desktop.children ?? []), id];
 }
 
-/** Changes a registered file's display name in place — used by Rename, and by
- *  restoring a file whose old name collides with one already on the Desktop. */
+/**
+ * Adds an empty folder to the tree, made with Explorer's own New Folder
+ * command — inside whichever folder was open when it was clicked, not
+ * always the Desktop the way a Notepad save is. `store/folders.ts` owns the
+ * bookkeeping (the count and name-collision rules a real folder needs, that
+ * a lone id in the tree can't enforce on its own) and is what components
+ * subscribe to for the re-render.
+ */
+export function registerFolder(id: string, name: string, parentId: string) {
+  NODES.set(id, {
+    id,
+    label: name,
+    Icon: FolderIcon,
+    kind: "folder",
+    deletable: true,
+    type: "File folder",
+    children: [],
+  });
+
+  const parent = NODES.get(parentId);
+  if (parent) parent.children = [...(parent.children ?? []), id];
+}
+
+/** Changes a registered file's or folder's display name in place — used by
+ *  Rename, and by restoring a file whose old name collides with one already
+ *  on the Desktop. */
 export function relabel(id: string, name: string) {
   const existing = NODES.get(id);
   if (existing) NODES.set(id, { ...existing, label: name });
 }
 
+/** Whichever node currently lists `id` as a child — a registered file is
+ *  always the Desktop, but a registered folder can be anywhere, so removal
+ *  has to search rather than assume. */
+function parentOf(id: string): FsNode | undefined {
+  for (const candidate of NODES.values()) {
+    if (candidate.children?.includes(id)) return candidate;
+  }
+  return undefined;
+}
+
 /**
- * Fully removes a registered file from the tree: the Desktop stops listing
- * it and `node(id)` stops finding it. Only a permanent delete from the
- * Recycle Bin calls this — everything else (drag-to-bin, Delete) only moves
- * an id in and out of `useRecycleBin`'s `deleted` list.
+ * Fully removes a registered file or folder from the tree: wherever it was
+ * listed stops listing it, and `node(id)` stops finding it. Only a permanent
+ * delete from the Recycle Bin calls this — everything else (drag-to-bin,
+ * Delete) only moves an id in and out of `useRecycleBin`'s `deleted` list.
  */
 export function unregisterFile(id: string) {
   NODES.delete(id);
-  const desktop = NODES.get("desktop");
-  if (desktop) desktop.children = (desktop.children ?? []).filter((child) => child !== id);
+  const parent = parentOf(id);
+  if (parent) parent.children = (parent.children ?? []).filter((child) => child !== id);
 }
 
 /**

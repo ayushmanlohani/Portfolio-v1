@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type FsNode, node, unregisterFile } from "@/components/win7/fs";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
 import { useFiles } from "@/store/files";
+import { useFolders } from "@/store/folders";
 import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
@@ -83,13 +84,20 @@ const DESKTOP_ENTRIES: Entry[] = [
 ];
 
 /**
- * Only a Notepad file (`kind === "file"`) can be renamed or permanently
- * destroyed — the six content folders are `kind === "folder"`, and their
- * names come from the content files, not from anyone clicking Rename.
+ * Only a Notepad file (`kind === "file"`) can be permanently destroyed — the
+ * six content folders are `kind === "folder"`, and so is everything New
+ * Folder makes, and neither goes all the way from the bin.
+ *
+ * Rename lights up for a file or for a folder New Folder made — checked
+ * against `useFolders` rather than `deletable`, since the six content
+ * folders are deletable too but keep the name their content file gives
+ * them.
  */
 const itemEntries = (inBin: boolean, item: FsNode | undefined): Entry[] => {
   const deletable = !!item?.deletable;
   const isFile = item?.kind === "file";
+  const isCreatedFolder = !!item && useFolders.getState().folders.some((f) => f.id === item.id);
+  const canRename = isFile || isCreatedFolder;
 
   return inBin
     ? [
@@ -109,7 +117,7 @@ const itemEntries = (inBin: boolean, item: FsNode | undefined): Entry[] => {
         { kind: "sep" },
         // The Recycle Bin itself can't go in the Recycle Bin.
         { kind: "item", label: "Delete", action: "delete", disabled: !deletable },
-        { kind: "item", label: "Rename", action: "rename", disabled: !isFile },
+        { kind: "item", label: "Rename", action: "rename", disabled: !canRename },
         { kind: "sep" },
         { kind: "item", label: "Properties", disabled: true },
       ];
