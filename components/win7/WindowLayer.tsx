@@ -8,6 +8,7 @@ import { node } from "@/components/win7/fs";
 import { MediaPlayer } from "@/components/win7/MediaPlayer";
 import { Notepad } from "@/components/win7/Notepad";
 import { PdfViewer } from "@/components/win7/PdfViewer";
+import { Personalize } from "@/components/win7/Personalize";
 import { PhotoViewer } from "@/components/win7/PhotoViewer";
 import { Terminal } from "@/components/win7/Terminal";
 import {
@@ -17,6 +18,7 @@ import {
   NOTEPAD_ID,
   PDF_ID,
   PDF_PREFIX,
+  PERSONALIZE_ID,
   PHOTOS_PREFIX,
   TERMINAL_ID,
   WMP_ID,
@@ -42,6 +44,7 @@ function contentFor(win: OpenWindow) {
   if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
   if (id === WMP_ID) return <MediaPlayer />;
   if (id === PDF_ID) return <PdfViewer />;
+  if (id === PERSONALIZE_ID) return <Personalize />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
   if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;
   if (id === CHROME_ID) return <Chrome windowId={id} />;

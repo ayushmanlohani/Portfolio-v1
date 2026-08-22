@@ -8,6 +8,7 @@ import {
   NOTEPAD_ID,
   PDF_ID,
   PDF_PREFIX,
+  PERSONALIZE_ID,
   PHOTOS_PREFIX,
   TERMINAL_ID,
   WMP_ID,
@@ -20,6 +21,7 @@ import {
   MediaPlayerIcon,
   NotepadIcon,
   PdfIcon,
+  PersonalizeIcon,
   PhotoViewerIcon,
   TerminalIcon,
 } from "@/components/win7/icons";
@@ -37,6 +39,7 @@ const TaskIcon = ({ id }: { id: string }) => {
   if (id === WMP_ID) return <MediaPlayerIcon className="task-button-icon" />;
   if (id === PDF_ID || id.startsWith(PDF_PREFIX)) return <PdfIcon className="task-button-icon" />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewerIcon className="task-button-icon" />;
+  if (id === PERSONALIZE_ID) return <PersonalizeIcon className="task-button-icon" />;
 
   const Icon = node(id)?.Icon ?? FolderIcon;
   return <Icon className="task-button-icon" />;
@@ -48,6 +51,7 @@ const APP_NAMES: Record<string, string> = {
   [CALC_ID]: "Calculator",
   [NOTEPAD_ID]: "Notepad",
   [WMP_ID]: WMP_TITLE,
+  [PERSONALIZE_ID]: "Personalization",
 };
 
 const taskLabel = (id: string) => APP_NAMES[id] ?? node(id)?.label ?? id;
