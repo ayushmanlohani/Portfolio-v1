@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask, PDFPageProxy } from "pdfjs-dist";
 
 import { fileName } from "@/components/win7/media";
+import { PdfIcon } from "@/components/win7/icons";
 import { RESUME } from "@/content/resume";
 
 /**
@@ -125,8 +126,14 @@ export function PdfViewer({ src }: { src?: string }) {
   const [fitWidth, setFitWidth] = useState(true);
   const [page, setPage] = useState(1);
 
+  // What's actually open — starts as the `src` prop, but the empty state's
+  // resume tile can set it directly, so a window opened blank from the Start
+  // menu ends up showing the resume without becoming a second window.
+  const [openedSrc, setOpenedSrc] = useState(src);
+  useEffect(() => setOpenedSrc(src), [src]);
+
   useEffect(() => {
-    if (!src) return;
+    if (!openedSrc) return;
     let cancelled = false;
     // Closing the window has to tear the worker down with it, and it is the
     // loading task — not the document — that owns the worker.
@@ -137,7 +144,7 @@ export function PdfViewer({ src }: { src?: string }) {
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = WORKER;
 
-        task = pdfjs.getDocument({ url: src });
+        task = pdfjs.getDocument({ url: openedSrc });
         const doc = await task.promise;
         if (cancelled) return;
 
@@ -155,7 +162,7 @@ export function PdfViewer({ src }: { src?: string }) {
       cancelled = true;
       task?.destroy().catch(() => {});
     };
-  }, [src]);
+  }, [openedSrc]);
 
   /** Fit width: the page fills the frame minus its margins, and follows a
    *  window resize, which is what makes the default feel like a reader. */
@@ -251,15 +258,15 @@ export function PdfViewer({ src }: { src?: string }) {
             download in its place; every other PDF downloads via the icon on
             the right. */}
         <div className="pdf-title">
-          {src === RESUME.pdf && (
-            <a className="pdf-resume-dl" href={src} download>
+          {openedSrc === RESUME.pdf && (
+            <a className="pdf-resume-dl" href={openedSrc} download>
               Download Resume
             </a>
           )}
         </div>
 
         <div className="pdf-group">
-          <button type="button" className="pdf-btn" aria-label="Zoom out" disabled={!src} onClick={() => stepZoom(-1)}>
+          <button type="button" className="pdf-btn" aria-label="Zoom out" disabled={!openedSrc} onClick={() => stepZoom(-1)}>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M4 8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
@@ -270,20 +277,20 @@ export function PdfViewer({ src }: { src?: string }) {
             className="pdf-zoom"
             aria-label="Fit to width"
             aria-pressed={fitWidth}
-            disabled={!src}
+            disabled={!openedSrc}
             onClick={() => setFitWidth(true)}
           >
             {Math.round(scale * 100)}%
           </button>
 
-          <button type="button" className="pdf-btn" aria-label="Zoom in" disabled={!src} onClick={() => stepZoom(1)}>
+          <button type="button" className="pdf-btn" aria-label="Zoom in" disabled={!openedSrc} onClick={() => stepZoom(1)}>
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M8 4v8M4 8h8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
             </svg>
           </button>
 
-          {src && (
-            <a className="pdf-btn pdf-download" href={src} download aria-label="Download">
+          {openedSrc && (
+            <a className="pdf-btn pdf-download" href={openedSrc} download aria-label="Download">
               <svg viewBox="0 0 16 16" aria-hidden="true">
                 <path d="M8 2.5v7m0 0L5 6.8M8 9.5l3-2.7M3.5 12.5h9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -293,18 +300,32 @@ export function PdfViewer({ src }: { src?: string }) {
       </div>
 
       <div className="pdf-scroll" ref={scroller} onScroll={onScroll}>
-        {!src && <p className="pdf-status">Open a PDF to view it here.</p>}
-        {src && error && (
+        {!openedSrc && (
+          <div className="pdf-empty">
+            <p className="pdf-status">Open a PDF to view it here.</p>
+            <button
+              type="button"
+              className="pdf-empty-tile"
+              onClick={() => setOpenedSrc(RESUME.pdf)}
+            >
+              <PdfIcon className="pdf-empty-icon" />
+              <span>{fileName(RESUME.pdf)}</span>
+            </button>
+          </div>
+        )}
+        {openedSrc && error && (
           <p className="pdf-status">
             {error}
             {/* A download manager extension can swallow a .pdf request before
                 the page ever sees it, so the dead end gets an exit. */}
-            <a href={src} download>
+            <a href={openedSrc} download>
               Download it instead
             </a>
           </p>
         )}
-        {src && !error && pages.length === 0 && <p className="pdf-status">Opening {fileName(src)}…</p>}
+        {openedSrc && !error && pages.length === 0 && (
+          <p className="pdf-status">Opening {fileName(openedSrc)}…</p>
+        )}
         {pages.map((p, i) => (
           <Page key={p.pageNumber} page={p} scale={scale} label={i + 1} />
         ))}

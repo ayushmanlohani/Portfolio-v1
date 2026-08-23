@@ -4308,6 +4308,46 @@ img.project-crest {
   background: rgba(255, 255, 255, 0.24);
 }
 
+/* The empty state's shortcut to the one document worth opening by default —
+   a file tile in the same language Explorer and the Pictures folder use. */
+.pdf-empty {
+  display: grid;
+  justify-items: center;
+  gap: calc(18 * var(--px));
+  margin-top: calc(30 * var(--px));
+}
+
+.pdf-empty-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(6 * var(--px));
+  padding: calc(10 * var(--px)) calc(14 * var(--px));
+  border: calc(1 * var(--px)) solid transparent;
+  border-radius: calc(4 * var(--px));
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pdf-empty-tile:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pdf-empty-icon {
+  width: calc(48 * var(--px));
+  height: calc(48 * var(--px));
+}
+
+.pdf-empty-tile span {
+  max-width: calc(160 * var(--px));
+  font-size: calc(12 * var(--px));
+  color: #eef3f8;
+  text-align: center;
+  word-break: break-word;
+}
+
 /* The resume's two buttons, stacked in the space beside the last section. */
 .cv-actions {
   flex: none;
