@@ -3,7 +3,7 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 
 interface SparkleButtonProps {
   text?: string;
@@ -30,7 +30,7 @@ function __OriginkitBase_SparkleButton({
   glareDirection = "left-to-right",
   transition = { type: "spring", stiffness: 400, damping: 25, mass: 1 },
 }: SparkleButtonProps) {
-  const variants = React.useMemo(() => {
+  const variants = React.useMemo<Variants>(() => {
     let hoverPos = 1;
     let restPos = 0;
     if (glareDirection === "right-to-left") {
