@@ -23,12 +23,13 @@ import { useWindowStore } from "@/store/windows";
  * file gives them. Rename doesn't open a dialog: it hands off to
  * `store/inlineEdit.ts`, which turns the item's own label into a text box —
  * same as real Windows. The same item seen inside the Recycle Bin gets
- * **Restore** and, for a file only, a permanent **Delete** behind a confirm
- * dialog: a folder can be sent to the bin but never destroyed from it, only
- * restored. Permanent Delete covers the whole selection — select a handful
- * of files and it destroys every file among them, leaving folders to be
- * restored — and its dialog never names the files, it just asks for
- * confirmation.
+ * **Restore** and, for a file or a folder New Folder made, a permanent
+ * **Delete** behind a confirm dialog — the six content folders are the one
+ * thing that can never go all the way, since there's no path from "in the
+ * bin" to "gone" for them, only Restore. Permanent Delete covers the whole
+ * selection — select a handful of items and it destroys every file or
+ * created folder among them, leaving the six content folders to be restored
+ * — and its dialog never names them, it just asks for confirmation.
  *
  * Restoring a file whose old name collides with one already on the Desktop
  * doesn't rename anything for you — it refuses and raises the same balloon
@@ -86,28 +87,31 @@ const DESKTOP_ENTRIES: Entry[] = [
 ];
 
 /**
- * Only a Notepad file (`kind === "file"`) can be permanently destroyed — the
- * six content folders are `kind === "folder"`, and so is everything New
- * Folder makes, and neither goes all the way from the bin.
+ * A Notepad file or a folder New Folder made can both be permanently
+ * destroyed. The six content folders are `kind === "folder"` too, but they
+ * aren't in `useFolders` — that's what tells them apart from anything New
+ * Folder created, and it's the only thing standing between the bin and gone
+ * for them.
  *
- * Rename lights up for a file or for a folder New Folder made — checked
- * against `useFolders` rather than `deletable`, since the six content
- * folders are deletable too but keep the name their content file gives
- * them.
+ * Rename lights up for the same two — checked against `useFolders` rather
+ * than `deletable`, since the six content folders are deletable too but
+ * keep the name their content file gives them.
  */
 const itemEntries = (inBin: boolean, item: FsNode | undefined): Entry[] => {
   const deletable = !!item?.deletable;
   const isFile = item?.kind === "file";
   const isCreatedFolder = !!item && useFolders.getState().folders.some((f) => f.id === item.id);
   const canRename = isFile || isCreatedFolder;
+  const canDestroy = isFile || isCreatedFolder;
 
   return inBin
     ? [
         { kind: "item", label: "Restore", action: "restore" },
         { kind: "sep" },
-        // The bin can hold a folder (sent there by mistake) as well as a
-        // file — only the file can go all the way and be destroyed.
-        { kind: "item", label: "Delete", action: "destroy", disabled: !isFile },
+        // The bin can hold one of the six content folders (sent there by
+        // mistake) as well as a file or a created folder — only the latter
+        // two can go all the way and be destroyed.
+        { kind: "item", label: "Delete", action: "destroy", disabled: !canDestroy },
         { kind: "item", label: "Cut", disabled: true },
         { kind: "item", label: "Properties", disabled: true },
       ]
@@ -300,11 +304,14 @@ export function DesktopContextMenu({
       target.selection.forEach(tryRestore);
     }
 
-    // Permanent delete works on the whole selection. Folders in the bin can
-    // be restored but never destroyed, so only the files among the selection
-    // go through — a mixed selection deletes the files and spares the folders.
+    // Permanent delete works on the whole selection. Only the six content
+    // folders in the bin are un-destroyable, so a mixed selection deletes
+    // every file and created folder and spares only those.
     if (action === "destroy" && target.kind === "node") {
-      const ids = target.selection.filter((sid) => node(sid)?.kind === "file");
+      const createdFolderIds = useFolders.getState().folders.map((f) => f.id);
+      const ids = target.selection.filter(
+        (sid) => node(sid)?.kind === "file" || createdFolderIds.includes(sid),
+      );
       if (ids.length > 0) setConfirm({ ids });
     }
 
@@ -351,12 +358,12 @@ export function DesktopContextMenu({
       {confirm && (
         <div className="win7-dialog-layer">
           <div className="win7-dialog" role="dialog" aria-modal="true" aria-label="Confirm Delete">
-            <div className="win7-dialog-caption">Confirm File Delete</div>
+            <div className="win7-dialog-caption">Confirm Delete</div>
             <div className="win7-dialog-body">
               <p className="win7-dialog-message">
                 {confirm.ids.length === 1
-                  ? "Permanently delete this file? This can't be undone."
-                  : `Permanently delete these ${confirm.ids.length} files? This can't be undone.`}
+                  ? "Permanently delete this item? This can't be undone."
+                  : `Permanently delete these ${confirm.ids.length} items? This can't be undone.`}
               </p>
             </div>
             <div className="win7-dialog-buttons">
@@ -367,6 +374,7 @@ export function DesktopContextMenu({
                   confirm.ids.forEach((id) => {
                     unregisterFile(id);
                     useFiles.getState().forget(id);
+                    useFolders.getState().forget(id);
                     purge(id);
                   });
                   setConfirm(null);

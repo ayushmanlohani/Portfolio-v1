@@ -43,6 +43,10 @@ type FolderStore = {
       not — already uses that name, checked case-insensitively, the way
       Windows itself treats names. */
   rename: (id: string, name: string) => boolean;
+  /** Drops a created folder for good — only a permanent delete from the
+      Recycle Bin calls this. The six content folders never reach here: they
+      aren't in this store to begin with. */
+  forget: (id: string) => void;
 };
 
 let nextId = 0;
@@ -92,4 +96,6 @@ export const useFolders = create<FolderStore>((set, get) => ({
     relabel(id, name);
     return true;
   },
+
+  forget: (id) => set((state) => ({ folders: state.folders.filter((f) => f.id !== id) })),
 }));
