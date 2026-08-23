@@ -185,12 +185,6 @@ export function StartMenu({ id, onLaunch, onShutdown }: { id: string; onLaunch: 
               <PowerIcon className="sm-power" />
               <span>Shut down</span>
             </button>
-            <button
-              type="button"
-              className="sm-shutdown-arrow"
-              role="menuitem"
-              aria-label="Shut down options"
-            />
           </div>
         </div>
       </div>

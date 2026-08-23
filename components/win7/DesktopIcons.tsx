@@ -7,6 +7,7 @@ import { DESKTOP_FOLDERS, node } from "@/components/win7/fs";
 import { RecycleBinIcon } from "@/components/win7/icons";
 import { RenameField } from "@/components/win7/RenameField";
 import { useMarquee } from "@/components/win7/useMarquee";
+import { type SortMode, useDesktopView } from "@/store/desktopView";
 import { useFiles } from "@/store/files";
 import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
@@ -42,6 +43,62 @@ type Layout = Record<string, Cell>;
 const DRAG_THRESHOLD = 4;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/** The order the six content folders appear in Ayushman's own resume. */
+const CV_ORDER = ["about", "education", "experience", "projects", "contact", "resume"];
+
+/**
+ * A stand-in for file size, since nothing on this desktop has a real one.
+ *
+ * A Notepad file's size is its actual text — the one item here with real
+ * bytes to count. Everything else is a place rather than a document, so its
+ * "size" is how much it holds: a folder with more inside it sorts as bigger,
+ * the same intuition real Explorer gives a folder even though it never
+ * actually shows one a byte count.
+ */
+function sizeOf(id: string): number {
+  const item = node(id);
+  if (!item) return 0;
+  if (item.kind === "file") return useFiles.getState().read(id)?.text.length ?? 0;
+  return item.children?.length ?? 0;
+}
+
+/**
+ * Size's own head of the line, biggest first — Ayushman's call on what
+ * actually weighs the most, ahead of anything a child count could prove.
+ * Time Attack is a real game, not a folder of text files, so it leads; the
+ * rest of the desktop falls in behind by the ordinary size rule below.
+ */
+const SIZE_PRIORITY = ["racer", "chrome", "computer", "recycle", "contact", "about"];
+
+/** Comparator for one Sort by mode. Ties fall back to name, same as Explorer
+ *  breaking a Size or Type tie alphabetically rather than leaving it to
+ *  chance. `order` gives every id still outside the CV a stable spot after
+ *  the six folders, in whatever order they already sit on the desktop. */
+function compareBy(mode: SortMode, order: readonly string[]): (a: string, b: string) => number {
+  const label = (id: string) => node(id)?.label ?? "";
+  const byName = (a: string, b: string) => label(a).localeCompare(label(b));
+
+  if (mode === "name") return byName;
+  if (mode === "size") {
+    return (a, b) => {
+      const pa = SIZE_PRIORITY.indexOf(a);
+      const pb = SIZE_PRIORITY.indexOf(b);
+      if (pa !== -1 || pb !== -1) {
+        if (pa === -1) return 1;
+        if (pb === -1) return -1;
+        return pa - pb;
+      }
+      return sizeOf(a) - sizeOf(b) || byName(a, b);
+    };
+  }
+
+  const rank = (id: string) => {
+    const i = CV_ORDER.indexOf(id);
+    return i === -1 ? CV_ORDER.length + order.indexOf(id) : i;
+  };
+  return (a, b) => rank(a) - rank(b);
+}
 
 /**
  * Where the icons sit when the page loads — Ayushman's own arrangement, taken
@@ -137,6 +194,17 @@ export function DesktopIcons() {
   // row count is known packs them into a single row instead of a column.
   const [grid, setGrid] = useState({ w: 80, h: 92, cols: 1, rows: 1, measured: false });
 
+  const iconSize = useDesktopView((s) => s.iconSize);
+  const autoArrange = useDesktopView((s) => s.autoArrange);
+  const alignToGrid = useDesktopView((s) => s.alignToGrid);
+  const showIcons = useDesktopView((s) => s.showIcons);
+  const sortRequest = useDesktopView((s) => s.sortRequest);
+  const clearSortRequest = useDesktopView((s) => s.clearSortRequest);
+  // Pixel positions used only while Align to grid is off — an icon's spot the
+  // moment it goes freeform. Keyed the same as `layout`, but in raw pixels
+  // rather than cells, since that's the whole point of turning grid snap off.
+  const [freePos, setFreePos] = useState<Record<string, { x: number; y: number }>>({});
+
   // Drag state lives in a ref so pointermove doesn't re-render on every frame;
   // only `dragging` (which moves the element) is state.
   const drag = useRef<{
@@ -189,6 +257,76 @@ export function DesktopIcons() {
     ro.observe(root);
     return () => ro.disconnect();
   }, [measure]);
+
+  // Large/Small icons change --cell-w/--cell-h without changing the root's
+  // own box size, so the ResizeObserver above never fires for them — this
+  // re-measures on exactly the one thing it misses.
+  useLayoutEffect(() => {
+    measure();
+  }, [iconSize, measure]);
+
+  // Auto Arrange means there is no custom layout any more — every icon goes
+  // back to its default slot the instant it's switched on, same as real
+  // Windows snapping the desktop back into order.
+  useEffect(() => {
+    if (autoArrange) setLayout({});
+  }, [autoArrange]);
+
+  // Turning Align to grid back on captures wherever freeform dragging left
+  // every icon and settles each one into the nearest cell, same collision
+  // avoidance a normal drop uses so two icons can't land on top of each
+  // other. Freeform positions are then cleared — the next time grid snap
+  // comes off, icons start from where they actually are now, not from
+  // wherever they were the last time freeform was in use.
+  useEffect(() => {
+    if (!alignToGrid || Object.keys(freePos).length === 0) return;
+
+    setLayout((moved) => {
+      const cellsNow = computeCells(moved, grid.rows, items);
+      const settled: Layout = { ...cellsNow };
+      const next = { ...moved };
+
+      for (const [gid, pos] of Object.entries(freePos)) {
+        const want = {
+          c: clamp(Math.round(pos.x / grid.w), 0, grid.cols - 1),
+          r: clamp(Math.round(pos.y / grid.h), 0, grid.rows - 1),
+        };
+        delete settled[gid];
+        const cell = freeCellNear(want, new Set(), settled);
+        settled[gid] = cell;
+        next[gid] = cell;
+      }
+      return next;
+    });
+    setFreePos({});
+    // Only the on/off edge should fire this — it reads grid/items/freePos as
+    // of the render where alignToGrid flips, not on every change to them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alignToGrid]);
+
+  // Sort by: a one-off reflow into a fresh column-major grid, not a mode
+  // that sticks — dragging an icon afterward moves it same as always. Clears
+  // any freeform positions too, since a sort is only visible as a grid.
+  useEffect(() => {
+    if (!sortRequest) return;
+
+    const onDesktopNow = items.filter((id) => !deleted.includes(id));
+    const sorted = [...onDesktopNow].sort(compareBy(sortRequest.mode, onDesktopNow));
+
+    setLayout(() => {
+      const next: Layout = {};
+      sorted.forEach((id, i) => {
+        next[id] = { c: Math.floor(i / grid.rows), r: i % grid.rows };
+      });
+      return next;
+    });
+    setFreePos({});
+    clearSortRequest();
+    // The nonce inside sortRequest is what makes choosing the same mode
+    // twice in a row still fire this — not a dependency on everything it
+    // closes over (items/deleted/grid.rows as of the render it landed on).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortRequest]);
 
   // Clicking bare desktop clears the selection, same as Windows.
   useEffect(() => {
@@ -277,6 +415,8 @@ export function DesktopIcons() {
    */
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>, id: string) => {
     if (e.button !== 0) return;
+    // Auto Arrange locks the layout — there is nothing to pick up.
+    if (autoArrange) return;
 
     const additive = e.ctrlKey || e.metaKey;
     const group = additive
@@ -335,8 +475,62 @@ export function DesktopIcons() {
     window.addEventListener("blur", onCancel);
   };
 
+  /** An icon's rendered pixel position — its freeform spot when there is one
+   *  and grid snap is off, its grid cell converted to pixels otherwise. Both
+   *  rendering and hit-testing (the bin, freeform's own drop) read this, so
+   *  what's drawn is exactly what a drop will act on. */
+  const effectivePos = (id: string, cellsNow: Layout): { x: number; y: number } => {
+    if (!autoArrange && !alignToGrid) {
+      const free = freePos[id];
+      if (free) return free;
+    }
+    const cell = cellsNow[id];
+    return { x: cell.c * grid.w, y: cell.r * grid.h };
+  };
+
+  /** Freeform counterpart to `drop` below, used while Align to grid is off:
+   *  no snapping, no collision avoidance — pixel for pixel, the way an
+   *  unaligned Windows desktop actually behaves. The bin is still a real
+   *  target, tested by proximity rather than by sharing a cell. */
+  const dropFree = (d: { id: string; ids: string[] }, dx: number, dy: number) => {
+    const box = rootRef.current?.getBoundingClientRect();
+    const maxX = box ? Math.max(0, box.width - grid.w) : Infinity;
+    const maxY = box ? Math.max(0, box.height - grid.h) : Infinity;
+    const cellsNow = computeCells(layout, grid.rows, items);
+    const clampToDesktop = (p: { x: number; y: number }) => ({
+      x: clamp(p.x + dx, 0, maxX),
+      y: clamp(p.y + dy, 0, maxY),
+    });
+
+    const group = new Set(d.ids);
+    if (!group.has("recycle")) {
+      const primary = clampToDesktop(effectivePos(d.id, cellsNow));
+      const bin = effectivePos("recycle", cellsNow);
+      const onBin = Math.abs(primary.x - bin.x) < grid.w * 0.6 && Math.abs(primary.y - bin.y) < grid.h * 0.6;
+      if (onBin) {
+        const going = d.ids.filter((gid) => node(gid)?.deletable);
+        if (going.length > 0) {
+          setSelected([]);
+          going.forEach(remove);
+          return;
+        }
+      }
+    }
+
+    setFreePos((prev) => {
+      const next = { ...prev };
+      for (const gid of d.ids) next[gid] = clampToDesktop(prev[gid] ?? effectivePos(gid, cellsNow));
+      return next;
+    });
+  };
+
   /** Where the whole group lands. */
   const drop = (d: { id: string; ids: string[] }, dx: number, dy: number) => {
+    if (!alignToGrid) {
+      dropFree(d, dx, dy);
+      return;
+    }
+
     const cellsNow = computeCells(layout, grid.rows, items);
     const want = dropCell(d.id, dx, dy, cellsNow);
     const bin = cellsNow.recycle;
@@ -417,19 +611,34 @@ export function DesktopIcons() {
   const onDesktop = items.filter((id) => !deleted.includes(id));
 
   // True while a deletable folder is being dragged over the bin. Computed from
-  // the same dropCell() the drop uses, so the highlight cannot promise
+  // the same hit test the drop itself uses (grid cell match when aligned,
+  // pixel proximity when freeform), so the highlight cannot promise
   // something the release then doesn't do.
   const overBin =
     !!dragging &&
     !dragging.ids.includes("recycle") &&
     dragging.ids.some((gid) => node(gid)?.deletable) &&
-    (() => {
-      const want = dropCell(dragging.primary, dragging.dx, dragging.dy, cells);
-      return want.c === cells.recycle.c && want.r === cells.recycle.r;
-    })();
+    (alignToGrid
+      ? (() => {
+          const want = dropCell(dragging.primary, dragging.dx, dragging.dy, cells);
+          return want.c === cells.recycle.c && want.r === cells.recycle.r;
+        })()
+      : (() => {
+          const base = effectivePos(dragging.primary, cells);
+          const bin = effectivePos("recycle", cells);
+          const x = base.x + dragging.dx;
+          const y = base.y + dragging.dy;
+          return Math.abs(x - bin.x) < grid.w * 0.6 && Math.abs(y - bin.y) < grid.h * 0.6;
+        })());
 
   return (
-    <div className="desktop-icons" ref={rootRef} onPointerDown={startBand}>
+    <div
+      className="desktop-icons"
+      data-size={iconSize === "medium" ? undefined : iconSize}
+      data-hidden={showIcons ? undefined : "1"}
+      ref={rootRef}
+      onPointerDown={startBand}
+    >
       {band && (
         <div
           className="desktop-band"
@@ -446,7 +655,7 @@ export function DesktopIcons() {
         const item = node(id);
         if (!item) return null;
 
-        const cell = cells[id];
+        const pos = effectivePos(id, cells);
         const isDragging = !!dragging?.ids.includes(id);
         const isBin = id === "recycle";
 
@@ -461,8 +670,8 @@ export function DesktopIcons() {
             // Lights up while a folder is being dragged over it.
             data-drop={isBin && overBin ? "true" : undefined}
             style={{
-              transform: `translate(${cell.c * grid.w + (isDragging ? dragging!.dx : 0)}px, ${
-                cell.r * grid.h + (isDragging ? dragging!.dy : 0)
+              transform: `translate(${pos.x + (isDragging ? dragging!.dx : 0)}px, ${
+                pos.y + (isDragging ? dragging!.dy : 0)
               }px)`,
             }}
             // The browser will happily start a native HTML5 drag from an icon

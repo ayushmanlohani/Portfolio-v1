@@ -312,6 +312,34 @@ body {
   filter: drop-shadow(0 calc(2 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, 0.55));
 }
 
+/* Large/Small icons — the View menu's own sizes. Medium (above) is the
+   desktop's long-standing default and stays the un-suffixed rule. Cell and
+   icon scale together so nothing overlaps at either end. */
+.desktop-icons[data-size="large"] {
+  --cell-w: calc(104 * var(--px));
+  --cell-h: calc(116 * var(--px));
+}
+
+.desktop-icons[data-size="large"] .di-icon {
+  width: calc(64 * var(--px));
+  height: calc(64 * var(--px));
+}
+
+.desktop-icons[data-size="small"] {
+  --cell-w: calc(64 * var(--px));
+  --cell-h: calc(72 * var(--px));
+}
+
+.desktop-icons[data-size="small"] .di-icon {
+  width: calc(32 * var(--px));
+  height: calc(32 * var(--px));
+}
+
+/* Show desktop icons, unchecked. */
+.desktop-icons[data-hidden] {
+  display: none;
+}
+
 .di-label {
   font-size: calc(12 * var(--px));
   line-height: 1.25;
@@ -423,6 +451,7 @@ body {
 }
 
 .ctx-item {
+  position: relative;
   display: flex;
   align-items: center;
   width: 100%;
@@ -435,6 +464,47 @@ body {
   color: inherit;
   text-align: left;
   cursor: default;
+}
+
+/* The gutter glyph for a checked/selected View option — a dot for one choice
+   out of several (icon size), a check for a plain on/off toggle. */
+.ctx-mark {
+  position: absolute;
+  left: calc(10 * var(--px));
+  width: calc(10 * var(--px));
+  height: calc(10 * var(--px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctx-mark[data-kind="radio"]::after {
+  content: "";
+  width: calc(6 * var(--px));
+  height: calc(6 * var(--px));
+  border-radius: 50%;
+  background: #1a1a1a;
+}
+
+.ctx-mark[data-kind="check"]::after {
+  content: "";
+  width: calc(7 * var(--px));
+  height: calc(4 * var(--px));
+  border-left: calc(2 * var(--px)) solid #1a1a1a;
+  border-bottom: calc(2 * var(--px)) solid #1a1a1a;
+  transform: rotate(-45deg) translateY(calc(-1 * var(--px)));
+}
+
+/* A submenu — same chrome as the top-level menu, popped out beside the row
+   that opens it rather than tracking the cursor like the top-level one does. */
+.ctx-item-wrap {
+  position: relative;
+}
+
+.ctx-submenu {
+  position: absolute;
+  top: calc(-3 * var(--px));
+  left: 100%;
 }
 
 .ctx-item:hover:not([data-disabled]),
@@ -871,8 +941,7 @@ body {
   padding: calc(8 * var(--px));
 }
 
-.sm-shutdown-main,
-.sm-shutdown-arrow {
+.sm-shutdown-main {
   border: calc(1 * var(--px)) solid #4a5f74;
   background: linear-gradient(180deg, #7e8fa1 0%, #64778c 48%, #55697f 52%, #46596e 100%);
   color: #f2f6fa;
@@ -880,15 +949,12 @@ body {
   font-size: calc(12 * var(--px));
   cursor: default;
   box-shadow: inset 0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.35);
-}
-
-.sm-shutdown-main {
   display: flex;
   align-items: center;
   gap: calc(6 * var(--px));
   flex: 1;
   padding: calc(5 * var(--px)) calc(8 * var(--px));
-  border-radius: calc(3 * var(--px)) 0 0 calc(3 * var(--px));
+  border-radius: calc(3 * var(--px));
 }
 
 .sm-power {
@@ -897,22 +963,7 @@ body {
   flex: none;
 }
 
-.sm-shutdown-arrow {
-  width: calc(20 * var(--px));
-  border-radius: 0 calc(3 * var(--px)) calc(3 * var(--px)) 0;
-  position: relative;
-}
-
-.sm-shutdown-arrow::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: #f2f6fa;
-  clip-path: polygon(34% 42%, 66% 42%, 50% 60%);
-}
-
-.sm-shutdown-main:hover,
-.sm-shutdown-arrow:hover {
+.sm-shutdown-main:hover {
   background: linear-gradient(180deg, #94a5b7 0%, #76889d 48%, #667b91 52%, #576b80 100%);
 }
 

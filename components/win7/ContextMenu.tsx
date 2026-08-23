@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { type FsNode, node, unregisterFile } from "@/components/win7/fs";
 import { launchWindow, PERSONALIZE_ID } from "@/components/win7/apps";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
+import { type IconSize, type SortMode, useDesktopView } from "@/store/desktopView";
 import { useFiles } from "@/store/files";
 import { useFolders } from "@/store/folders";
 import { useInlineEdit } from "@/store/inlineEdit";
@@ -53,11 +54,24 @@ type Entry =
       kind: "item";
       label: string;
       submenu?: boolean;
+      /** The two submenus this menu actually opens — View's icon-size and
+          arrangement options, and Sort by's reflow actions. "New" is still
+          just the arrow, unwired. */
+      opens?: "view" | "sort";
       disabled?: boolean;
       action?: Action;
       /** Jump-list rows carry an icon; desktop rows don't. */
       icon?: React.ReactNode;
     };
+
+/** One row of the View submenu — a size to pick, or a plain on/off toggle. */
+type ViewEntry =
+  | { kind: "sep" }
+  | { kind: "radio"; label: string; active: boolean; onSelect: () => void }
+  | { kind: "check"; label: string; active: boolean; disabled?: boolean; onToggle: () => void };
+
+/** One row of the Sort by submenu — a plain action, not a mode that sticks. */
+type SortEntry = { label: string; onSelect: () => void };
 
 type Action =
   | "refresh"
@@ -73,8 +87,8 @@ type Action =
 
 /** Bare desktop. Gadgets was removed on request. */
 const DESKTOP_ENTRIES: Entry[] = [
-  { kind: "item", label: "View", submenu: true },
-  { kind: "item", label: "Sort by", submenu: true },
+  { kind: "item", label: "View", submenu: true, opens: "view" },
+  { kind: "item", label: "Sort by", submenu: true, opens: "sort" },
   { kind: "item", label: "Refresh", action: "refresh" },
   { kind: "sep" },
   { kind: "item", label: "Paste", disabled: true },
@@ -167,6 +181,7 @@ export function DesktopContextMenu({
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
   const [target, setTarget] = useState<Target>(null);
   const [confirm, setConfirm] = useState<ConfirmDialog | null>(null);
+  const [openSubmenu, setOpenSubmenu] = useState<"view" | "sort" | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const remove = useRecycleBin((s) => s.remove);
@@ -178,7 +193,22 @@ export function DesktopContextMenu({
   const unpin = useWindowStore((s) => s.unpin);
   const closeWindow = useWindowStore((s) => s.close);
 
+  const iconSize = useDesktopView((s) => s.iconSize);
+  const setIconSize = useDesktopView((s) => s.setIconSize);
+  const autoArrange = useDesktopView((s) => s.autoArrange);
+  const toggleAutoArrange = useDesktopView((s) => s.toggleAutoArrange);
+  const alignToGrid = useDesktopView((s) => s.alignToGrid);
+  const toggleAlignToGrid = useDesktopView((s) => s.toggleAlignToGrid);
+  const showIcons = useDesktopView((s) => s.showIcons);
+  const toggleShowIcons = useDesktopView((s) => s.toggleShowIcons);
+  const requestSort = useDesktopView((s) => s.requestSort);
+
   const close = useCallback(() => setAt(null), []);
+
+  // A closed top-level menu shouldn't reopen with a submenu already expanded.
+  useEffect(() => {
+    if (!at) setOpenSubmenu(null);
+  }, [at]);
 
   useEffect(() => {
     const onContextMenu = (e: MouseEvent) => {
@@ -279,6 +309,36 @@ export function DesktopContextMenu({
         ? itemEntries(target.inBin, node(target.id))
         : DESKTOP_ENTRIES;
 
+  const sizeLabel = (size: IconSize) => `${size[0].toUpperCase()}${size.slice(1)} icons`;
+  const viewEntries: ViewEntry[] = [
+    ...(["large", "medium", "small"] as const).map(
+      (size): ViewEntry => ({
+        kind: "radio",
+        label: sizeLabel(size),
+        active: iconSize === size,
+        onSelect: () => setIconSize(size),
+      }),
+    ),
+    { kind: "sep" },
+    { kind: "check", label: "Auto arrange icons", active: autoArrange, onToggle: toggleAutoArrange },
+    // Auto Arrange makes grid alignment automatic and non-optional, same as
+    // real Windows greying this row out the moment the one above is checked.
+    {
+      kind: "check",
+      label: "Align icons to grid",
+      active: alignToGrid || autoArrange,
+      disabled: autoArrange,
+      onToggle: toggleAlignToGrid,
+    },
+    { kind: "check", label: "Show desktop icons", active: showIcons, onToggle: toggleShowIcons },
+  ];
+
+  const sortLabel: Record<SortMode, string> = { name: "Name", size: "Size", cv: "CV order" };
+  const sortEntries: SortEntry[] = (["name", "size", "cv"] as const).map((mode) => ({
+    label: sortLabel[mode],
+    onSelect: () => requestSort(mode),
+  }));
+
   const run = (action?: Action) => {
     if (!action) return;
     // Both bare-desktop actions fire with `target` null, so they run before
@@ -333,6 +393,65 @@ export function DesktopContextMenu({
           {entries.map((entry, i) =>
             entry.kind === "sep" ? (
               <div key={`sep-${i}`} className="ctx-sep" role="separator" />
+            ) : entry.opens ? (
+              <div
+                key={entry.label}
+                className="ctx-item-wrap"
+                onMouseEnter={() => setOpenSubmenu(entry.opens!)}
+                onMouseLeave={() => setOpenSubmenu(null)}
+              >
+                <button type="button" role="menuitem" aria-haspopup="menu" className="ctx-item">
+                  <span className="ctx-label">{entry.label}</span>
+                  <span className="ctx-arrow" aria-hidden="true" />
+                </button>
+                {openSubmenu === "view" && entry.opens === "view" && (
+                  <div className="ctx-menu ctx-submenu" role="menu">
+                    {viewEntries.map((ve, vi) =>
+                      ve.kind === "sep" ? (
+                        <div key={`vsep-${vi}`} className="ctx-sep" role="separator" />
+                      ) : (
+                        <button
+                          key={ve.label}
+                          type="button"
+                          role={ve.kind === "radio" ? "menuitemradio" : "menuitemcheckbox"}
+                          aria-checked={ve.active}
+                          className="ctx-item"
+                          data-disabled={("disabled" in ve && ve.disabled) || undefined}
+                          disabled={"disabled" in ve && ve.disabled}
+                          onClick={() => {
+                            if (ve.kind === "radio") ve.onSelect();
+                            else ve.onToggle();
+                            close();
+                          }}
+                        >
+                          {ve.active && (
+                            <span className="ctx-mark" data-kind={ve.kind === "radio" ? "radio" : "check"} />
+                          )}
+                          <span className="ctx-label">{ve.label}</span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                )}
+                {openSubmenu === "sort" && entry.opens === "sort" && (
+                  <div className="ctx-menu ctx-submenu" role="menu">
+                    {sortEntries.map((se) => (
+                      <button
+                        key={se.label}
+                        type="button"
+                        role="menuitem"
+                        className="ctx-item"
+                        onClick={() => {
+                          se.onSelect();
+                          close();
+                        }}
+                      >
+                        <span className="ctx-label">{se.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 key={entry.label}
