@@ -8,7 +8,6 @@ import {
   NOTEPAD_ID,
   PDF_ID,
   PDF_PREFIX,
-  PERSONALIZE_ID,
   PHOTOS_PREFIX,
   TERMINAL_ID,
   WMP_ID,
@@ -21,7 +20,6 @@ import {
   MediaPlayerIcon,
   NotepadIcon,
   PdfIcon,
-  PersonalizeIcon,
   PhotoViewerIcon,
   TerminalIcon,
 } from "@/components/win7/icons";
@@ -39,7 +37,6 @@ const TaskIcon = ({ id }: { id: string }) => {
   if (id === WMP_ID) return <MediaPlayerIcon className="task-button-icon" />;
   if (id === PDF_ID || id.startsWith(PDF_PREFIX)) return <PdfIcon className="task-button-icon" />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewerIcon className="task-button-icon" />;
-  if (id === PERSONALIZE_ID) return <PersonalizeIcon className="task-button-icon" />;
 
   const Icon = node(id)?.Icon ?? FolderIcon;
   return <Icon className="task-button-icon" />;
@@ -51,7 +48,6 @@ const APP_NAMES: Record<string, string> = {
   [CALC_ID]: "Calculator",
   [NOTEPAD_ID]: "Notepad",
   [WMP_ID]: WMP_TITLE,
-  [PERSONALIZE_ID]: "Personalization",
 };
 
 const taskLabel = (id: string) => APP_NAMES[id] ?? node(id)?.label ?? id;
@@ -71,7 +67,7 @@ const taskLabel = (id: string) => APP_NAMES[id] ?? node(id)?.label ?? id;
  * shows once, as its window's button — Windows merges the two rather than
  * drawing the app twice. Pin and unpin live on the right-click menu.
  */
-export function Taskbar() {
+export function Taskbar({ onShutdown }: { onShutdown?: () => void } = {}) {
   const [panel, setPanel] = useState<Panel>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const windows = useWindowStore((s) => s.windows);
@@ -112,7 +108,7 @@ export function Taskbar() {
 
   return (
     <div className="taskbar-root" ref={rootRef}>
-      {panel === "start" && <StartMenu id={MENU_ID} onLaunch={launch} />}
+      {panel === "start" && <StartMenu id={MENU_ID} onLaunch={launch} onShutdown={onShutdown} />}
 
       <div className="taskbar">
         <button

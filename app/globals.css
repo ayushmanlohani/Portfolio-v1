@@ -676,6 +676,19 @@ body {
   flex: 1;
 }
 
+.sm-no-results {
+  flex: 1;
+  margin: 0;
+  padding: calc(10 * var(--px)) calc(12 * var(--px));
+  font-size: calc(11 * var(--px));
+  color: #5a6b7a;
+}
+
+.sm-easter-egg {
+  font-style: italic;
+  color: #7a1f1f;
+}
+
 .sm-sep {
   height: calc(1 * var(--px));
   margin: calc(5 * var(--px)) calc(4 * var(--px));
@@ -798,6 +811,7 @@ body {
 .sm-user-pic {
   width: calc(46 * var(--px));
   height: calc(46 * var(--px));
+  object-fit: cover;
   border-radius: calc(3 * var(--px));
   box-shadow:
     0 0 0 calc(2 * var(--px)) #fff,
@@ -4604,3 +4618,242 @@ img.project-crest {
 .cp-confirm-btn--ok:active {
   background: linear-gradient(180deg, #94bdd8 0%, #7dabc8 100%);
 }
+
+/* ── Windows 7 Login Screen ─────────────────────────────────
+   The welcome screen before the desktop loads. Uses the same
+   --px system so everything scales with the monitor.
+   ───────────────────────────────────────────────────────── */
+
+.win7-login {
+  position: absolute;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Win7 login uses its own background, not the desktop wallpaper */
+  overflow: hidden;
+}
+
+/* The classic Win7 login background — a deep blue gradient with
+   subtle organic shapes (birds, leaves). Recreated in CSS since
+   we can't ship Microsoft's actual artwork. */
+.win7-login-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  /* Shows through only if the image fails to load. */
+  background-color: #0a1628;
+}
+
+/* A faint dark wash so white login text stays readable over a bright
+   photo — the same job the old CSS-only gradient did on its own. */
+.win7-login-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 45%,
+    rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+.win7-login-center {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── Title block ───────────────────────────────────────────── */
+
+.win7-login-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+/* SparkleButton's two overlapping text layers both read their padding
+   from --padding (its own 24px/32px, sized for its 120px default) — override
+   the custom property itself, not the resolved padding, or the layers
+   drift out of sync and double-expose. */
+.win7-login-title .sparkle-button {
+  --padding: 4px 10px;
+  white-space: nowrap;
+  margin-top: -82px;
+}
+
+/* User avatar — the rounded square with white border, exactly like Win7 */
+.win7-login-avatar {
+  width: 76px;
+  height: 76px;
+  padding: 3px;
+  margin-top: -20px;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.win7-login-avatar-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #8fc4e8 0%, #3d7cb0 100%);
+}
+
+.win7-login-avatar-inner svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Username text */
+.win7-login-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02em;
+}
+
+/* Sign-in button — a rectangular pill */
+.win7-login-btn {
+  height: 44px;
+  padding: 0 22px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #5ba8d6 0%, #2d7cb8 50%, #1a5a8a 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.win7-login-btn:hover {
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.5),
+    0 0 12px rgba(60, 140, 210, 0.4);
+}
+
+.win7-login-btn:active {
+  transform: scale(0.97);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Welcome spinner + text during sign-in */
+.win7-login-welcome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  color: #fff;
+  font-size: 14px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  animation: login-fade-in 300ms ease-out;
+}
+
+@keyframes login-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.win7-login-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: login-spin 0.8s linear infinite;
+}
+
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Desktop welcome toast ───────────────────────────────────
+   Shown once, first time the desktop loads. Slides in from the
+   right, sits for a few seconds, then slides back out.
+   ───────────────────────────────────────────────────────── */
+
+.desktop-toast {
+  position: absolute;
+  right: calc(16 * var(--px));
+  bottom: calc(52 * var(--px));
+  z-index: 600;
+  width: calc(300 * var(--px));
+  padding: calc(14 * var(--px)) calc(16 * var(--px));
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: calc(6 * var(--px));
+  background: rgba(253, 253, 253, 0.97);
+  box-shadow: 0 calc(10 * var(--px)) calc(30 * var(--px)) rgba(0, 0, 0, 0.35);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.desktop-toast-enter {
+  animation: toast-slide-in 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.desktop-toast-exit {
+  animation: toast-slide-out 350ms cubic-bezier(0.7, 0, 0.84, 0) both;
+}
+
+@keyframes toast-slide-in {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toast-slide-out {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+
+.desktop-toast-close {
+  position: absolute;
+  top: calc(6 * var(--px));
+  right: calc(8 * var(--px));
+  border: none;
+  background: none;
+  color: #666;
+  font-size: calc(16 * var(--px));
+  line-height: 1;
+  cursor: pointer;
+  padding: calc(2 * var(--px));
+}
+
+.desktop-toast-close:hover {
+  color: #000;
+}
+
+.desktop-toast-heading {
+  margin: 0 calc(14 * var(--px)) calc(6 * var(--px)) 0;
+  font-size: calc(16 * var(--px));
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.desktop-toast-body {
+  margin: 0;
+  font-size: calc(13.5 * var(--px));
+  line-height: 1.5;
+  color: #3a3a3a;
+}
+
+
+

@@ -1,18 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { CALC_ID, CHROME_ID, NOTEPAD_ID, PDF_ID, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
 import {
   CalculatorIcon,
   ChromeIcon,
-  FlagIcon,
   MediaPlayerIcon,
   NotepadIcon,
-  PaintIcon,
   PdfIcon,
   PowerIcon,
-  ScissorsIcon,
   TerminalIcon,
-  UserIcon,
 } from "@/components/win7/icons";
 
 /**
@@ -50,7 +47,6 @@ const RECENT: Program[] = [
     icon: <TerminalIcon className="sm-icon" />,
     opens: true,
   },
-  { id: "getting-started", label: "Getting Started", icon: <FlagIcon className="sm-icon" /> },
   { id: CALC_ID, label: "Calculator", icon: <CalculatorIcon className="sm-icon" />, opens: true },
   { id: NOTEPAD_ID, label: "Notepad", icon: <NotepadIcon className="sm-icon" />, opens: true },
   {
@@ -65,8 +61,6 @@ const RECENT: Program[] = [
     icon: <PdfIcon className="sm-icon" />,
     opens: true,
   },
-  { id: "paint", label: "Paint", icon: <PaintIcon className="sm-icon" /> },
-  { id: "snipping-tool", label: "Snipping Tool", icon: <ScissorsIcon className="sm-icon" /> },
 ];
 
 /**
@@ -83,15 +77,24 @@ const SHORTCUTS: { label: string; opens?: string }[] = [
   { label: "Games" },
   { label: "Computer" },
   { label: "Control Panel" },
-  { label: "Devices and Printers" },
-  { label: "Default Programs" },
-  { label: "Help and Support" },
 ];
 
 /** Where Windows draws a divider in the right column. */
-const SHORTCUT_DIVIDERS = new Set(["Games", "Devices and Printers"]);
+const SHORTCUT_DIVIDERS = new Set(["Games"]);
 
-export function StartMenu({ id, onLaunch }: { id: string; onLaunch: (id: string) => void }) {
+export function StartMenu({ id, onLaunch, onShutdown }: { id: string; onLaunch: (id: string) => void; onShutdown?: () => void }) {
+  const [query, setQuery] = useState("");
+  const searching = query.trim().length > 0;
+  const easterEggQuery = query.trim().toLowerCase();
+  const easterEgg =
+    easterEggQuery.length >= 4 &&
+    ("ayushman".startsWith(easterEggQuery) ||
+      "lohani".startsWith(easterEggQuery) ||
+      "ayushman lohani".includes(easterEggQuery));
+  const results = searching
+    ? RECENT.filter((p) => p.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : RECENT;
+
   const item = (p: Program) => (
     <li key={p.id}>
       <button
@@ -110,21 +113,30 @@ export function StartMenu({ id, onLaunch }: { id: string; onLaunch: (id: string)
     <div className="start-menu" id={id} role="menu" aria-label="Start menu">
       <div className="sm-body">
         <div className="sm-left">
-          <ul className="sm-programs">
-            {RECENT.map(item)}
-          </ul>
+          {easterEgg ? (
+            <p className="sm-no-results sm-easter-egg">
+              He is everywhere, watching your moves.
+            </p>
+          ) : results.length > 0 ? (
+            <ul className="sm-programs">{results.map(item)}</ul>
+          ) : (
+            <p className="sm-no-results">There isn&apos;t anything here matching that.</p>
+          )}
 
-          <button type="button" className="sm-item sm-all" role="menuitem">
-            <span className="sm-all-arrow" aria-hidden="true" />
-            <span>All Programs</span>
-          </button>
+          {!searching && (
+            <button type="button" className="sm-item sm-all" role="menuitem">
+              <span className="sm-all-arrow" aria-hidden="true" />
+              <span>All Programs</span>
+            </button>
+          )}
 
           <div className="sm-search">
             <input
               type="text"
               placeholder="Search programs and files"
               aria-label="Search programs and files"
-              readOnly
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
             />
             <span className="sm-search-glass" aria-hidden="true" />
           </div>
@@ -132,7 +144,7 @@ export function StartMenu({ id, onLaunch }: { id: string; onLaunch: (id: string)
 
         <div className="sm-right">
           <div className="sm-user">
-            <UserIcon className="sm-user-pic" />
+            <img src="/letterbox/1234.png" alt="" className="sm-user-pic" />
             <div className="sm-user-name">Ayushman</div>
           </div>
 
@@ -152,7 +164,7 @@ export function StartMenu({ id, onLaunch }: { id: string; onLaunch: (id: string)
           </ul>
 
           <div className="sm-shutdown">
-            <button type="button" className="sm-shutdown-main" role="menuitem">
+            <button type="button" className="sm-shutdown-main" role="menuitem" onClick={onShutdown}>
               <PowerIcon className="sm-power" />
               <span>Shut down</span>
             </button>
