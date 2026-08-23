@@ -2316,6 +2316,13 @@ body {
   white-space: pre;
 }
 
+/* Placeholder text ahead of the caret — dim, and gone the moment there's
+   real input, same rule any placeholder follows. */
+.term-hint {
+  margin-left: calc(6 * var(--px));
+  opacity: 0.4;
+}
+
 /* A blinking block, stepped rather than faded — a console caret is on or off,
    it never dims through the middle. */
 .term-caret {
