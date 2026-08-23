@@ -65,15 +65,7 @@ function __OriginkitBase_SparkleButton({
   }, [glareDirection, glareSpeed, transition]);
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <>
       <style>{`
 .sparkle-button {
   --padding: 24px 32px;
@@ -182,7 +174,7 @@ function __OriginkitBase_SparkleButton({
         <span>{text}</span>
         <span aria-hidden="true">{text}</span>
       </motion.a>
-    </div>
+    </>
   );
 }
 
@@ -196,7 +188,7 @@ function Sparkle() {
 
 const __originkitPresetProps = {
   "text": "Ayushman Lohani",
-  "fontFamily": "'Bebas Neue', var(--font-bebas)",
+  "fontFamily": "'Segoe UI', Tahoma, sans-serif",
   "shadowColor": "#1742F5",
   "glareColor": "#FFFFFFCC",
   "glareSpeed": 4,

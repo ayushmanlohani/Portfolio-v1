@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, Libre_Bodoni, Public_Sans } from "next/font/google";
+import { Libre_Bodoni, Public_Sans } from "next/font/google";
 
 import "./globals.css";
 
@@ -21,14 +21,6 @@ const body = Public_Sans({
   variable: "--font-body",
 });
 
-// Bebas Neue only ships one weight — used by the login screen's SparkleButton.
-const bebas = Bebas_Neue({
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-  variable: "--font-bebas",
-});
-
 export const metadata: Metadata = {
   title: "Ayushman Lohani — Portfolio",
   description: "A portfolio you browse like a desktop.",
@@ -44,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`h-full ${display.variable} ${body.variable} ${bebas.variable}`}>
+    <html lang="en" className={`h-full ${display.variable} ${body.variable}`}>
       <body className="h-full">{children}</body>
     </html>
   );

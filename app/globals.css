@@ -4775,39 +4775,30 @@ img.project-crest {
 }
 
 .win7-login-center {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
+}
+
+/* The tile, name and button, pinned dead centre of the screen — a taller
+   tagline below never has anything to push against. */
+.win7-login-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
 }
 
-/* ── Title block ───────────────────────────────────────────── */
-
-.win7-login-title {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 2px;
-}
-
-/* SparkleButton's two overlapping text layers both read their padding
-   from --padding (its own 24px/32px, sized for its 120px default) — override
-   the custom property itself, not the resolved padding, or the layers
-   drift out of sync and double-expose. */
-.win7-login-title .sparkle-button {
-  --padding: 4px 10px;
-  white-space: nowrap;
-  margin-top: -82px;
-}
-
-/* User avatar — the rounded square with white border, exactly like Win7 */
+/* User avatar — the rounded square with white border, exactly like Win7.
+   128px is the real Win7 logon tile size, not a scaled-down stand-in. */
 .win7-login-avatar {
-  width: 76px;
-  height: 76px;
-  padding: 3px;
-  margin-top: -20px;
+  width: 128px;
+  height: 128px;
+  padding: 4px;
   background: #fff;
   border-radius: 5px;
   box-shadow:
@@ -4826,6 +4817,12 @@ img.project-crest {
 .win7-login-avatar-inner svg {
   width: 100%;
   height: 100%;
+}
+
+.win7-login-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* Username text */
@@ -4871,6 +4868,36 @@ img.project-crest {
   box-shadow:
     inset 0 2px 4px rgba(0, 0, 0, 0.3),
     0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Tagline under the button — now the loudest line on the screen. Anchored
+   at a fixed offset below true centre (core half-height + a real gap)
+   instead of following the core in flow, so its own size can't drag the
+   avatar off centre. */
+.win7-login-tagline {
+  position: absolute;
+  top: calc(50% + 130px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90vw;
+  max-width: 500px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24px;
+  line-height: 1.4;
+  text-align: center;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* SparkleButton's two overlapping text layers both read their padding from
+   --padding — override the custom property itself, not the resolved
+   padding, or the layers drift out of sync and double-expose. Near-zero
+   here so the name sits in the sentence's own flow instead of the title's
+   old block spacing. */
+.win7-login-tagline .sparkle-button {
+  --padding: 0 3px;
+  white-space: nowrap;
+  vertical-align: -2px;
 }
 
 /* Welcome spinner + text during sign-in */
