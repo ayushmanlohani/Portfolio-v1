@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CALC_ID, CHROME_ID, NOTEPAD_ID, PDF_ID, TERMINAL_ID, WMP_ID } from "@/components/win7/apps";
+import {
+  CALC_ID,
+  CHROME_ID,
+  CONTROL_PANEL_ID,
+  NOTEPAD_ID,
+  PDF_ID,
+  TERMINAL_ID,
+  WMP_ID,
+} from "@/components/win7/apps";
 import {
   CalculatorIcon,
   ChromeIcon,
@@ -66,17 +74,17 @@ const RECENT: Program[] = [
 /**
  * Right column. Windows renders these as text only — no icons.
  *
- * Pictures and Music are the two that lead somewhere: they open the viewer and
- * the player, which is what those shortcuts do in Windows. The rest hold the
- * shape of the menu and are deliberately inert.
+ * Documents, Pictures, Music, My Computer and Control Panel lead somewhere —
+ * Explorer views and apps Windows itself opens for them. Games is the one
+ * left inert, holding the shape of the menu.
  */
 const SHORTCUTS: { label: string; opens?: string }[] = [
-  { label: "Documents" },
+  { label: "Documents", opens: "documents" },
   { label: "Pictures", opens: "pictures" },
   { label: "Music", opens: WMP_ID },
   { label: "Games" },
-  { label: "Computer" },
-  { label: "Control Panel" },
+  { label: "My Computer", opens: "computer" },
+  { label: "Control Panel", opens: CONTROL_PANEL_ID },
 ];
 
 /** Where Windows draws a divider in the right column. */

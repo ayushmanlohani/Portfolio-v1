@@ -51,6 +51,10 @@ export const PDF_TITLE = "PDF Viewer";
 export const PERSONALIZE_ID = "personalize";
 export const PERSONALIZE_SIZE = { width: 820, height: 600 };
 
+/** Control Panel Home — the category grid, opened from the Start menu. */
+export const CONTROL_PANEL_ID = "controlpanel";
+export const CONTROL_PANEL_SIZE = { width: 820, height: 600 };
+
 export { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 
 export const PHOTOS_SIZE = { width: 640, height: 512 };
@@ -123,6 +127,11 @@ export function launchWindow(id: string) {
 
   if (id === PERSONALIZE_ID) {
     open(id, { title: "Personalization", ...PERSONALIZE_SIZE, desk });
+    return;
+  }
+
+  if (id === CONTROL_PANEL_ID) {
+    open(id, { title: "Control Panel", ...CONTROL_PANEL_SIZE, desk });
     return;
   }
 

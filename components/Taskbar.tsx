@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 
 import {
   CALC_ID,
+  CONTROL_PANEL_ID,
   launchWindow,
   NOTEPAD_ID,
   PDF_ID,
   PDF_PREFIX,
+  PERSONALIZE_ID,
   PHOTOS_PREFIX,
   TERMINAL_ID,
   WMP_ID,
@@ -16,10 +18,12 @@ import {
 import { node } from "@/components/win7/fs";
 import {
   CalculatorIcon,
+  ComputerIcon,
   FolderIcon,
   MediaPlayerIcon,
   NotepadIcon,
   PdfIcon,
+  PersonalizeIcon,
   PhotoViewerIcon,
   TerminalIcon,
 } from "@/components/win7/icons";
@@ -37,6 +41,8 @@ const TaskIcon = ({ id }: { id: string }) => {
   if (id === WMP_ID) return <MediaPlayerIcon className="task-button-icon" />;
   if (id === PDF_ID || id.startsWith(PDF_PREFIX)) return <PdfIcon className="task-button-icon" />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewerIcon className="task-button-icon" />;
+  if (id === PERSONALIZE_ID) return <PersonalizeIcon className="task-button-icon" />;
+  if (id === CONTROL_PANEL_ID) return <ComputerIcon className="task-button-icon" />;
 
   const Icon = node(id)?.Icon ?? FolderIcon;
   return <Icon className="task-button-icon" />;

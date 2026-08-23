@@ -31,8 +31,9 @@ import { useRecycleBin } from "@/store/recycleBin";
 /* What sits on the desktop, from the shared tree — the same list Explorer
    shows inside the Desktop folder. Chrome is a program rather than a place,
    the one installed app with a desktop shortcut. The bin goes last, where
-   Windows keeps it, and anything Notepad has saved lands after it. */
-const FIXED_ITEMS = [...DESKTOP_FOLDERS, "chrome", "recycle"];
+   Windows keeps it, and anything Notepad has saved lands after it. Computer
+   opens the same Explorer view the Start menu's own Computer link does. */
+const FIXED_ITEMS = ["computer", ...DESKTOP_FOLDERS, "chrome", "recycle"];
 
 type Cell = { c: number; r: number };
 type Layout = Record<string, Cell>;
@@ -44,28 +45,31 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 
 /**
  * Where the icons sit when the page loads — Ayushman's own arrangement, taken
- * from a screenshot of how he'd dragged them.
+ * from a screenshot of how he'd dragged them, with My Computer added at the
+ * head of the first column the way real Windows leads with it.
  *
- * Two full columns, four rows each, no gaps: the bin leads, Chrome and the
- * six content folders fill in around it.
+ * Two full columns, five rows each, no gaps: My Computer leads, then the bin,
+ * Chrome and the six content folders fill in around them.
  *
  *     c0          c1
  *   ┌───────────┬───────────┐
- * r0│ Recycle   │ About Me  │
- * r1│ Chrome    │ Experience│
- * r2│ Contact   │ Education │
- * r3│ Resume    │ Projects  │
+ * r0│ My Computer│ About Me  │
+ * r1│ Recycle   │ Experience│
+ * r2│ Chrome    │ Education │
+ * r3│ Contact   │ Projects  │
+ * r4│ Resume    │           │
  *   └───────────┴───────────┘
  */
 const DEFAULT_LAYOUT: Layout = {
-  recycle: { c: 0, r: 0 },
+  computer: { c: 0, r: 0 },
   about: { c: 1, r: 0 },
-  chrome: { c: 0, r: 1 },
+  recycle: { c: 0, r: 1 },
   experience: { c: 1, r: 1 },
-  contact: { c: 0, r: 2 },
+  chrome: { c: 0, r: 2 },
   education: { c: 1, r: 2 },
-  resume: { c: 0, r: 3 },
+  contact: { c: 0, r: 3 },
   projects: { c: 1, r: 3 },
+  resume: { c: 0, r: 4 },
 };
 
 /** How many rows the arrangement above needs to fit. */

@@ -3537,7 +3537,8 @@ img.project-crest {
 }
 
 .wmp-dropdown button,
-.pv-dropdown button {
+.pv-dropdown button,
+.pv-dropdown a {
   display: block;
   width: 100%;
   padding: calc(5 * var(--px)) calc(10 * var(--px));
@@ -3547,11 +3548,14 @@ img.project-crest {
   font-size: calc(12 * var(--px));
   color: #1a2430;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .wmp-dropdown button:hover,
-.pv-dropdown button:hover {
+.pv-dropdown button:hover,
+.pv-dropdown a:hover {
   background: linear-gradient(180deg, #eaf4ff, #cfe6fb);
   box-shadow: inset 0 0 0 calc(1 * var(--px)) #a8cdee;
 }
@@ -4527,6 +4531,71 @@ img.project-crest {
   text-align: center;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* ── Control Panel Home ────────────────────────────────────────
+   The category grid Control Panel opens to. Two columns of icon +
+   heading + a few sub-links, the same shape the real applet uses. */
+
+.cp-home {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: calc(28 * var(--px));
+  row-gap: calc(18 * var(--px));
+}
+
+.cp-cat {
+  display: flex;
+  gap: calc(10 * var(--px));
+  align-items: flex-start;
+}
+
+.cp-cat-icon {
+  flex: none;
+  width: calc(32 * var(--px));
+  height: calc(32 * var(--px));
+}
+
+.cp-cat-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cp-cat-title {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: calc(12.5 * var(--px));
+  color: #205ca6;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cp-cat-title:hover {
+  text-decoration: underline;
+}
+
+.cp-cat-links {
+  margin-top: calc(3 * var(--px));
+  list-style: none;
+}
+
+.cp-cat-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: calc(11 * var(--px));
+  line-height: 1.7;
+  color: #3f6ea5;
+  cursor: pointer;
+  text-align: left;
+}
+
+.cp-cat-link:hover {
+  text-decoration: underline;
 }
 
 /* ── Confirm dialog ─────────────────────────────────────────── */

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-import { fileName, PICTURES, type MediaItem } from "@/components/win7/media";
+import { fileName, mediaBySrc, PICTURES, type MediaItem } from "@/components/win7/media";
+import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
 /**
@@ -18,9 +19,11 @@ import { useWindowStore } from "@/store/windows";
  * fit is a state, not a maximum. And Delete asks first, because it is the one
  * control here that takes something away.
  *
- * Deletion is per-window and per-session: it removes the picture from this
- * viewer's list, not from disk. Nothing in a portfolio should be able to
- * destroy the portfolio.
+ * Delete moves the picture to the Recycle Bin the same way Explorer's does —
+ * `useRecycleBin`'s soft delete, keyed by the picture's window id — so it
+ * disappears from the Pictures folder and shows up in the bin, restorable
+ * from there. Nothing here can purge a file for good; only the Recycle Bin's
+ * own permanent-delete does that.
  */
 
 const ICON = { viewBox: "0 0 24 24", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": true } as const;
@@ -34,7 +37,6 @@ const SLIDESHOW_MS = 3000;
 /** What each message box calls itself, same as the Windows caption would. */
 const DIALOG_TITLE = {
   delete: "Delete Picture",
-  burn: "Burn a Disc",
   properties: "Properties",
 } as const;
 
@@ -44,15 +46,30 @@ const mailto = (title: string, src: string) => {
   return `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`${title} — ${url}`)}`;
 };
 
+/**
+ * Pictures not in the library — TrySomethingElse.jpg, opened only from the
+ * one Control Panel link that points at it — get a standalone one-item list
+ * instead of falling back to whatever PICTURES[0] happens to be. That keeps
+ * them out of the library, the Pictures folder, and every "Open"/next-prev
+ * list, reachable only by the exact window id that names them.
+ */
+function initialPictures(src: string): MediaItem[] {
+  if (PICTURES.some((p) => p.src === src)) return PICTURES;
+  const item = mediaBySrc(src);
+  return [item ?? { src, title: fileName(src), kind: "picture", album: "Pictures" }];
+}
+
 export function PhotoViewer({ windowId, src }: { windowId: string; src: string }) {
-  const [pictures, setPictures] = useState<MediaItem[]>(PICTURES);
-  const [index, setIndex] = useState(() => Math.max(0, PICTURES.findIndex((p) => p.src === src)));
+  const [pictures, setPictures] = useState<MediaItem[]>(() => initialPictures(src));
+  const [index, setIndex] = useState(() => Math.max(0, pictures.findIndex((p) => p.src === src)));
   const [zoom, setZoom] = useState<number | null>(null); // null = fit to window
   const [angle, setAngle] = useState(0);
   const [slideshow, setSlideshow] = useState(false);
   const [menu, setMenu] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<"burn" | "delete" | "properties" | null>(null);
+  const [dialog, setDialog] = useState<"delete" | "properties" | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+
+  const recycle = useRecycleBin((s) => s.remove);
 
   const current = pictures[index];
 
@@ -88,6 +105,7 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
   }, [slideshow]);
 
   const remove = () => {
+    recycle(windowId);
     const rest = pictures.filter((_, i) => i !== index);
     setPictures(rest);
     setIndex((i) => (i >= rest.length ? Math.max(0, rest.length - 1) : i));
@@ -137,6 +155,15 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
     </li>
   );
 
+  /** A real download link — the browser saves the file, no clipboard trick. */
+  const downloadItem = (label: string, href: string, name: string) => (
+    <li key={label}>
+      <a role="menuitem" href={href} download={name} onClick={() => setMenu(null)}>
+        {label}
+      </a>
+    </li>
+  );
+
   if (!current) {
     return (
       <div className="pv pv-empty">
@@ -162,9 +189,7 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
         {menuButton(
           "File",
           <>
-            {item("Copy image address", () => navigator.clipboard?.writeText(
-              new URL(current.src, window.location.origin).href,
-            ).catch(() => {}))}
+            {downloadItem("Download", current.src, fileName(current.src))}
             {item("Properties", () => setDialog("properties"))}
             {item("Delete", () => setDialog("delete"))}
           </>,
@@ -177,7 +202,7 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
           E-mail
         </a>
 
-        {menuButton("Burn", <>{item("Data disc…", () => setDialog("burn"))}</>)}
+        {menuButton("Burn", <>{item("You don't have a CD", () => {})}</>)}
 
         {menuButton(
           "Open",
@@ -343,16 +368,18 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
             </svg>
           </button>
 
-          <button
-            type="button"
-            className="pv-btn pv-delete"
-            aria-label="Delete"
-            onClick={() => setDialog("delete")}
-          >
-            <svg {...ICON}>
-              <path d="M6 6l12 12M18 6 6 18" {...STROKE} strokeWidth={2.2} />
-            </svg>
-          </button>
+          {PICTURES.some((p) => p.src === current.src) && (
+            <button
+              type="button"
+              className="pv-btn pv-delete"
+              aria-label="Delete"
+              onClick={() => setDialog("delete")}
+            >
+              <svg {...ICON}>
+                <path d="M6 6l12 12M18 6 6 18" {...STROKE} strokeWidth={2.2} />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
@@ -370,13 +397,6 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
                     Are you sure you want to move this picture to the Recycle Bin?
                   </p>
                   <p className="win7-dialog-where">{fileName(current.src)}</p>
-                </>
-              )}
-
-              {dialog === "burn" && (
-                <>
-                  <p className="win7-dialog-message">There is no disc in the drive.</p>
-                  <p className="win7-dialog-where">Insert a writable CD or DVD and try again.</p>
                 </>
               )}
 

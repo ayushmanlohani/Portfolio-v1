@@ -260,6 +260,7 @@ const PICTURE_NODES: FsNode[] = PICTURES.map((picture) => ({
   Icon: thumbnail(picture.src),
   kind: "file",
   type: picture.src.endsWith(".png") ? "PNG image" : "JPEG image",
+  deletable: true,
 }));
 
 /** The resume as a file in the Resume folder. Opening it opens the viewer. */
@@ -319,7 +320,7 @@ const NODE_LIST: FsNode[] = [
     label: "Desktop",
     Icon: FolderIcon,
     kind: "folder",
-    children: [...DESKTOP_FOLDERS, "chrome", "recycle"],
+    children: ["computer", ...DESKTOP_FOLDERS, "chrome", "recycle"],
     type: "File folder",
   },
   { id: "downloads", label: "Downloads", Icon: FolderIcon, kind: "folder", type: "File folder" },
@@ -335,7 +336,7 @@ const NODE_LIST: FsNode[] = [
   },
   {
     id: "computer",
-    label: "Computer",
+    label: "My Computer",
     Icon: ComputerIcon,
     kind: "computer",
     children: ["drive-c"],
@@ -346,8 +347,19 @@ const NODE_LIST: FsNode[] = [
     label: "Local Disk (C:)",
     Icon: DriveIcon,
     kind: "drive",
-    children: ["desktop", "downloads", "pictures"],
+    children: ["desktop", "documents", "downloads", "pictures"],
     type: "Local Disk",
+  },
+  {
+    id: "documents",
+    label: "Documents",
+    Icon: FolderIcon,
+    kind: "folder",
+    type: "File folder",
+    // The resume PDF is the only document there is — same node the Resume
+    // desktop folder lists, so opening it from either place lands on the
+    // same viewer window.
+    children: [RESUME_PDF_NODE.id],
   },
   { id: "network", label: "Network", Icon: NetworkIcon, kind: "network", type: "System folder" },
 

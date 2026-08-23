@@ -605,6 +605,105 @@ export function ChromeIcon({ className }: IconProps) {
  * Personalization — a monitor wearing the Harmony wallpaper in miniature:
  * sky above a rolling green hill, the sun up in the corner.
  */
+/** Hardware and Sound — a speaker beside a gear. */
+export function HardwareIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <path
+        d="M4 12v8h5l7 6V6l-7 6z"
+        fill="#cfe0ef"
+        stroke="#5d7f9e"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M19.5 11a7 7 0 0 1 0 10"
+        stroke="#7fb6dd"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M23 8a11.5 11.5 0 0 1 0 16"
+        stroke="#a9cbe6"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <circle cx="26" cy="24" r="4.2" fill="#e7eef5" stroke="#8298ab" strokeWidth="1.3" />
+      <path
+        d="M26 21.8v.6M26 25.6v.6M23.8 24h.6M27.6 24h.6M24.4 22.4l.4.4M27.2 25.6l.4.4M24.4 25.6l.4-.4M27.2 22.4l.4-.4"
+        stroke="#8298ab"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Programs — a window with a titlebar over a smaller one behind it. */
+export function ProgramsIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <rect x="7" y="4" width="20" height="15" rx="1.4" fill="#e7eef5" stroke="#8298ab" strokeWidth="1.3" />
+      <rect x="7" y="4" width="20" height="4" rx="1.4" fill="#c3d3e2" />
+      <rect x="3" y="12" width="20" height="15" rx="1.4" fill="#fdfefe" stroke="#5d7f9e" strokeWidth="1.5" />
+      <rect x="3" y="12" width="20" height="4.4" rx="1.4" fill="#7fb6dd" />
+      <circle cx="7.5" cy="14.2" r="0.9" fill="#fff" />
+      <path d="M7 22h12M7 25h9" stroke="#a3b3c1" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Clock, Language, and Region — a clock face. */
+export function ClockRegionIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="clk-face" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fdfefe" />
+          <stop offset="1" stopColor="#dbe7f2" />
+        </linearGradient>
+      </defs>
+      <circle cx="16" cy="16" r="13" fill="url(#clk-face)" stroke="#5d7f9e" strokeWidth="1.6" />
+      <circle cx="16" cy="16" r="1.4" fill="#5d7f9e" />
+      <path d="M16 16V8.5" stroke="#5d7f9e" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16 16l5 3" stroke="#5d7f9e" strokeWidth="1.8" strokeLinecap="round" />
+      <path
+        d="M16 4.2v2M16 25.8v2M4.2 16h2M25.8 16h2"
+        stroke="#8298ab"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+/** Ease of Access — a figure inside a ring. */
+export function EaseOfAccessIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="eoa-ring" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8fc4e8" />
+          <stop offset="1" stopColor="#3d7cb0" />
+        </linearGradient>
+      </defs>
+      <circle cx="16" cy="16" r="13" fill="url(#eoa-ring)" />
+      <circle cx="16" cy="16" r="9.6" fill="#fdfefe" />
+      <circle cx="16" cy="11.4" r="2.6" fill="#5d7f9e" />
+      <path
+        d="M9.5 16.2c2-1 4.3-1.4 6.5-1.4s4.5.4 6.5 1.4M16 14.8v10M13 25l3-4 3 4"
+        stroke="#5d7f9e"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
 export function PersonalizeIcon({ className }: IconProps) {
   return (
     <svg {...BASE} className={className}>

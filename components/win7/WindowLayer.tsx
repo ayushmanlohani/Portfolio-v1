@@ -2,6 +2,7 @@
 
 import { Calculator } from "@/components/win7/Calculator";
 import { Chrome } from "@/components/win7/chrome/Chrome";
+import { ControlPanel } from "@/components/win7/ControlPanel";
 import { useDesk } from "@/components/win7/desk";
 import { Explorer } from "@/components/win7/Explorer";
 import { node } from "@/components/win7/fs";
@@ -14,6 +15,7 @@ import { Terminal } from "@/components/win7/Terminal";
 import {
   CALC_ID,
   CHROME_ID,
+  CONTROL_PANEL_ID,
   mediaSrc,
   NOTEPAD_ID,
   PDF_ID,
@@ -45,6 +47,7 @@ function contentFor(win: OpenWindow) {
   if (id === WMP_ID) return <MediaPlayer />;
   if (id === PDF_ID) return <PdfViewer />;
   if (id === PERSONALIZE_ID) return <Personalize />;
+  if (id === CONTROL_PANEL_ID) return <ControlPanel />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
   if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;
   if (id === CHROME_ID) return <Chrome windowId={id} />;
