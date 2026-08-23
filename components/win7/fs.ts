@@ -8,6 +8,7 @@ import {
   NetworkIcon,
   NotepadIcon,
   PdfIcon,
+  RacerIcon,
   RecycleBinIcon,
   StarIcon,
   TextFileIcon,
@@ -303,6 +304,16 @@ const NODE_LIST: FsNode[] = [
     deletable: true,
   },
 
+  // Same shape as Chrome above: a program, not a place.
+  {
+    id: "racer",
+    label: "Time Attack",
+    Icon: RacerIcon,
+    kind: "app",
+    type: "Application",
+    deletable: true,
+  },
+
   {
     id: "recycle",
     label: "Recycle Bin",
@@ -320,7 +331,7 @@ const NODE_LIST: FsNode[] = [
     label: "Desktop",
     Icon: FolderIcon,
     kind: "folder",
-    children: ["computer", ...DESKTOP_FOLDERS, "chrome", "recycle"],
+    children: ["computer", ...DESKTOP_FOLDERS, "chrome", "racer", "recycle"],
     type: "File folder",
   },
   { id: "downloads", label: "Downloads", Icon: FolderIcon, kind: "folder", type: "File folder" },

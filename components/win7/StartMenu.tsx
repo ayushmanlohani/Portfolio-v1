@@ -7,6 +7,7 @@ import {
   CONTROL_PANEL_ID,
   NOTEPAD_ID,
   PDF_ID,
+  RACER_ID,
   TERMINAL_ID,
   WMP_ID,
 } from "@/components/win7/apps";
@@ -17,6 +18,7 @@ import {
   NotepadIcon,
   PdfIcon,
   PowerIcon,
+  RacerIcon,
   TerminalIcon,
 } from "@/components/win7/icons";
 
@@ -69,20 +71,27 @@ const RECENT: Program[] = [
     icon: <PdfIcon className="sm-icon" />,
     opens: true,
   },
+  {
+    id: RACER_ID,
+    label: "Time Attack",
+    icon: <RacerIcon className="sm-icon" />,
+    opens: true,
+  },
 ];
 
 /**
  * Right column. Windows renders these as text only — no icons.
  *
  * Documents, Pictures, Music, My Computer and Control Panel lead somewhere —
- * Explorer views and apps Windows itself opens for them. Games is the one
- * left inert, holding the shape of the menu.
+ * Explorer views and apps Windows itself opens for them. Games used to be the
+ * one left inert; it now opens Time Attack, which is what a Games entry on a
+ * Windows 7 machine is for.
  */
 const SHORTCUTS: { label: string; opens?: string }[] = [
   { label: "Documents", opens: "documents" },
   { label: "Pictures", opens: "pictures" },
   { label: "Music", opens: WMP_ID },
-  { label: "Games" },
+  { label: "Games", opens: RACER_ID },
   { label: "My Computer", opens: "computer" },
   { label: "Control Panel", opens: CONTROL_PANEL_ID },
 ];

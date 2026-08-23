@@ -1,7 +1,7 @@
 "use client";
 
 import { readDesk } from "@/components/win7/desk";
-import { MediaPlayerIcon } from "@/components/win7/icons";
+import { MediaPlayerIcon, RacerIcon } from "@/components/win7/icons";
 import { node } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 import { useWindowStore } from "@/store/windows";
@@ -51,6 +51,19 @@ export const PDF_TITLE = "PDF Viewer";
 export const PERSONALIZE_ID = "personalize";
 export const PERSONALIZE_SIZE = { width: 820, height: 600 };
 
+/**
+ * Time Attack, the racing game. One window, opens on its own menu, and like
+ * every other application here it is only ever its id.
+ */
+export const RACER_ID = "racer";
+export const RACER_TITLE = "Time Attack";
+/* Wide enough for the HUD to sit clear of the car, and short enough to open
+   whole on a 585px-tall browser window — the shape Ayushman actually reviews
+   at, where the desktop is only 545px once the taskbar has taken its 40. A
+   taller default just gets clamped and lands looking wrong. Maximise is right
+   there for anyone who wants more road. */
+export const RACER_SIZE = { width: 880, height: 520 };
+
 /** Control Panel Home — the category grid, opened from the Start menu. */
 export const CONTROL_PANEL_ID = "controlpanel";
 export const CONTROL_PANEL_SIZE = { width: 820, height: 600 };
@@ -68,6 +81,7 @@ export const PDF_SIZE = { width: 780, height: 680 };
  */
 export const CAPTION_ICONS: Record<string, (props: { className?: string }) => React.ReactElement> = {
   [WMP_ID]: MediaPlayerIcon,
+  [RACER_ID]: RacerIcon,
 };
 
 /** The file a `photos:` or `pdf:` window is showing. */
@@ -112,6 +126,11 @@ export function launchWindow(id: string) {
 
   if (id === NOTEPAD_ID) {
     open(id, { title: "Untitled - Notepad", ...NOTEPAD_SIZE, desk });
+    return;
+  }
+
+  if (id === RACER_ID) {
+    open(id, { title: RACER_TITLE, ...RACER_SIZE, desk });
     return;
   }
 

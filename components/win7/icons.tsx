@@ -726,3 +726,57 @@ export function PersonalizeIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Time Attack. The same top-down red car the game draws, over a chequered
+ * flag — a car alone reads as "cars", the flag is what says "racing".
+ */
+export function RacerIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="rc-body" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f2695c" />
+          <stop offset="0.5" stopColor="#d23b2e" />
+          <stop offset="0.51" stopColor="#b62d22" />
+          <stop offset="1" stopColor="#8e1f16" />
+        </linearGradient>
+        <linearGradient id="rc-glass" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#cfe6f7" />
+          <stop offset="1" stopColor="#5f86a6" />
+        </linearGradient>
+      </defs>
+
+      {/* Chequered flag, tucked behind the car on the diagonal. */}
+      <g opacity="0.9">
+        <rect x="17" y="3" width="12" height="9" rx="0.8" fill="#f4f4f6" />
+        <path
+          d="M17 3h3v3h-3zm6 0h3v3h-3zm-3 3h3v3h-3zm6 0h3v3h-3zm-9 3h3v3h-3zm6 0h3v3h-3z"
+          fill="#26262b"
+        />
+        <rect x="16.2" y="3" width="1.3" height="12" rx="0.6" fill="#7d8b99" />
+      </g>
+
+      {/* Car, nose up. */}
+      <g>
+        <rect x="9.6" y="10" width="3" height="4.6" rx="1.1" fill="#1a1a1f" />
+        <rect x="19.4" y="10" width="3" height="4.6" rx="1.1" fill="#1a1a1f" />
+        <rect x="9.6" y="21" width="3" height="4.6" rx="1.1" fill="#1a1a1f" />
+        <rect x="19.4" y="21" width="3" height="4.6" rx="1.1" fill="#1a1a1f" />
+        <rect
+          x="10.5"
+          y="7"
+          width="11"
+          height="22"
+          rx="3.2"
+          fill="url(#rc-body)"
+          stroke="#6d1610"
+          strokeWidth="0.9"
+        />
+        <rect x="12.4" y="12.4" width="7.2" height="5.4" rx="1.6" fill="url(#rc-glass)" />
+        <rect x="14.6" y="7.6" width="2.8" height="21" fill="#f2f2f4" opacity="0.85" />
+        <path d="M11.4 8.6c0-1 .9-1.6 2-1.6h5.2c1.1 0 2 .6 2 1.6v1.2c-3-.9-6.2-.9-9.2 0z" fill="#fff" opacity="0.35" />
+      </g>
+    </svg>
+  );
+}

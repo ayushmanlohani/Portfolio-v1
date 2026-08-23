@@ -33,7 +33,7 @@ import { useRecycleBin } from "@/store/recycleBin";
    the one installed app with a desktop shortcut. The bin goes last, where
    Windows keeps it, and anything Notepad has saved lands after it. Computer
    opens the same Explorer view the Start menu's own Computer link does. */
-const FIXED_ITEMS = ["computer", ...DESKTOP_FOLDERS, "chrome", "recycle"];
+const FIXED_ITEMS = ["computer", ...DESKTOP_FOLDERS, "chrome", "racer", "recycle"];
 
 type Cell = { c: number; r: number };
 type Layout = Record<string, Cell>;
@@ -57,7 +57,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
  * r1│ Recycle   │ Experience│
  * r2│ Chrome    │ Education │
  * r3│ Contact   │ Projects  │
- * r4│ Resume    │           │
+ * r4│ Resume    │ Time Attack│
  *   └───────────┴───────────┘
  */
 const DEFAULT_LAYOUT: Layout = {
@@ -70,6 +70,8 @@ const DEFAULT_LAYOUT: Layout = {
   contact: { c: 0, r: 3 },
   projects: { c: 1, r: 3 },
   resume: { c: 0, r: 4 },
+  // The one gap his arrangement left open, so nothing else has to move.
+  racer: { c: 1, r: 4 },
 };
 
 /** How many rows the arrangement above needs to fit. */
@@ -95,9 +97,14 @@ function computeCells(moved: Layout, rows: number, items: readonly string[]): La
   // saved isn't in it, so it falls through to the column-major position like
   // everything does when the window's too short for the named arrangement.
   items.forEach((id, i) => {
+    // `fits ? ... : undefined` rather than `fits && ...`: `??` only falls
+    // through on null and undefined, so a `false` from `&&` would be taken as
+    // a real answer and every icon would end up with no cell at all — which
+    // rendered as translate(NaNpx, NaNpx) and stacked the whole desktop in the
+    // top-left corner on any window too short for the named arrangement.
     cells[id] =
       moved[id] ??
-      (fits && DEFAULT_LAYOUT[id]) ??
+      (fits ? DEFAULT_LAYOUT[id] : undefined) ??
       { c: Math.floor(i / rows), r: i % rows };
   });
   return cells;

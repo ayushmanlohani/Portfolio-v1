@@ -4933,3 +4933,510 @@ img.project-crest {
 
 
 
+
+/* ============================================================ Time Attack
+   The racing game. Everything is `.rc-`.
+
+   The HUD deliberately borrows Aero rather than the neon a racing game
+   usually wears: this runs inside a Windows 7 window, and a glowing arcade
+   overlay would read as a screenshot pasted onto the desktop. Frosted panels,
+   one accent colour, and the numbers doing the talking.
+
+   Sizes here are plain pixels, not `--px`. `--px` exists so the OS chrome
+   stays a fixed size as the desktop grows; the game is content inside a
+   window and should scale with the window it was given. */
+
+.rc {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #2b3a26;
+  outline: none;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+.rc-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* -------------------------------------------------------------- the HUD */
+
+.rc-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.rc-hud[data-hidden="1"] {
+  opacity: 0;
+}
+
+.rc-panel {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(22, 32, 48, 0.82), rgba(12, 18, 28, 0.86));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  color: #eef4ff;
+  padding: 7px 12px;
+  backdrop-filter: blur(3px);
+}
+
+.rc-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #9fb6d4;
+}
+
+.rc-clock {
+  top: 12px;
+  left: 12px;
+  min-width: 128px;
+}
+
+.rc-time {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  /* Tabular figures, or every digit change nudges the whole clock sideways. */
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.rc-delta {
+  display: block;
+  height: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-delta[data-sign="up"] {
+  color: #6ee787;
+}
+
+.rc-delta[data-sign="down"] {
+  color: #ff8f7a;
+}
+
+.rc-lap {
+  top: 12px;
+  left: 152px;
+  text-align: center;
+}
+
+.rc-lapno {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.rc-speedo {
+  left: 12px;
+  bottom: 12px;
+  min-width: 108px;
+  text-align: right;
+}
+
+.rc-speed {
+  font-size: 34px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.rc-unit {
+  font-size: 11px;
+  color: #9fb6d4;
+  margin-left: 4px;
+}
+
+/* How sideways the car is. It fills as the rear steps out and turns amber at
+   the angle where a drift is either about to be brilliant or about to end. */
+.rc-drift {
+  margin-top: 6px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.rc-drift-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 2px;
+  background: #5aa9ff;
+  transition: background 120ms linear;
+}
+
+.rc-drift-fill[data-hot="1"] {
+  background: #ffb43a;
+}
+
+/* ----------------------------------------------------- countdown & flags */
+
+.rc-lights {
+  position: absolute;
+  top: 34%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 86px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 3px 16px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.86);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.rc-lights[data-show="1"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.rc-warn {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 4px;
+  background: rgba(150, 30, 22, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.rc-warn[data-show="1"] {
+  opacity: 1;
+}
+
+.rc-focus-note {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: rgba(12, 18, 28, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #dce8f8;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+/* -------------------------------------------------------------- overlays */
+
+.rc-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(8, 14, 22, 0.55);
+  overflow: auto;
+}
+
+.rc-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 20px 22px 18px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(244, 248, 253, 0.97), rgba(228, 236, 246, 0.97));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 #fff;
+  color: #16212e;
+  text-align: center;
+}
+
+.rc-card h2 {
+  margin: 0 0 8px;
+  font-size: 21px;
+  font-weight: 600;
+  color: #14385e;
+}
+
+.rc-muted {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #4a5a6c;
+}
+
+.rc-pb {
+  margin-top: 10px;
+}
+
+.rc-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: #6b7a8b;
+}
+
+.rc-final {
+  margin: 0 0 10px;
+  font-size: 40px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #14385e;
+  line-height: 1;
+}
+
+.rc-rank {
+  margin: 8px 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #14385e;
+}
+
+/* Aero button, the same shape language as the rest of the desktop. */
+.rc-btn {
+  appearance: none;
+  padding: 6px 18px;
+  border-radius: 3px;
+  border: 1px solid #8badc8;
+  background: linear-gradient(180deg, #f4fafe 0%, #e2eff9 45%, #d0e6f6 46%, #e6f3fb 100%);
+  color: #16212e;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.rc-btn:hover {
+  border-color: #4c9ed9;
+  background: linear-gradient(180deg, #fbfeff 0%, #eaf6fd 45%, #d5edfb 46%, #eaf7fe 100%);
+}
+
+.rc-btn:active {
+  background: linear-gradient(180deg, #d4e8f6 0%, #c4dff2 100%);
+}
+
+.rc-btn-go {
+  margin-top: 4px;
+  padding: 8px 30px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Control list on the menu card. */
+.rc-keys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  margin: 0 0 16px;
+  text-align: left;
+}
+
+.rc-keys > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #4a5a6c;
+}
+
+.rc-keys kbd {
+  display: inline-block;
+  min-width: 17px;
+  padding: 1px 4px;
+  border: 1px solid #a9bccd;
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  color: #16212e;
+  text-align: center;
+}
+
+.rc-submit {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+
+.rc-input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #9db6cc;
+  border-radius: 3px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  color: #16212e;
+}
+
+.rc-input:focus {
+  outline: none;
+  border-color: #4c9ed9;
+  box-shadow: 0 0 0 2px rgba(76, 158, 217, 0.28);
+}
+
+/* ------------------------------------------------------------ scoreboard */
+
+.rc-board {
+  width: 100%;
+  margin: 12px 0 14px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.rc-board td {
+  padding: 3px 6px;
+  border-bottom: 1px solid rgba(20, 56, 94, 0.09);
+}
+
+.rc-pos {
+  width: 22px;
+  color: #7d8b99;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-name {
+  color: #16212e;
+}
+
+.rc-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #14385e;
+}
+
+/* The shipped target times, rendered as medals so nobody mistakes them for
+   somebody's lap — they are goals, not people. */
+.rc-board tr[data-target] .rc-name::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: baseline;
+}
+
+.rc-board tr[data-target="gold"] .rc-name::before {
+  background: #e3b341;
+}
+
+.rc-board tr[data-target="silver"] .rc-name::before {
+  background: #b6bfc8;
+}
+
+.rc-board tr[data-target="bronze"] .rc-name::before {
+  background: #c07a3c;
+}
+
+.rc-board tr[data-target] td {
+  color: #6b7a8b;
+  font-style: italic;
+}
+
+.rc-board tr[data-me="1"] td {
+  background: rgba(76, 158, 217, 0.16);
+  font-weight: 700;
+  color: #14385e;
+  font-style: normal;
+}
+
+/* ------------------------------------------------- graphics options panel
+   Lives on the menu card. Segmented controls instead of checkboxes: every
+   option is a small ordered choice, and the Win7 settings dialogs this game
+   dresses as used exactly this shape for them. */
+
+.rc-gfx {
+  margin: 0 0 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(20, 56, 94, 0.12);
+  text-align: left;
+}
+
+.rc-gfx-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.rc-gfx-title > span:first-child {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #7d8b99;
+}
+
+/* Which preset the knobs currently match, or Custom when none do. */
+.rc-gfx-title > span:last-child {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4c9ed9;
+}
+
+.rc-gfx-title > span:last-child[data-preset="custom"] {
+  color: #8a6d3b;
+}
+
+.rc-gfx-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 5px 0;
+  font-size: 11.5px;
+  color: #4a5a6c;
+}
+
+.rc-gfx-row > span:first-child {
+  flex: none;
+  width: 88px;
+}
+
+.rc-seg {
+  display: inline-flex;
+  border: 1px solid #9db6cc;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.rc-seg button {
+  appearance: none;
+  border: 0;
+  border-right: 1px solid #cdd9e4;
+  background: #fff;
+  padding: 2px 9px;
+  font-family: inherit;
+  font-size: 11px;
+  color: #16212e;
+  cursor: pointer;
+}
+
+.rc-seg button:last-child {
+  border-right: 0;
+}
+
+.rc-seg button:hover {
+  background: #eaf6fd;
+}
+
+.rc-seg button[data-active="1"] {
+  background: #4c9ed9;
+  color: #fff;
+}

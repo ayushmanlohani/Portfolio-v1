@@ -11,6 +11,7 @@ import { Notepad } from "@/components/win7/Notepad";
 import { PdfViewer } from "@/components/win7/PdfViewer";
 import { Personalize } from "@/components/win7/Personalize";
 import { PhotoViewer } from "@/components/win7/PhotoViewer";
+import { Racer } from "@/components/win7/racer/Racer";
 import { Terminal } from "@/components/win7/Terminal";
 import {
   CALC_ID,
@@ -22,6 +23,7 @@ import {
   PDF_PREFIX,
   PERSONALIZE_ID,
   PHOTOS_PREFIX,
+  RACER_ID,
   TERMINAL_ID,
   WMP_ID,
 } from "@/components/win7/apps";
@@ -45,6 +47,7 @@ function contentFor(win: OpenWindow) {
   if (id === CALC_ID) return <Calculator />;
   if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
   if (id === WMP_ID) return <MediaPlayer />;
+  if (id === RACER_ID) return <Racer />;
   if (id === PDF_ID) return <PdfViewer />;
   if (id === PERSONALIZE_ID) return <Personalize />;
   if (id === CONTROL_PANEL_ID) return <ControlPanel />;

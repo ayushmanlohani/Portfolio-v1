@@ -4,6 +4,115 @@ Short status log for new sessions. Keep entries terse; full context lives in
 git history and CLAUDE.md, not here. Prune old entries once superseded.
 Newest entries at the top.
 
+## Chase camera (2026-08-23)
+
+Time Attack is now third person — behind and above the car, Smash-Karts style
+— instead of top-down. **Only `render.ts` changed.** Physics, track, session
+rules and the leaderboard never learned the view moved.
+
+**Why there is no 3D library.** Every surface in this game is on one plane
+(z = 0). A chase view over a single plane is one pinhole projection plus near-
+plane clipping, which is a few dozen lines in `render.ts` — a 3D engine would
+have sat almost entirely unused. World space is unchanged: x/y are still the
+ground in metres, exactly as the physics writes them.
+
+**The sign convention everything rests on:** canvas y points down, so an
+increasing heading turns the car clockwise on screen and the driver's right
+hand points along +y. That is why the camera's right vector is
+`(-sin yaw, cos yaw)`. Get that backwards and the world mirrors.
+
+**Camera lags, deliberately.** `trackCameraYaw` eases toward the car's heading
+over ~0.17 s rather than locking to it. Locked, the world snaps sideways the
+instant the rear steps out — ugly, and disorienting exactly when the road most
+needs reading. Lagged, a drift shows you your own car at an angle. It is eased
+by WALL time, not sim time, so it keeps gliding while paused.
+
+**Skid marks had to change model.** They used to be painted onto an offscreen
+canvas and blitted in one call. That cannot survive a chase camera: laying a
+texture onto a receding plane is a *projective* transform and Canvas2D only
+offers affine ones. Marks are now world-space quads in a 1400-entry ring
+buffer, laid every 3rd physics step (every step fills the ring in ~6 s), with
+intensity carried as WIDTH not opacity — that keeps them all on one path at
+one alpha, so a thousand marks cost a single fill.
+
+**Batching is what makes it fast.** Every polygon of a given colour goes into
+one path and is filled once. Benchmarked on the real canvas: the worst-case
+load (~2500 quads) costs **2.4 ms** against a 16.7 ms frame budget. Everything
+is culled by world distance before it is ever projected — see the `*_RANGE`
+constants.
+
+**Not verified:** real frame rate. Headless Chromium does not composite, so
+rAF is pinned at 1 Hz there and the game runs in slow motion — fine for
+checking geometry and state, useless for fps. The 2.4 ms figure above is a
+synchronous canvas benchmark, which is the part that does hold.
+
+## Desktop icons stacked in the corner on short windows (2026-08-23)
+
+Pre-existing bug, found while testing the game, fixed in `DesktopIcons.tsx`.
+
+`cells[id] = moved[id] ?? (fits && DEFAULT_LAYOUT[id]) ?? {column-major}`
+
+`??` only falls through on null/undefined — **not** on `false`. So whenever
+`fits` was false (any desktop too short for the 5-row arrangement) every icon
+got `false` for its cell, `cell.c` was undefined, and the transform came out
+`translate(NaNpx, NaNpx)`: the entire desktop piled up at the top-left. Now a
+ternary yielding `undefined`, so the column-major fallback actually runs.
+Triggers below roughly 480px of desktop height, which is why it had not been
+seen at the usual review size.
+
+## Time Attack, the racing game (2026-08-23)
+
+A real driving game in a Win7 window. `components/win7/racer/`, five files,
+no new dependencies, plain canvas 2D.
+
+**What it is**
+- Top-down time attack. 2 laps of a 695 m circuit, one clock, a ghost car
+  replaying your personal best, and a scoreboard.
+- Arrows/WASD, Space handbrake, R restart, Esc pause. Keys are only claimed
+  while the window has focus and a race is running, so they never leak to the
+  desktop or steal Space from the name field.
+
+**The physics is real, and the numbers matter**
+- Bicycle model in SI units: per-axle slip angles, cornering stiffness,
+  friction circle, weight transfer. Drifting is not a mode — it falls out of
+  the rear axle running out of grip. Countersteer works for the same reason.
+- `MU_FRONT` 1.5 / `MU_REAR` 1.66, and the asymmetry is **load-bearing**.
+  With one shared coefficient, `a*Fzf` and `b*Fzr` are exactly equal, the yaw
+  moment at full saturation is identically zero, and the car spins from a
+  steady steering input at 60 km/h. Do not "simplify" those to one constant.
+- `YAW_DAMP` only exists below 6 m/s, where dividing by forward speed stops
+  describing anything real. It cannot affect racing speeds.
+- Verified headlessly: step-steer settles (front slip 8.4 deg vs rear 4.0 =
+  stable understeer), handbrake gives 22 deg of drift and countersteer
+  recovers to 0, AI laps at ~29 s with no spins.
+
+**Timing is simulated time, never the wall clock**
+Fixed 120 Hz steps; the clock is the number of steps taken. Same lap time on
+60 Hz and 144 Hz, and a dropped frame costs the player nothing. The flip side:
+a slow machine plays in slow motion for the same recorded time. Irrelevant
+for a local board; a **global** board would need the server to reject runs
+where sim time and wall time diverge.
+
+**Anti-cut** Progress comes from projecting onto the centre line, clamped to
+what the car could physically have covered, plus five ordered gates. Teleporting
+the car across the infield gains 0.27 m. Grass drops grip to ~0.38.
+
+**The leaderboard is a seam, not a database.** `leaderboard.ts` exports one
+interface with four async methods and a localStorage implementation behind it.
+Going global = write another object with those methods and change the last
+line. The three medal rows are shipped *target times*, deliberately rendered
+as medals so they are never mistaken for someone's lap.
+
+**Wiring** — the id `racer` threads the usual five files (`apps.ts`,
+`WindowLayer`, `Taskbar`, `StartMenu`, `fs.ts`) plus `DesktopIcons` and
+`icons.tsx`. The Start menu's Games entry was inert and now opens it. The
+desktop icon sits at c1/r4 — the one gap his arrangement already had, so
+nothing moved.
+
+**Sized 880x520** so it opens whole on his 1252x585 review viewport, where the
+desktop is only 545 tall. Verified there end to end: race, finish, submit,
+board, ghost.
+
 ## Personalization window (2026-08-22)
 
 The desktop right-click menu's **Personalize** now opens a working Control

@@ -84,6 +84,16 @@ Old files are in the session scratchpad, not the repo.)*
   the same bytes work at a non-PDF URL. Fix lives in IDM's settings, not
   the code.
 
+- **Time Attack (2026-08-23)** — a real racing game at
+  `components/win7/racer/`, opened from the desktop, the Start menu Games
+  entry, or the taskbar. Canvas 2D, no new dependencies. Two laps against the
+  clock, a ghost of your personal best, and a scoreboard. The car is a proper
+  bicycle model with tyre slip and a friction circle, so drifting is earned
+  rather than faked. **The front/rear grip split is structural, not taste** —
+  see HANDOFF for why one shared coefficient makes the car spin from a steady
+  steering input. Scores are localStorage today behind a four-method
+  interface; a global board means writing one more implementation of it.
+
 ## Project rules
 
 - **Assets go in `public/letterbox/`.** He drops files there, I wire them up.
@@ -108,5 +118,10 @@ Old files are in the session scratchpad, not the repo.)*
 ## Still open
 
 - Taskbar clock — the only taskbar piece still missing.
+- Whether Time Attack gets a real global leaderboard. He chose "local now,
+  global later" on purpose. Doing it needs a table (Supabase/Upstash), one
+  route handler, and server-side rejection of impossible times — including
+  runs where simulated time and wall time diverge, which is how a throttled
+  machine would otherwise farm a slow-motion lap.
 - Whether the CRT frame comes back on. It's one attribute either way.
 - No mobile/small-screen design yet.
