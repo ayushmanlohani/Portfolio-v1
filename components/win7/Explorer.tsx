@@ -80,6 +80,20 @@ export function Explorer({ id, title }: { id: string; title: string }) {
   const here = node(view);
   const label = here?.label ?? title;
 
+  // Search in this window — same easter egg as Start menu: typing
+  // "ayus…"/"lohan…" shows "He is everywhere, watching your moves."
+  const [query, setQuery] = useState("");
+  const queryTrim = query.trim();
+  const easterEggQuery = queryTrim.toLowerCase();
+  const isEasterEgg =
+    easterEggQuery.length >= 4 &&
+    ("ayushman".startsWith(easterEggQuery) ||
+      "lohani".startsWith(easterEggQuery) ||
+      "ayushman lohani".includes(easterEggQuery));
+
+  // Changing folder clears the search, same as Windows Explorer.
+  useEffect(() => setQuery(""), [view]);
+
   // The caption, the taskbar button and the address bar are all this string, so
   // a window is named after wherever it currently is — not after whatever
   // folder happened to open it.
@@ -148,18 +162,39 @@ export function Explorer({ id, title }: { id: string; title: string }) {
 
         <div className="ex-address">
           <Icon className="ex-icon" />
-          <span className="ex-crumb">Ayushman</span>
+          <button
+            type="button"
+            className="ex-crumb ex-crumb-btn"
+            onClick={() => go("desktop")}
+            title="Go to Desktop"
+          >
+            Ayushman
+          </button>
           <span className="ex-sep" />
           {crumbs.map((c) => (
             <Fragment key={c.id}>
-              <span className="ex-crumb">{c.label}</span>
+              <button
+                type="button"
+                className="ex-crumb ex-crumb-btn"
+                onClick={() => go(c.id)}
+                aria-current={c.id === view ? "page" : undefined}
+              >
+                {c.label}
+              </button>
               <span className="ex-sep" />
             </Fragment>
           ))}
         </div>
 
         <div className="ex-search">
-          <span className="ex-search-text">Search {label}</span>
+          <input
+            type="text"
+            className="ex-search-input"
+            placeholder={`Search ${label}`}
+            aria-label={`Search ${label}`}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
           <SearchIcon className="ex-icon ex-search-icon" />
         </div>
       </div>
@@ -234,7 +269,14 @@ export function Explorer({ id, title }: { id: string; title: string }) {
         </nav>
 
         <div className="ex-content">
-          <Contents key={view} view={view} deleted={deleted} onOpen={go} />
+          <Contents
+            key={view}
+            view={view}
+            deleted={deleted}
+            onOpen={go}
+            query={queryTrim}
+            isEasterEgg={isEasterEgg}
+          />
           {view === "recycle" && warning?.kind === "restore" && (
             <div className="win7-warn win7-warn-bin">{warning.text}</div>
           )}
@@ -255,10 +297,14 @@ function Contents({
   view,
   deleted,
   onOpen,
+  query,
+  isEasterEgg,
 }: {
   view: string;
   deleted: string[];
   onOpen: (id: string) => void;
+  query: string;
+  isEasterEgg: boolean;
 }) {
   // Hooks first — several early returns follow, and only the tiles grid at
   // the bottom actually uses these. Explorer remounts this component with
@@ -271,6 +317,15 @@ function Contents({
   const warning = useInlineEdit((s) => s.warning);
   const commitRename = useInlineEdit((s) => s.commit);
   const cancelRename = useInlineEdit((s) => s.cancel);
+
+  // Easter egg — same as Start menu search (works in every folder)
+  if (isEasterEgg) {
+    return (
+      <p className="ex-empty" style={{ fontStyle: "italic", color: "#7a1f1f" }}>
+        He is everywhere, watching your moves.
+      </p>
+    );
+  }
 
   if (view === "network") return <Network />;
 
@@ -301,6 +356,15 @@ function Contents({
 
   const items = contents(view, deleted);
 
+  // Filter by search query (case-insensitive substring on label)
+  const filtered = query
+    ? items.filter((cid) => node(cid)?.label.toLowerCase().includes(query.toLowerCase()))
+    : items;
+
+  if (query && filtered.length === 0) {
+    return <p className="ex-empty">There isn&apos;t anything here matching that.</p>;
+  }
+
   if (items.length === 0) {
     return (
       <p className="ex-empty">
@@ -327,7 +391,7 @@ function Contents({
         />
       )}
 
-      {items.map((childId) => {
+      {filtered.map((childId) => {
         const child = node(childId);
         if (!child) return null;
 
@@ -353,6 +417,38 @@ function Contents({
               setSelected((prev) => {
                 if (additive) return prev.includes(childId) ? prev.filter((s) => s !== childId) : [...prev, childId];
                 return [childId];
+              });
+            }}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              // Enter on a multi-selection opens everything in its own window
+              const targets = selected.includes(childId) && selected.length > 1 ? selected : [childId];
+              // If only one and it's a folder, navigate in-place like double-click
+              if (targets.length === 1) {
+                const single = targets[0];
+                if (node(single)?.kind === "app") {
+                  launchWindow(single);
+                  return;
+                }
+                if (single === UNITWISE_FILE_ID || single === SENTINEL_FILE_ID) {
+                  useChrome.getState().visit(single === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
+                  launchWindow(CHROME_ID);
+                  return;
+                }
+                if (node(single)?.kind === "file") {
+                  launchWindow(single);
+                  return;
+                }
+                onOpen(single);
+                return;
+              }
+              targets.forEach((cid) => {
+                if (cid === UNITWISE_FILE_ID || cid === SENTINEL_FILE_ID) {
+                  useChrome.getState().visit(cid === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
+                  launchWindow(CHROME_ID);
+                  return;
+                }
+                launchWindow(cid);
               });
             }}
             onDoubleClick={() => {

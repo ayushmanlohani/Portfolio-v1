@@ -601,7 +601,17 @@ export function DesktopIcons() {
 
   // `launchWindow` already knows every id's title and opening size, folder or
   // program, so the desktop doesn't keep a second copy of that table.
-  const openItem = useCallback((id: string) => launchWindow(id), []);
+  const openItem = useCallback(
+    (id: string) => {
+      // Enter on a multi-selection opens everything, not just the focused icon
+      if (selected.includes(id) && selected.length > 1) {
+        selected.forEach((sid) => launchWindow(sid));
+        return;
+      }
+      launchWindow(id);
+    },
+    [selected],
+  );
 
   const cells = computeCells(layout, grid.rows, items);
   const onDesktop = items.filter((id) => !deleted.includes(id));
