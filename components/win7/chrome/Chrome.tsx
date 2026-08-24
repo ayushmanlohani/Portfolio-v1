@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Clouds } from "@/components/win7/clouds/Clouds";
 import { SentinelLanding } from "@/components/win7/sentinel/SentinelLanding";
-import { SENTINEL, UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
+import { GOOGLE, SENTINEL, UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
 import { useWindowStore } from "@/store/windows";
 
 import {
@@ -52,14 +52,24 @@ const NUB_CLIP =
 /**
  * The shortcut circles under the search box — Ayushman's bookmarks, moved
  * off the bookmarks bar and onto the page where he wanted them.
+ *
+ * Bookmarked sites (Unitwise, Sentinel, Google) come from the bookmark store
+ * so starring/unstarring is reflected here. The remaining three are static
+ * shortcuts that are always shown — they have no Site, so the star never
+ * touches them.
  */
-const SHORTCUTS = [
-  { label: "Unitwise", hue: "#d9662e", site: UNITWISE },
-  { label: "RBI Sentinel", hue: "#0d1b26", site: SENTINEL },
+const STATIC_SHORTCUTS = [
   { label: "GitHub", hue: "#24292f" },
   { label: "LinkedIn", hue: "#0a66c2" },
   { label: "Gmail", hue: "#d93025" },
 ];
+
+function bookmarkHue(site: { url: string }): string {
+  if (site.url === UNITWISE.url) return "#d9662e";
+  if (site.url === SENTINEL.url) return "#0d1b26";
+  if (site.url === GOOGLE.url) return "#4285f4";
+  return "#5a5a5a";
+}
 
 /**
  * Google's wordmark in the colours it wore through the Windows 7 years — the
@@ -189,21 +199,43 @@ function TabStrip({
 
 function Toolbar({
   onReload,
+  onBack,
+  onForward,
+  canBack,
+  canForward,
   loading,
   tab,
 }: {
   onReload: () => void;
+  onBack: () => void;
+  onForward: () => void;
+  canBack: boolean;
+  canForward: boolean;
   loading: boolean;
   tab: ChromeTab | undefined;
 }) {
-  const [starred, setStarred] = useState(false);
+  // Draft lets the omnibox stay editable while always snapping back to the
+  // tab's real URL on navigation (back/forward/visit/new-tab) — defaultValue
+  // with key={tab?.id} only reset on new tabs, so back to New Tab kept the
+  // old url visible. Controlled `value` synced to tab.site fixes every page.
+  const [draft, setDraft] = useState(tab?.site?.url ?? "");
+  useEffect(() => {
+    setDraft(tab?.site?.url ?? "");
+  }, [tab?.site?.url]);
+
+  // Star is yellow when the current page is bookmarked. On New Tab the star
+  // bookmarks Google itself, otherwise it bookmarks the Site the tab is on.
+  const bookmarks = useChrome((s) => s.bookmarks);
+  const toggleBookmark = useChrome((s) => s.toggleBookmark);
+  const currentSite = tab?.site ?? GOOGLE;
+  const isBookmarked = bookmarks.some((b) => b.url === currentSite.url);
 
   return (
     <div className="flex h-[33px] shrink-0 items-center gap-[2px] border-b border-[#9e9e9e] bg-gradient-to-b from-[#f5f5f5] to-[#dedede] px-[5px] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
-      <ToolButton label="Back" disabled>
+      <ToolButton label="Back" disabled={!canBack} onClick={onBack}>
         <BackIcon className="h-4 w-4" />
       </ToolButton>
-      <ToolButton label="Forward" disabled>
+      <ToolButton label="Forward" disabled={!canForward} onClick={onForward}>
         <ForwardIcon className="h-4 w-4" />
       </ToolButton>
       <ToolButton label={loading ? "Stop" : "Reload"} onClick={onReload}>
@@ -211,26 +243,27 @@ function Toolbar({
       </ToolButton>
 
       {/* The omnibox: square corners, a hairline border and an inset shadow —
-          a sunken field, not the floating pill Chrome uses now. The star sits
-          inside it, at the right end, where 2011 put it. */}
+           a sunken field, not the floating pill Chrome uses now. The star sits
+           inside it, at the right end, where 2011 put it. */}
       <div className="mx-[4px] flex h-[24px] flex-1 items-center gap-[5px] rounded-[2px] border border-[#a5a5a5] bg-white px-[4px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.13)] focus-within:border-[#5a8fd6] focus-within:shadow-[inset_0_1px_2px_rgba(0,0,0,0.1),0_0_3px_rgba(90,143,214,0.75)]">
         <LockIcon className="h-[14px] w-[14px] shrink-0" />
         <input
-          key={tab?.id}
           type="text"
-          defaultValue={tab?.site?.url ?? ""}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
           placeholder="Search Google or type a URL"
           aria-label="Address and search bar"
           className="min-w-0 flex-1 bg-transparent text-[12px] leading-none text-[#1a1a1a] outline-none placeholder:text-[#9b9b9b]"
         />
         <button
           type="button"
-          aria-label="Bookmark this page"
-          aria-pressed={starred}
-          onClick={() => setStarred((s) => !s)}
+          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark this page"}
+          aria-pressed={isBookmarked}
+          onClick={() => toggleBookmark(currentSite)}
           className="flex h-[17px] w-[17px] shrink-0 items-center justify-center rounded-[2px] text-[#8a8a8a] hover:bg-[#e8e8e8]"
+          title={isBookmarked ? "Remove bookmark" : "Bookmark this page"}
         >
-          <StarIcon className="h-[13px] w-[13px]" filled={starred} />
+          <StarIcon className="h-[13px] w-[13px]" filled={isBookmarked} />
         </button>
       </div>
 
@@ -254,6 +287,7 @@ function Toolbar({
  */
 function NewTabPage() {
   const visit = useChrome((s) => s.visit);
+  const bookmarks = useChrome((s) => s.bookmarks);
 
   return (
     <div className="flex h-full flex-col items-center overflow-y-auto bg-white px-[24px] pt-[9%] pb-[32px]">
@@ -285,11 +319,24 @@ function NewTabPage() {
       </div>
 
       <div className="mt-[42px] flex flex-wrap justify-center gap-x-[22px] gap-y-[18px]">
-        {SHORTCUTS.map((s) => (
+        {bookmarks.map((site) => (
+          <button
+            key={site.url}
+            type="button"
+            onClick={() => visit(site)}
+            className="group flex w-[76px] flex-col items-center gap-[7px]"
+            title={site.url}
+          >
+            <span className="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-[#cfcfcf] bg-gradient-to-b from-[#fdfdfd] to-[#e4e4e4] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.12)] group-hover:from-[#ffffff] group-hover:to-[#d8e4f2] group-hover:border-[#9db8d8]">
+              <Favicon hue={bookmarkHue(site)} label={site.title} size={22} />
+            </span>
+            <span className="w-full truncate text-center text-[12px] text-[#3c3c3c]">{site.title}</span>
+          </button>
+        ))}
+        {STATIC_SHORTCUTS.map((s) => (
           <button
             key={s.label}
             type="button"
-            onClick={s.site ? () => visit(s.site) : undefined}
             className="group flex w-[76px] flex-col items-center gap-[7px]"
           >
             <span className="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-[#cfcfcf] bg-gradient-to-b from-[#fdfdfd] to-[#e4e4e4] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.12)] group-hover:from-[#ffffff] group-hover:to-[#d8e4f2] group-hover:border-[#9db8d8]">
@@ -298,15 +345,6 @@ function NewTabPage() {
             <span className="w-full truncate text-center text-[12px] text-[#3c3c3c]">{s.label}</span>
           </button>
         ))}
-
-        {/* Chrome's own "add one" circle, kept so the row reads as a set the
-            user owns rather than a fixed list. */}
-        <button type="button" className="group flex w-[76px] flex-col items-center gap-[7px]">
-          <span className="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-[#cfcfcf] bg-gradient-to-b from-[#fdfdfd] to-[#e4e4e4] text-[#5a5a5a] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.12)] group-hover:from-[#ffffff] group-hover:to-[#d8e4f2] group-hover:border-[#9db8d8]">
-            <PlusIcon className="h-[15px] w-[15px]" />
-          </span>
-          <span className="w-full truncate text-center text-[12px] text-[#3c3c3c]">Add shortcut</span>
-        </button>
       </div>
     </div>
   );
@@ -315,10 +353,12 @@ function NewTabPage() {
 export function Chrome({ windowId }: { windowId: string }) {
   const close = useWindowStore((s) => s.close);
   const setTitle = useWindowStore((s) => s.setTitle);
-  const { tabs, activeId, select, addTab, closeTab, reset } = useChrome();
+  const { tabs, activeId, select, addTab, closeTab, reset, back, forward } = useChrome();
   const [loading, setLoading] = useState(false);
 
   const active = tabs.find((t) => t.id === activeId);
+  const canBack = !!active && active.backStack.length > 0;
+  const canForward = !!active && active.forwardStack.length > 0;
 
   // The taskbar button reads the window's title, not the tab strip, so it has
   // to be kept in sync with whichever tab is active — otherwise every Chrome
@@ -378,13 +418,15 @@ export function Chrome({ windowId }: { windowId: string }) {
   return (
     <div className="flex h-full w-full flex-col bg-white">
       <TabStrip tabs={tabs} activeId={activeId} onSelect={select} onClose={onClose} onAdd={addTab} />
-      <Toolbar onReload={reload} loading={loading} tab={active} />
+      <Toolbar onReload={reload} onBack={back} onForward={forward} canBack={canBack} canForward={canForward} loading={loading} tab={active} />
       {/* `relative` because a page can fill itself with `absolute inset-0` —
           both project pages do. Without it that anchors to .w7-body instead
           and the page covers the tabs and the toolbar. */}
       <div className="relative min-h-0 flex-1">
         {active?.site?.url === SENTINEL.url ? (
           <SentinelLanding />
+        ) : active?.site?.url === GOOGLE.url ? (
+          <NewTabPage />
         ) : active?.site ? (
           <Clouds />
         ) : (

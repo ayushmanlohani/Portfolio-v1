@@ -25,16 +25,16 @@ export type TextFile = { id: string; name: string; text: string };
 type FileStore = {
   files: TextFile[];
   /** Saves under `name`, overwriting any file already called that — a file
-      sitting in the Recycle Bin doesn't count as "already called that", so
-      deleting one and saving a new file under its old name gets a fresh
-      file rather than quietly resurrecting the deleted one. */
+       sitting in the Recycle Bin doesn't count as "already called that", so
+       deleting one and saving a new file under its old name gets a fresh
+       file rather than quietly resurrecting the deleted one. */
   save: (name: string, text: string) => string;
   read: (id: string) => TextFile | undefined;
   /** Renames a saved file. Returns false and changes nothing if another
-      live (non-deleted) file already uses that name. */
+       live (non-deleted) file already uses that name. */
   rename: (id: string, name: string) => boolean;
   /** Drops a file for good — only a permanent delete from the Recycle Bin
-      calls this. */
+       calls this. */
   forget: (id: string) => void;
 };
 

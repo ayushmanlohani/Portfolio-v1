@@ -125,7 +125,7 @@ export function Explorer({ id, title }: { id: string; title: string }) {
     .filter((n): n is NonNullable<typeof n> => !!n);
 
   return (
-    <div className="ex">
+    <div className="ex" data-ex-view={view}>
       <div className="ex-nav">
         <button
           type="button"

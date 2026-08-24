@@ -51,18 +51,17 @@ import { useWindowStore } from "@/store/windows";
 type Entry =
   | { kind: "sep" }
   | {
-      kind: "item";
-      label: string;
-      submenu?: boolean;
-      /** The two submenus this menu actually opens — View's icon-size and
-          arrangement options, and Sort by's reflow actions. "New" is still
-          just the arrow, unwired. */
-      opens?: "view" | "sort";
-      disabled?: boolean;
-      action?: Action;
-      /** Jump-list rows carry an icon; desktop rows don't. */
-      icon?: React.ReactNode;
-    };
+       kind: "item";
+       label: string;
+       submenu?: boolean;
+       /** The three submenus this menu actually opens — View, Sort by and
+           New (Folder). */
+       opens?: "view" | "sort" | "new";
+       disabled?: boolean;
+       action?: Action;
+       /** Jump-list rows carry an icon; desktop rows don't. */
+       icon?: React.ReactNode;
+     };
 
 /** One row of the View submenu — a size to pick, or a plain on/off toggle. */
 type ViewEntry =
@@ -94,7 +93,7 @@ const DESKTOP_ENTRIES: Entry[] = [
   { kind: "item", label: "Paste", disabled: true },
   { kind: "item", label: "Paste shortcut", disabled: true },
   { kind: "sep" },
-  { kind: "item", label: "New", submenu: true },
+  { kind: "item", label: "New", submenu: true, opens: "new" },
   { kind: "sep" },
   { kind: "item", label: "Screen resolution" },
   { kind: "item", label: "Personalize", action: "personalize" },
@@ -181,7 +180,8 @@ export function DesktopContextMenu({
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
   const [target, setTarget] = useState<Target>(null);
   const [confirm, setConfirm] = useState<ConfirmDialog | null>(null);
-  const [openSubmenu, setOpenSubmenu] = useState<"view" | "sort" | null>(null);
+  const [openSubmenu, setOpenSubmenu] = useState<"view" | "sort" | "new" | null>(null);
+  const [menuView, setMenuView] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const remove = useRecycleBin((s) => s.remove);
@@ -221,6 +221,8 @@ export function DesktopContextMenu({
       const el = e.target as HTMLElement;
       const task = el.closest<HTMLElement>("[data-task-id]");
       const hit = task ? null : el.closest<HTMLElement>("[data-node-id]");
+      const exRoot = (e.target as HTMLElement).closest<HTMLElement>("[data-ex-view]");
+      setMenuView(exRoot?.dataset.exView ?? null);
 
       // Capture the selection for the surface the item lives in. The desktop
       // and each Explorer window keep their own, so scope it to the container
@@ -300,8 +302,6 @@ export function DesktopContextMenu({
     return () => document.removeEventListener("keydown", onKey);
   }, [confirm]);
 
-  if (!at && !confirm) return null;
-
   const entries =
     target?.kind === "task"
       ? taskEntries(pinned.includes(target.id), target.running)
@@ -338,6 +338,20 @@ export function DesktopContextMenu({
     label: sortLabel[mode],
     onSelect: () => requestSort(mode),
   }));
+
+  const handleNewFolder = useCallback(() => {
+    const parentId = menuView ?? "desktop";
+    const created = useFolders.getState().create(parentId);
+    if (!created) {
+      useInlineEdit.getState().folderLimitReached(parentId);
+    } else {
+      startRename(created);
+    }
+    close();
+  }, [close, startRename, menuView]);
+
+  type NewEntry = { label: string; onSelect: () => void };
+  const newEntries: NewEntry[] = [{ label: "Folder", onSelect: handleNewFolder }];
 
   const run = (action?: Action) => {
     if (!action) return;
@@ -379,6 +393,8 @@ export function DesktopContextMenu({
     if (action === "unpin") unpin(target.id);
     if (action === "close") closeWindow(target.id);
   };
+
+  if (!at && !confirm) return null;
 
   return (
     <>
@@ -447,6 +463,21 @@ export function DesktopContextMenu({
                         }}
                       >
                         <span className="ctx-label">{se.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {openSubmenu === "new" && entry.opens === "new" && (
+                  <div className="ctx-menu ctx-submenu" role="menu">
+                    {newEntries.map((ne) => (
+                      <button
+                        key={ne.label}
+                        type="button"
+                        role="menuitem"
+                        className="ctx-item"
+                        onClick={() => ne.onSelect()}
+                      >
+                        <span className="ctx-label">{ne.label}</span>
                       </button>
                     ))}
                   </div>

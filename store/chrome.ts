@@ -21,13 +21,22 @@ export type Site = { url: string; title: string };
  */
 export const UNITWISE: Site = { url: "unitwise.interactive", title: "Unitwise" };
 export const SENTINEL: Site = { url: "sentinel.interactive", title: "RBI Sentinel" };
+/** The New Tab page itself, bookmarkable as "Google". */
+export const GOOGLE: Site = { url: "google.com", title: "Google" };
 
 /** A tab with no site is a new tab, showing the search page. */
-export type ChromeTab = { id: number; site: Site | null };
+export type ChromeTab = {
+  id: number;
+  site: Site | null;
+  /** Stack of previous pages for Back — oldest first, includes `null` (New Tab). */
+  backStack: (Site | null)[];
+  /** Stack for Forward — newest previous is last, cleared on new navigation. */
+  forwardStack: (Site | null)[];
+};
 
 let nextId = 1;
 
-const blank = (): ChromeTab => ({ id: 0, site: null });
+const blank = (): ChromeTab => ({ id: 0, site: null, backStack: [], forwardStack: [] });
 
 type ChromeState = {
   tabs: ChromeTab[];
@@ -43,18 +52,25 @@ type ChromeState = {
    * if it's blank, a new tab otherwise. Same as clicking a link in Chrome.
    */
   visit: (site: Site) => void;
+  /** Per-tab history: New Tab <-> Unitwise / Sentinel etc. */
+  back: () => void;
+  forward: () => void;
+  /** Bookmarks shown as circles on the New Tab page — toggled by the star. */
+  bookmarks: Site[];
+  toggleBookmark: (site: Site) => void;
 };
 
 export const useChrome = create<ChromeState>((set) => ({
   tabs: [blank()],
   activeId: 0,
+  bookmarks: [UNITWISE, SENTINEL],
 
   select: (id) => set({ activeId: id }),
 
   addTab: () =>
     set((s) => {
       const id = nextId++;
-      return { tabs: [...s.tabs, { id, site: null }], activeId: id };
+      return { tabs: [...s.tabs, { id, site: null, backStack: [], forwardStack: [] }], activeId: id };
     }),
 
   closeTab: (id) =>
@@ -73,10 +89,64 @@ export const useChrome = create<ChromeState>((set) => ({
 
       const active = s.tabs.find((t) => t.id === s.activeId);
       if (active && !active.site) {
-        return { tabs: s.tabs.map((t) => (t.id === active.id ? { ...t, site } : t)) };
+        // Reuse the blank New Tab — push its null onto back so Back returns to Google.
+        return {
+          tabs: s.tabs.map((t) =>
+            t.id === active.id
+              ? { ...t, site, backStack: [...t.backStack, t.site], forwardStack: [] }
+              : t,
+          ),
+        };
       }
-
+      // Active tab already has a site — like a real link click, it opens in
+      // a fresh tab with its own history rather than navigating in place.
       const id = nextId++;
-      return { tabs: [...s.tabs, { id, site }], activeId: id };
+      return { tabs: [...s.tabs, { id, site, backStack: [], forwardStack: [] }], activeId: id };
+    }),
+
+  back: () =>
+    set((s) => {
+      const active = s.tabs.find((t) => t.id === s.activeId);
+      if (!active || active.backStack.length === 0) return s;
+      const prev = active.backStack[active.backStack.length - 1];
+      return {
+        tabs: s.tabs.map((t) =>
+          t.id === active.id
+            ? {
+                ...t,
+                site: prev,
+                backStack: t.backStack.slice(0, -1),
+                forwardStack: [...t.forwardStack, t.site],
+              }
+            : t,
+        ),
+      };
+    }),
+
+  forward: () =>
+    set((s) => {
+      const active = s.tabs.find((t) => t.id === s.activeId);
+      if (!active || active.forwardStack.length === 0) return s;
+      const next = active.forwardStack[active.forwardStack.length - 1];
+      return {
+        tabs: s.tabs.map((t) =>
+          t.id === active.id
+            ? {
+                ...t,
+                site: next,
+                backStack: [...t.backStack, t.site],
+                forwardStack: t.forwardStack.slice(0, -1),
+              }
+            : t,
+        ),
+      };
+    }),
+
+  toggleBookmark: (site) =>
+    set((s) => {
+      const exists = s.bookmarks.some((b) => b.url === site.url);
+      return {
+        bookmarks: exists ? s.bookmarks.filter((b) => b.url !== site.url) : [...s.bookmarks, site],
+      };
     }),
 }));

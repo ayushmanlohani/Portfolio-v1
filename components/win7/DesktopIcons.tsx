@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { launchWindow } from "@/components/win7/apps";
-import { DESKTOP_FOLDERS, node } from "@/components/win7/fs";
+import { node } from "@/components/win7/fs";
 import { RecycleBinIcon } from "@/components/win7/icons";
 import { RenameField } from "@/components/win7/RenameField";
 import { useMarquee } from "@/components/win7/useMarquee";
 import { type SortMode, useDesktopView } from "@/store/desktopView";
 import { useFiles } from "@/store/files";
+import { useFolders } from "@/store/folders";
 import { useInlineEdit } from "@/store/inlineEdit";
 import { useRecycleBin } from "@/store/recycleBin";
 
@@ -28,13 +29,6 @@ import { useRecycleBin } from "@/store/recycleBin";
  * which is deliberate for a portfolio — every visitor gets the intended
  * layout. Persisting to localStorage would be a few lines if that changes.
  */
-
-/* What sits on the desktop, from the shared tree — the same list Explorer
-   shows inside the Desktop folder. Chrome is a program rather than a place,
-   the one installed app with a desktop shortcut. The bin goes last, where
-   Windows keeps it, and anything Notepad has saved lands after it. Computer
-   opens the same Explorer view the Start menu's own Computer link does. */
-const FIXED_ITEMS = ["computer", ...DESKTOP_FOLDERS, "chrome", "racer", "recycle"];
 
 type Cell = { c: number; r: number };
 type Layout = Record<string, Cell>;
@@ -170,16 +164,15 @@ function computeCells(moved: Layout, rows: number, items: readonly string[]): La
 export function DesktopIcons() {
   const rootRef = useRef<HTMLDivElement>(null);
   const deleted = useRecycleBin((s) => s.deleted);
-  // Saved text files join the desktop the moment Notepad writes one. The store
-  // is what makes this re-render; the file itself lives in the shared tree.
-  // Not every file in the store lives on the desktop, though — Unitwise and
-  // RBI Sentinel's writeups are seeded here too, but they belong to their own
-  // folders, so this only takes the ones `registerFile` actually put there.
-  const files = useFiles((s) => s.files);
-  const desktopIds = new Set(node("desktop")?.children);
+  // A saved file or a New Folder joins the desktop the moment it's created
+  // by pushing its id onto the `desktop` node's own `children` — these two
+  // stores exist only so components have something to subscribe to for the
+  // re-render; the actual list comes from the tree.
+  useFiles((s) => s.files);
+  useFolders((s) => s.folders);
   // Everything the desktop can show, in slot order. Declared here rather than
   // at render because the drag handlers below need the same list.
-  const items = [...FIXED_ITEMS, ...files.filter((f) => desktopIds.has(f.id)).map((f) => f.id)];
+  const items = node("desktop")?.children ?? [];
   const remove = useRecycleBin((s) => s.remove);
   const binEmpty = deleted.length === 0;
   // A set, not a single id: the marquee below can pick up several at once.
@@ -240,11 +233,14 @@ export function DesktopIcons() {
     // away a usable row of desktop that still looked free.
     const iconH = root.querySelector(".desktop-icon")?.getBoundingClientRect().height ?? h;
 
+    // Keep the original 80×92 distance for every row, but open the last
+    // visual strip: +1 row beyond the strict fit so the bottom gap becomes a
+    // real snap target instead of a dead zone that snaps back (the screenshot).
     setGrid({
       w,
       h,
       cols: Math.max(1, Math.floor((box.width - w) / w) + 1),
-      rows: Math.max(1, Math.floor((box.height - iconH) / h) + 1),
+      rows: Math.max(1, Math.floor((box.height - iconH) / h) + 2),
       measured: true,
     });
   }, []);

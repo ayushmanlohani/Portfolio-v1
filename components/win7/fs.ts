@@ -412,14 +412,49 @@ export const NODES = new Map(NODE_LIST.map((n) => [n.id, n]));
 export const node = (id: string) => NODES.get(id);
 
 /**
- * Every ancestor id on the way to `id`, root first — ids are built as
- * `parent/child` (see `fileId` and `walk` above), so splitting on `/` and
- * re-joining each prefix walks the path without a separate parent pointer.
- * The address bar is the only reader; it turns these into the crumb trail.
+ * Every ancestor id on the way to `id`, root first — walked via parent
+ * pointers so `about` correctly shows `Local Disk (C:) → Desktop → About Me`
+ * instead of just `About Me`. The address bar is the only reader.
  */
 export function crumbIds(id: string): string[] {
-  const parts = id.split("/");
-  return parts.map((_, i) => parts.slice(0, i + 1).join("/"));
+  // Walk parent chain via NODES so `about` (child of `desktop` child of
+  // `drive-c`) yields [drive-c, desktop, about] and `projects/unitwise`
+  // yields [drive-c, desktop, projects, projects/unitwise].
+  const chain: string[] = [];
+  let cur: string | undefined = id;
+  const seen = new Set<string>();
+  while (cur && !seen.has(cur)) {
+    seen.add(cur);
+    chain.unshift(cur);
+    // Find parent by scanning children — `parentOf` is defined below, so
+    // inline the search here to avoid ordering issues. `favorites` lists
+    // `desktop` too (it's the nav-pane shortcut, not real containment), so
+    // it's skipped here — otherwise it wins the scan ahead of `drive-c` and
+    // cuts every path short at "Desktop", one node above where it should.
+    let parentId: string | undefined;
+    for (const candidate of NODES.values()) {
+      if (candidate.id === "favorites") continue;
+      if (candidate.children?.includes(cur)) {
+        parentId = candidate.id;
+        break;
+      }
+    }
+    if (!parentId) break;
+    // Stop before `computer`/`favorites` — the bar already shows the hardcoded
+    // `Ayushman` root, and the user expects `Ayushman → C: → Desktop → …`
+    if (parentId === "computer" || parentId === "favorites") break;
+    // For `drive-c` the parent is `computer`, so the next loop would push
+    // `drive-c` then stop; we want `drive-c` in the trail, so continue one
+    // more iteration to include it, then break above.
+    cur = parentId;
+    // Include `drive-c` itself then stop — don't walk beyond it.
+    if (cur === "drive-c") {
+      // `drive-c` will be added at top of next loop; after that break.
+      continue;
+    }
+  }
+  // Filter out any non-file-system roots that slipped in (e.g. `computer`)
+  return chain.filter((cid) => cid !== "computer" && cid !== "favorites");
 }
 
 /**
