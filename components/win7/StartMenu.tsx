@@ -83,15 +83,15 @@ const RECENT: Program[] = [
  * Right column. Windows renders these as text only — no icons.
  *
  * Documents, Pictures, Music, My Computer and Control Panel lead somewhere —
- * Explorer views and apps Windows itself opens for them. Games used to be the
- * one left inert; it now opens Time Attack, which is what a Games entry on a
- * Windows 7 machine is for.
+ * Explorer views and apps Windows itself opens for them. Games opens the Games
+ * folder inside Local Disk (C:) — so the address bar reads
+ * Ayushman ▸ Local Disk (C:) ▸ Games, same as Windows 7.
  */
 const SHORTCUTS: { label: string; opens?: string }[] = [
   { label: "Documents", opens: "documents" },
   { label: "Pictures", opens: "pictures" },
   { label: "Music", opens: WMP_ID },
-  { label: "Games", opens: RACER_ID },
+  { label: "Games", opens: "drive-c/games" },
   { label: "My Computer", opens: "computer" },
   { label: "Control Panel", opens: CONTROL_PANEL_ID },
 ];

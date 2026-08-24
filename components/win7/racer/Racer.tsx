@@ -591,30 +591,47 @@ export function Racer() {
       {showMenu && (
         <div className="rc-overlay">
           <div className="rc-card rc-menu">
-            <h2>Time Attack</h2>
-            <p className="rc-muted">
-              {LAPS} laps, one clock. Rear-wheel drive with real tyre slip — the handbrake
-              breaks the back loose and countersteering brings it back.
-            </p>
-            <div className="rc-keys">
-              <div><kbd>↑</kbd> / <kbd>W</kbd><span>Throttle</span></div>
-              <div><kbd>↓</kbd> / <kbd>S</kbd><span>Brake &amp; reverse</span></div>
-              <div><kbd>←</kbd> <kbd>→</kbd><span>Steer</span></div>
-              <div><kbd>Space</kbd><span>Handbrake</span></div>
-              <div><kbd>R</kbd><span>Restart</span></div>
-              <div><kbd>Esc</kbd><span>Pause</span></div>
-            </div>
-            <GraphicsPanel gfx={gfx} onChange={setGfx} />
-            <button type="button" className="rc-btn rc-btn-go" onClick={start}>
-              {personalBest === null ? "Start" : "Race again"}
-            </button>
-            {personalBest !== null && (
-              <p className="rc-muted rc-pb">
-                Your best: <strong>{formatTime(personalBest)}</strong> — the ghost will drive it
-                alongside you.
+            <div className="rc-menu-head">
+              <div className="rc-menu-badge">Time Trial • {LAPS} Laps</div>
+              <h2>Time Attack</h2>
+              <p className="rc-muted">
+                One clock, rear-wheel slip. Throttle in, handbrake to break the rear, counter-steer to catch it — three laps to find the line.
               </p>
+            </div>
+            <div className="rc-menu-body">
+              <div className="rc-menu-col">
+                <div className="rc-keys">
+                  <div><kbd>↑</kbd> / <kbd>W</kbd><span>Throttle</span></div>
+                  <div><kbd>↓</kbd> / <kbd>S</kbd><span>Brake &amp; reverse</span></div>
+                  <div><kbd>←</kbd> <kbd>→</kbd><span>Steer</span></div>
+                  <div><kbd>Space</kbd><span>Handbrake</span></div>
+                  <div><kbd>R</kbd><span>Restart</span></div>
+                  <div><kbd>Esc</kbd><span>Pause</span></div>
+                </div>
+                <button type="button" className="rc-btn rc-btn-go rc-btn-primary" onClick={start}>
+                  {personalBest === null ? "Start race" : "Race again"}
+                  <span aria-hidden="true"> →</span>
+                </button>
+                {personalBest !== null ? (
+                  <p className="rc-muted rc-pb">
+                    Your best: <strong>{formatTime(personalBest)}</strong> — ghost drives it with you.
+                  </p>
+                ) : (
+                  <p className="rc-muted rc-pb">Set a time and race your ghost.</p>
+                )}
+              </div>
+              <div className="rc-menu-col">
+                <GraphicsPanel gfx={gfx} onChange={setGfx} />
+              </div>
+            </div>
+            {(board.length > 0 || personalBest !== null) && (
+              <div className="rc-menu-foot">
+                <Board scores={board} highlight={null} />
+                <p className="rc-muted" style={{ margin: 0, textAlign: "center", marginTop: board.length ? 8 : 0 }}>
+                  {board.length === 0 ? "No scores yet — be the first on the board." : "Top 10 • Ghost saves in this browser"}
+                </p>
+              </div>
             )}
-            <Board scores={board} highlight={null} />
           </div>
         </div>
       )}

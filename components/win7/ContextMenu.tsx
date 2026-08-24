@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type FsNode, node, unregisterFile } from "@/components/win7/fs";
-import { launchWindow, PERSONALIZE_ID } from "@/components/win7/apps";
+import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, unregisterFile } from "@/components/win7/fs";
+import { CHROME_ID, launchWindow, PERSONALIZE_ID } from "@/components/win7/apps";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
+import { SENTINEL, UNITWISE, useChrome } from "@/store/chrome";
 import { type IconSize, type SortMode, useDesktopView } from "@/store/desktopView";
 import { useFiles } from "@/store/files";
 import { useFolders } from "@/store/folders";
@@ -350,7 +351,21 @@ export function DesktopContextMenu({
     }
     if (!target) return;
 
-    if (action === "open") onOpen?.(target.id);
+    if (action === "open" && target.kind === "node") {
+      // Open every selected item in its own window/app — folders as Explorer,
+      // files in Notepad, images in Photo Viewer, PDFs in PDF Viewer, apps
+      // directly, and the two interactive HTML files in Chrome.
+      const ids = target.selection.length > 0 ? target.selection : [target.id];
+      ids.forEach((cid) => {
+        if (cid === UNITWISE_FILE_ID || cid === SENTINEL_FILE_ID) {
+          useChrome.getState().visit(cid === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
+          launchWindow(CHROME_ID);
+          return;
+        }
+        launchWindow(cid);
+      });
+      return;
+    }
     if (action === "delete" && target.kind === "node") {
       // Delete moves the whole selection to the bin — a selected folder goes
       // too, but only the deletable items can. Like Windows, a right-click on

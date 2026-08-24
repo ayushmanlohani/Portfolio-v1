@@ -304,7 +304,7 @@ const NODE_LIST: FsNode[] = [
     deletable: true,
   },
 
-  // Same shape as Chrome above: a program, not a place.
+  // Same shape as Chrome above: a program, not a place. Also lives inside Games.
   {
     id: "racer",
     label: "Time Attack",
@@ -312,6 +312,24 @@ const NODE_LIST: FsNode[] = [
     kind: "app",
     type: "Application",
     deletable: true,
+  },
+
+  {
+    id: "drive-c/games",
+    label: "Games",
+    Icon: FolderIcon,
+    kind: "folder",
+    type: "File folder",
+    children: ["racer"],
+  },
+
+  {
+    id: "drive-c/music",
+    label: "Music",
+    Icon: FolderIcon,
+    kind: "folder",
+    type: "File folder",
+    children: [],
   },
 
   {
@@ -358,7 +376,7 @@ const NODE_LIST: FsNode[] = [
     label: "Local Disk (C:)",
     Icon: DriveIcon,
     kind: "drive",
-    children: ["desktop", "documents", "downloads", "pictures"],
+    children: ["desktop", "documents", "downloads", "pictures", "drive-c/games", "drive-c/music"],
     type: "Local Disk",
   },
   {
@@ -416,10 +434,36 @@ export const node = (id: string) => NODES.get(id);
  * `parent/child` (see `fileId` and `walk` above), so splitting on `/` and
  * re-joining each prefix walks the path without a separate parent pointer.
  * The address bar is the only reader; it turns these into the crumb trail.
+ *
+ * Slash ids already encode their ancestry (e.g. `drive-c/games` → Local Disk
+ * (C:) ▸ Games, `projects/unitwise` → Projects ▸ Unitwise). For top-level
+ * shell folders the ancestry is derived from the drive's and desktop's
+ * children so the full file-system path is shown:
+ * Local Disk (C:) ▸ Desktop ▸ About Me, Local Disk (C:) ▸ Documents, etc.
  */
 export function crumbIds(id: string): string[] {
   const parts = id.split("/");
-  return parts.map((_, i) => parts.slice(0, i + 1).join("/"));
+  if (parts.length > 1) {
+    const base = parts.map((_, i) => parts.slice(0, i + 1).join("/"));
+    // Nested content like `about/about.txt` or `projects/unitwise/...` lives
+    // inside a desktop folder (About Me, Projects…), so prepend
+    // Local Disk (C:) ▸ Desktop. `computer` is a shell location shown inside
+    // Desktop for convenience but its canonical path is My Computer.
+    if (parts[0] !== "computer" && NODES.get("desktop")?.children?.includes(parts[0])) {
+      return ["drive-c", "desktop", ...base];
+    }
+    return base;
+  }
+  // Top-level folders that are children of Local Disk (C:) — show the drive
+  if (NODES.get("drive-c")?.children?.includes(id)) {
+    return ["drive-c", id];
+  }
+  // Desktop’s own folders — About Me … Contact, Recycle Bin. Full path is
+  // Local Disk (C:) ▸ Desktop ▸ Folder, i.e. Ayushman ▸ C: ▸ Desktop ▸ About Me.
+  if (id !== "computer" && NODES.get("desktop")?.children?.includes(id)) {
+    return ["drive-c", "desktop", id];
+  }
+  return [id];
 }
 
 /**
