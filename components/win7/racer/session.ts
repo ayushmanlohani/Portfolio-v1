@@ -9,7 +9,23 @@
  */
 
 import { createCar, speedOf, step, type Car, type Input } from "./physics";
-import { GATE_COUNT, GATE_DISTANCES, HALF_WIDTH, LAP_LENGTH, project, startPose, surfaceAt } from "./track";
+import { CENTER, GATE_COUNT, TINY, GATE_DISTANCES, HALF_WIDTH, LAP_LENGTH, project, startPose, surfaceAt, tangentAt } from "./track";
+
+/**
+ * The finish line as a plane, not a distance.
+ *
+ * A point on the chequered band and the direction the road faces there.
+ * `axialOf` below is metres in front of that plane; crossing it from negative
+ * to positive IS the finish, which is the whole point of this file's rewrite.
+ */
+const LINE = (() => {
+  const p = CENTER[0];
+  const t = tangentAt(0);
+  return { x: p.x, y: p.y, tx: t.x, ty: t.y };
+})();
+
+/** Half the car body: where the nose sits ahead of the centre of mass. */
+const NOSE = 2.0;
 
 export const LAPS = 2;
 export const DT = 1 / 120;
@@ -44,8 +60,10 @@ export type Session = {
   /** Completed, valid laps. */
   lap: number;
   lapTimes: number[];
-  /** Metres into the current lap. */
+  /** Metres into the current lap. Used to arm the finish line, nothing else. */
   lapProgress: number;
+  /** Metres the nose is in front of the finish plane. Negative = not there yet. */
+  axial: number;
   /** Metres covered in the whole run — the ghost comparison key. */
   distance: number;
   gatesHit: number;
@@ -65,7 +83,7 @@ export type Session = {
 
 export function createSession(ghost: GhostSample[] | null): Session {
   const pose = startPose();
-  return {
+  const s: Session = {
     phase: "countdown",
     car: createCar(pose.x, pose.y, pose.heading),
     countdown: COUNTDOWN,
@@ -73,6 +91,7 @@ export function createSession(ghost: GhostSample[] | null): Session {
     lap: 0,
     lapTimes: [],
     lapProgress: 0,
+    axial: NOSE,
     distance: 0,
     gatesHit: 0,
     missedGate: false,
@@ -84,6 +103,23 @@ export function createSession(ghost: GhostSample[] | null): Session {
     ghost,
     result: null,
   };
+
+  if (TINY) {
+    /* `?tiny=1`: start 25 m short of the line, on the final lap, aimed straight
+       at it. The point of the flag is to check where the car stops, and two
+       laps of driving is a slow, error-prone way to ask that question.
+       ponytail: delete with TINY in track.ts once the finish is signed off. */
+    const back = 25;
+    const t = tangentAt(0);
+    s.car.x = CENTER[0].x - t.x * back;
+    s.car.y = CENTER[0].y - t.y * back;
+    s.lap = LAPS - 1;
+    s.lapProgress = LAP_LENGTH - back;
+    s.gatesHit = GATE_COUNT;
+    s.axial = NOSE - back;
+  }
+
+  return s;
 }
 
 const IDLE: Input = { throttle: 0, brake: 0, steer: 0, handbrake: false };
@@ -113,6 +149,8 @@ export function advance(s: Session, input: Input, dt = DT): RunEvent | null {
   s.grip = surfaceAt(hit.offset);
 
   const before = hit.s;
+  const wasX = s.car.x;
+  const wasY = s.car.y;
   step(s.car, racing ? input : IDLE, dt, s.grip);
   if (!racing) return null;
 
@@ -157,29 +195,78 @@ export function advance(s: Session, input: Input, dt = DT): RunEvent | null {
     s.nextGhostAt = s.elapsed + 1 / GHOST_HZ;
   }
 
-  if (s.lapProgress >= LAP_LENGTH) {
-    if (s.gatesHit < GATE_COUNT) {
-      // Round again. The clock keeps running, which is punishment enough.
-      s.lapProgress -= LAP_LENGTH;
-      s.gatesHit = 0;
-      s.missedGate = true;
-      return "invalid";
-    }
-    s.lapProgress -= LAP_LENGTH;
-    s.gatesHit = 0;
-    s.missedGate = false;
-    const previous = s.lapTimes.reduce((a, b) => a + b, 0);
-    s.lapTimes.push(s.elapsed - previous);
-    s.lap += 1;
-    if (s.lap >= LAPS) {
-      s.phase = "finished";
-      s.result = s.elapsed * 1000;
-      return "finish";
-    }
-    return "lap";
+  /* --- the finish line -------------------------------------------------
+     A lap ends where the chequered band is, not where a counter says it
+     should be. `lapProgress` is a sum of per-step deltas clamped by `reach`
+     above, so it drifts behind the car's real position every time a corner is
+     cut — which is why the race used to end metres past the stripe. It is now
+     only an arming heuristic; the trigger is geometry.
+
+     Measured at the NOSE, because that is the part of a car that breaks a
+     timing beam, and `lateral` keeps the infinite plane from catching anything
+     that is not actually on the road. */
+  const noseX = s.car.x + Math.cos(s.car.heading) * NOSE;
+  const noseY = s.car.y + Math.sin(s.car.heading) * NOSE;
+  const dx = noseX - LINE.x;
+  const dy = noseY - LINE.y;
+  const axial = dx * LINE.tx + dy * LINE.ty;
+  const lateral = Math.abs(dx * -LINE.ty + dy * LINE.tx);
+  const wasAxial = s.axial;
+  s.axial = axial;
+
+  // Half a lap of arming, so sitting on the grid — or reversing back over the
+  // stripe — cannot hand out a lap.
+  const crossed =
+    wasAxial < 0 && axial >= 0 && lateral <= HALF_WIDTH && s.lapProgress > LAP_LENGTH / 2;
+  if (!crossed) return null;
+
+  /* Land ON the line, not one step past it. The crossing happened part-way
+     through this step, so rewind the pose and the clock by the overshoot. At
+     120 Hz that is centimetres, but centimetres are the difference between a
+     car parked on the chequers and a car parked beyond them. */
+  const over = axial / (axial - wasAxial);
+  s.elapsed -= over * dt;
+  s.distance -= over * ds;
+  s.car.x -= (s.car.x - wasX) * over;
+  s.car.y -= (s.car.y - wasY) * over;
+  s.axial = 0;
+  s.lapProgress = 0;
+  // The clock just went backwards; drop any sample recorded past the line so
+  // the ghost's timeline stays monotonic for ghostAtTime's binary search.
+  while (s.recording.length > 1 && s.recording[s.recording.length - 1].t > s.elapsed) {
+    s.recording.pop();
   }
 
-  return null;
+  const gatesOk = s.gatesHit >= GATE_COUNT;
+  s.gatesHit = 0;
+  const isFinalLap = s.lap + 1 >= LAPS;
+  if (!gatesOk && !isFinalLap) {
+    // Round again. The clock keeps running, which is punishment enough.
+    s.missedGate = true;
+    return "invalid";
+  }
+  s.missedGate = !gatesOk;
+  const previous = s.lapTimes.reduce((a, b) => a + b, 0);
+  s.lapTimes.push(s.elapsed - previous);
+  s.lap += 1;
+  if (s.lap < LAPS) return "lap";
+
+  s.car.u = 0;
+  s.car.v = 0;
+  s.car.omega = 0;
+  s.phase = "finished";
+  s.result = s.elapsed * 1000;
+  // One last sample at the exact stopping pose, so a ghost replayed from this
+  // run parks on the line too instead of up to 1/30 s short of it.
+  s.recording.push({
+    t: s.elapsed,
+    d: s.distance,
+    x: s.car.x,
+    y: s.car.y,
+    heading: s.car.heading,
+    steer: s.car.steer,
+  });
+  return "finish";
 }
 
 /**
