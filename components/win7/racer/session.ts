@@ -9,7 +9,7 @@
  */
 
 import { createCar, speedOf, step, type Car, type Input } from "./physics";
-import { CENTER, GATE_COUNT, TINY, GATE_DISTANCES, HALF_WIDTH, LAP_LENGTH, project, startPose, surfaceAt, tangentAt } from "./track";
+import { CENTER, GATE_COUNT, GATE_DISTANCES, HALF_WIDTH, LAP_LENGTH, project, startPose, surfaceAt, tangentAt } from "./track";
 
 /**
  * The finish line as a plane, not a distance.
@@ -83,7 +83,7 @@ export type Session = {
 
 export function createSession(ghost: GhostSample[] | null): Session {
   const pose = startPose();
-  const s: Session = {
+  return {
     phase: "countdown",
     car: createCar(pose.x, pose.y, pose.heading),
     countdown: COUNTDOWN,
@@ -103,23 +103,6 @@ export function createSession(ghost: GhostSample[] | null): Session {
     ghost,
     result: null,
   };
-
-  if (TINY) {
-    /* `?tiny=1`: start 25 m short of the line, on the final lap, aimed straight
-       at it. The point of the flag is to check where the car stops, and two
-       laps of driving is a slow, error-prone way to ask that question.
-       ponytail: delete with TINY in track.ts once the finish is signed off. */
-    const back = 25;
-    const t = tangentAt(0);
-    s.car.x = CENTER[0].x - t.x * back;
-    s.car.y = CENTER[0].y - t.y * back;
-    s.lap = LAPS - 1;
-    s.lapProgress = LAP_LENGTH - back;
-    s.gatesHit = GATE_COUNT;
-    s.axial = NOSE - back;
-  }
-
-  return s;
 }
 
 const IDLE: Input = { throttle: 0, brake: 0, steer: 0, handbrake: false };

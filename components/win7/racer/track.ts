@@ -15,7 +15,7 @@ export type Vec = { x: number; y: number };
  * build speed, a fast right sweeper, a second-gear hairpin, then a technical
  * link section that punishes anyone still sideways from the hairpin.
  */
-const BASE_CONTROL: Vec[] = [
+const CONTROL: Vec[] = [
   { x: 40, y: 60 },
   { x: 140, y: 48 },
   { x: 224, y: 54 },
@@ -31,29 +31,6 @@ const BASE_CONTROL: Vec[] = [
   { x: 24, y: 112 },
   { x: 24, y: 80 },
 ];
-/* A throwaway test loop, on `?tiny=1` only.
-   A long thin oval with sample 0 in the MIDDLE of the bottom straight, so the
-   last 25 m before the chequered band is dead straight. Paired with the tiny
-   start in createSession(), checking the finish line costs three seconds of
-   holding accelerate instead of two laps of driving.
-   ponytail: delete this and the branch below once the finish line is signed off. */
-const TINY_CONTROL: Vec[] = [
-  { x: 0, y: 0 },
-  { x: 40, y: 0 },
-  { x: 62, y: 6 },
-  { x: 68, y: 15 },
-  { x: 62, y: 24 },
-  { x: 40, y: 30 },
-  { x: -40, y: 30 },
-  { x: -62, y: 24 },
-  { x: -68, y: 15 },
-  { x: -62, y: 6 },
-  { x: -40, y: 0 },
-];
-export const TINY =
-  typeof window !== "undefined" && new URLSearchParams(window.location.search).has("tiny");
-const CONTROL: Vec[] = TINY ? TINY_CONTROL : BASE_CONTROL;
-
 /** Points generated per control segment. 24 keeps corners smooth at any zoom. */
 const SUBDIV = 24;
 
