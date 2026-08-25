@@ -17,7 +17,16 @@
  * one sign convention the whole projection rests on.
  */
 
-import { CENTER, HALF_WIDTH, SEGMENTS, BOUNDS, tangentAt } from "./track";
+import {
+  BOUNDS,
+  CENTER,
+  HALF_WIDTH,
+  outwardNormalAt,
+  SEGMENTS,
+  tangentAt,
+  WALL_HEIGHT,
+  WALL_OFFSET,
+} from "./track";
 import { GEOMETRY, type Car } from "./physics";
 import { type GfxSettings } from "./settings";
 
@@ -33,10 +42,16 @@ const SKY_LOW = "#bfe6fb";
 const GRASS = "#54833d";
 const GRASS_TUFT = "#476f33";
 const ASPHALT = "#54545c";
-const ASPHALT_FAR = "#6a6a73";
 const LINE = "#e8e8ee";
 const KERB_A = "#d94b3f";
 const KERB_B = "#f2f2f4";
+/* The boundary wall. Two panel tones so it flickers past at speed the way the
+   kerbs do — on a blank slab you cannot tell 40 km/h from 140 — plus a darker
+   cap so the top edge reads as an edge against the sky rather than a colour
+   change in mid-air. */
+const WALL_A = "#b7bec9";
+const WALL_B = "#cdd4de";
+const WALL_CAP = "#6f7784";
 
 /* ---------------------------------------------------------------- quality */
 
@@ -50,15 +65,10 @@ const KERB_B = "#f2f2f4";
 export type RenderQuality = {
   /** Backbuffer scale cap; 1 renders at CSS pixels. */
   dprCap: number;
-  roadRange: number;
-  kerbRange: number;
-  dashRange: number;
   skidRange: number;
   tufts: boolean;
-  tuftStep: number;
-  /** Gradient haze at the horizon / fade into the far asphalt. */
-  haze: boolean;
-  fade: boolean;
+  /** Draw every Nth precomputed tuft. 1 is all of them. */
+  tuftStride: number;
   maxSkids: number;
   smoke: boolean;
   ghostSimple: boolean;
@@ -68,46 +78,27 @@ export type RenderQuality = {
    like the pre-settings renderer did. Racer applies real values on mount. */
 export const quality: RenderQuality = {
   dprCap: 2,
-  roadRange: 260,
-  kerbRange: 150,
-  dashRange: 120,
   skidRange: 85,
   tufts: true,
-  tuftStep: 4.6,
-  haze: true,
-  fade: true,
+  tuftStride: 1,
   maxSkids: 1400,
   smoke: true,
   ghostSimple: false,
 };
 
-/** How far each kind of detail is worth drawing, per range setting. */
-const RANGE_STEPS = {
-  normal: { road: 260, kerb: 150, dash: 120 },
-  reduced: { road: 175, kerb: 105, dash: 90 },
-  minimal: { road: 130, kerb: 80, dash: 70 },
-} as const;
-
 const SKID_CAPS = { normal: 1400, short: 600, off: 0 } as const;
 
 /** Push a settings object into the live render state. */
 export function applyGfx(s: GfxSettings): void {
-  const r = RANGE_STEPS[s.range];
   quality.dprCap = s.dprCap;
-  quality.roadRange = r.road;
-  quality.kerbRange = r.kerb;
-  quality.dashRange = r.dash;
-  quality.skidRange = SKID_CAPS[s.skids] === 0 ? 0 : Math.min(r.dash + 20, 85);
+  quality.skidRange = SKID_CAPS[s.skids] === 0 ? 0 : 85;
   quality.tufts = s.tufts !== "off";
-  quality.tuftStep = s.tufts === "full" ? 4.6 : 7.2;
-  quality.haze = !s.simpleGradients;
-  quality.fade = !s.simpleGradients;
+  quality.tuftStride = s.tufts === "full" ? 1 : 2;
   quality.maxSkids = SKID_CAPS[s.skids];
   quality.smoke = s.smoke;
   quality.ghostSimple = s.ghostSimple;
 }
 
-const TUFT_RANGE = 62;
 
 /* ------------------------------------------------------------------ camera */
 
@@ -317,6 +308,30 @@ for (let i = 0; i < SEGMENTS; i += 1) {
   KERB_R[i * 2 + 1] = p.y + ny * (HALF_WIDTH + KERB_W);
 }
 
+/* The barrier ring, built once alongside the road edges. */
+const WALL = new Float64Array(SEGMENTS * 2);
+for (let i = 0; i < SEGMENTS; i += 1) {
+  const p = CENTER[i];
+  const n = outwardNormalAt(i);
+  WALL[i * 2] = p.x + n.x * WALL_OFFSET;
+  WALL[i * 2 + 1] = p.y + n.y * WALL_OFFSET;
+}
+
+/* The grass, generated once over the whole walled area. Same integer hash as
+   before, so the field looks identical — it just no longer follows the car. */
+const TUFTS = (() => {
+  const STEP = 4.6;
+  const out: number[] = [];
+  for (let gx = Math.floor(BOUNDS.minX / STEP); gx <= Math.ceil(BOUNDS.maxX / STEP); gx += 1) {
+    for (let gy = Math.floor(BOUNDS.minY / STEP); gy <= Math.ceil(BOUNDS.maxY / STEP); gy += 1) {
+      const hsh = (gx * 73856093) ^ (gy * 19349663);
+      out.push(gx * STEP + (((hsh >>> 8) & 255) / 255) * STEP);
+      out.push(gy * STEP + (((hsh >>> 16) & 255) / 255) * STEP);
+    }
+  }
+  return Float64Array.from(out);
+})();
+
 const quad: number[] = new Array(12).fill(0);
 
 const near2 = (cam: Cam, x: number, y: number, range: number) => {
@@ -356,52 +371,34 @@ export function drawGround(ctx: CanvasRenderingContext2D, cam: Cam, view: View) 
   ctx.fillStyle = GRASS;
   ctx.fillRect(0, h, view.width, view.height - h);
 
-  // Where ground meets sky. Full quality paints a gradient so the plane does
-  // not end on a hard seam; the flat band is one fill instead of a gradient
-  // allocation, and at racing distance nobody can tell where it ends.
-  if (quality.haze) {
-    const haze = ctx.createLinearGradient(0, h, 0, h + view.height * 0.16);
-    haze.addColorStop(0, "rgba(191,230,251,0.85)");
-    haze.addColorStop(1, "rgba(191,230,251,0)");
-    ctx.fillStyle = haze;
-    ctx.fillRect(0, h, view.width, view.height * 0.16);
-  } else {
-    ctx.fillStyle = "rgba(191,230,251,0.4)";
-    ctx.fillRect(0, h, view.width, view.height * 0.07);
-  }
+  /* No horizon treatment. The barrier is tall enough to stand above the
+     horizon from anywhere on the circuit, so the ground plane never actually
+     ends in view — there is no seam left for a haze gradient to hide. */
 
   if (!quality.tufts) return;
 
-  const STEP = quality.tuftStep;
-  const gx0 = Math.floor((cam.x - TUFT_RANGE) / STEP);
-  const gx1 = Math.ceil((cam.x + TUFT_RANGE) / STEP);
-  const gy0 = Math.floor((cam.y - TUFT_RANGE) / STEP);
-  const gy1 = Math.ceil((cam.y + TUFT_RANGE) / STEP);
-
+  /* Every tuft on the map, every frame. They used to be generated in a window
+     around the camera, which is why the grass kept growing in ahead of the car
+     and vanishing behind it. The map is small and walled, so the whole field
+     is a fixed list that costs one pass — addPoly rejects the off-screen ones
+     in a few multiplies each. */
   ctx.fillStyle = GRASS_TUFT;
   ctx.beginPath();
-  for (let gx = gx0; gx <= gx1; gx += 1) {
-    for (let gy = gy0; gy <= gy1; gy += 1) {
-      // Cheap integer hash; the same cell always yields the same blade.
-      const hsh = (gx * 73856093) ^ (gy * 19349663);
-      const jx = ((hsh >>> 8) & 255) / 255;
-      const jy = ((hsh >>> 16) & 255) / 255;
-      const x = gx * STEP + jx * STEP;
-      const y = gy * STEP + jy * STEP;
-      if (!near2(cam, x, y, TUFT_RANGE)) continue;
-      quad[0] = x - 0.34; quad[1] = y - 0.3; quad[2] = 0;
-      quad[3] = x + 0.34; quad[4] = y - 0.24; quad[5] = 0;
-      quad[6] = x + 0.28; quad[7] = y + 0.34; quad[8] = 0;
-      quad[9] = x - 0.32; quad[10] = y + 0.28; quad[11] = 0;
-      addPoly(ctx, cam, quad);
-    }
+  for (let i = 0; i < TUFTS.length; i += 2 * quality.tuftStride) {
+    const x = TUFTS[i];
+    const y = TUFTS[i + 1];
+    quad[0] = x - 0.34; quad[1] = y - 0.3; quad[2] = 0;
+    quad[3] = x + 0.34; quad[4] = y - 0.24; quad[5] = 0;
+    quad[6] = x + 0.28; quad[7] = y + 0.34; quad[8] = 0;
+    quad[9] = x - 0.32; quad[10] = y + 0.28; quad[11] = 0;
+    addPoly(ctx, cam, quad);
   }
   ctx.fill();
 }
 
 /* ---------------------------------------------------------------- track */
 
-export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, view: View) {
+export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
 
   /* Asphalt. Every visible quad goes into one path and is filled once —
@@ -411,7 +408,6 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, view: View) {
   ctx.beginPath();
   for (let i = 0; i < SEGMENTS; i += 1) {
     const j = (i + 1) % SEGMENTS;
-    if (!near2(cam, CENTER[i].x, CENTER[i].y, quality.roadRange)) continue;
     quad[0] = EDGE_L[i * 2]; quad[1] = EDGE_L[i * 2 + 1]; quad[2] = 0;
     quad[3] = EDGE_R[i * 2]; quad[4] = EDGE_R[i * 2 + 1]; quad[5] = 0;
     quad[6] = EDGE_R[j * 2]; quad[7] = EDGE_R[j * 2 + 1]; quad[8] = 0;
@@ -419,19 +415,6 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, view: View) {
     addPoly(ctx, cam, quad);
   }
   ctx.fill();
-
-  // Distance fade, painted over the far asphalt only. The first thing cut,
-  // because the road a hundred metres out is already haze-coloured to the eye.
-  if (quality.fade) {
-    const fade = ctx.createLinearGradient(0, cam.horizon, 0, cam.horizon + view.height * 0.2);
-    fade.addColorStop(0, ASPHALT_FAR);
-    fade.addColorStop(1, "rgba(106,106,115,0)");
-    ctx.save();
-    ctx.clip();
-    ctx.fillStyle = fade;
-    ctx.fillRect(0, cam.horizon, view.width, view.height * 0.2);
-    ctx.restore();
-  }
 
   /* Kerbs. Alternating blocks rather than a solid line: a solid edge gives no
      sense of how fast it is going past, and the flicker rate of the blocks is
@@ -442,7 +425,6 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, view: View) {
     for (let i = 0; i < SEGMENTS; i += 1) {
       if ((i >> 1) % 2 !== phase) continue;
       const j = (i + 1) % SEGMENTS;
-      if (!near2(cam, CENTER[i].x, CENTER[i].y, quality.kerbRange)) continue;
       for (const [inner, outer] of [[EDGE_L, KERB_L], [EDGE_R, KERB_R]] as const) {
         quad[0] = inner[i * 2]; quad[1] = inner[i * 2 + 1]; quad[2] = 0.02;
         quad[3] = outer[i * 2]; quad[4] = outer[i * 2 + 1]; quad[5] = 0.02;
@@ -462,7 +444,6 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, view: View) {
     const j = (i + 1) % SEGMENTS;
     const a = CENTER[i];
     const b = CENTER[j];
-    if (!near2(cam, a.x, a.y, quality.dashRange)) continue;
     const t = tangentAt(i);
     const nx = -t.y * 0.16;
     const ny = t.x * 0.16;
@@ -479,7 +460,6 @@ export function drawTrack(ctx: CanvasRenderingContext2D, cam: Cam, view: View) {
 /** The chequered band across the road at sample 0. */
 export function drawStartLine(ctx: CanvasRenderingContext2D, cam: Cam) {
   const p = CENTER[0];
-  if (!near2(cam, p.x, p.y, quality.roadRange)) return;
   const t = tangentAt(0);
   const nx = -t.y;
   const ny = t.x;
@@ -504,6 +484,72 @@ export function drawStartLine(ctx: CanvasRenderingContext2D, cam: Cam) {
       }
     }
     ctx.fill();
+  }
+}
+
+/**
+ * The wall round the outside of the circuit — the edge of the world.
+ *
+ * This is the one thing in the renderer that stands up, and it is tall on
+ * purpose. Anything above the camera projects above the horizon from any
+ * distance, so a ring this high closes the view off completely: road, wall,
+ * sky, and no seam where the ground plane runs out. That seam is what the old
+ * horizon gradient existed to hide, which is why it could be deleted.
+ *
+ * Because it has height, paint order stops agreeing with depth — a near
+ * section genuinely has to cover a far one, and index order would drape the
+ * far side of the circuit over the near. Hence the sort: strict back to front,
+ * the whole painter's algorithm this file gets away with instead of a depth
+ * buffer.
+ *
+ * Each panel is also filled on its own rather than batched into one path per
+ * colour, and that is not a style choice. Going round the ring, i -> i+1 runs
+ * left to right across the near wall and right to left across the far one, so
+ * the two have opposite winding on screen. Inside a single path, nonzero
+ * winding reads that as a hole and the grass and track behind show straight
+ * through the wall. Batching a flat surface is safe because projecting a plane
+ * cannot flip orientation; batching a standing one is not.
+ */
+const wallOrder: number[] = [];
+const wallDist = new Float64Array(SEGMENTS);
+
+export function drawWall(ctx: CanvasRenderingContext2D, cam: Cam) {
+  wallOrder.length = 0;
+  for (let i = 0; i < SEGMENTS; i += 1) {
+    const dx = WALL[i * 2] - cam.x;
+    const dy = WALL[i * 2 + 1] - cam.y;
+    wallDist[i] = dx * dx + dy * dy;
+    wallOrder.push(i);
+  }
+  wallOrder.sort((a, b) => wallDist[b] - wallDist[a]);
+
+  const CAP = WALL_HEIGHT * 0.16;
+  for (const k of wallOrder) {
+    /* Each panel spans two segments so it overlaps its neighbour. Butt-jointed
+       quads leave a hairline of background between them the moment the canvas
+       antialiases the shared edge; an overlap has nothing to show through. The
+       extra 2 m of chord across a 14 m-radius ring is not measurable. */
+    const j = (k + 2) % SEGMENTS;
+    const ax = WALL[k * 2];
+    const ay = WALL[k * 2 + 1];
+    const bx = WALL[j * 2];
+    const by = WALL[j * 2 + 1];
+
+    quad[0] = ax; quad[1] = ay; quad[2] = 0;
+    quad[3] = bx; quad[4] = by; quad[5] = 0;
+    quad[6] = bx; quad[7] = by; quad[8] = WALL_HEIGHT - CAP;
+    quad[9] = ax; quad[10] = ay; quad[11] = WALL_HEIGHT - CAP;
+    ctx.fillStyle = (k >> 2) % 2 ? WALL_B : WALL_A;
+    ctx.beginPath();
+    if (addPoly(ctx, cam, quad)) ctx.fill();
+
+    quad[2] = WALL_HEIGHT - CAP;
+    quad[5] = WALL_HEIGHT - CAP;
+    quad[8] = WALL_HEIGHT;
+    quad[11] = WALL_HEIGHT;
+    ctx.fillStyle = WALL_CAP;
+    ctx.beginPath();
+    if (addPoly(ctx, cam, quad)) ctx.fill();
   }
 }
 

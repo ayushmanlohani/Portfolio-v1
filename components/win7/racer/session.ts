@@ -8,8 +8,21 @@
  * 144 Hz monitor, and a machine that stuttered halfway round.
  */
 
-import { createCar, speedOf, step, type Car, type Input } from "./physics";
-import { CENTER, GATE_COUNT, GATE_DISTANCES, HALF_WIDTH, LAP_LENGTH, project, startPose, surfaceAt, tangentAt } from "./track";
+import { createCar, GEOMETRY, speedOf, step, type Car, type Input } from "./physics";
+import {
+  CENTER,
+  GATE_COUNT,
+  GATE_DISTANCES,
+  HALF_WIDTH,
+  LAP_LENGTH,
+  outwardNormalAt,
+  outwardOf,
+  project,
+  startPose,
+  surfaceAt,
+  tangentAt,
+  WALL_OFFSET,
+} from "./track";
 
 /**
  * The finish line as a plane, not a distance.
@@ -25,7 +38,37 @@ const LINE = (() => {
 })();
 
 /** Half the car body: where the nose sits ahead of the centre of mass. */
-const NOSE = 2.0;
+const NOSE = GEOMETRY.HALF_LEN;
+
+/**
+ * The four body corners, in car-local metres.
+ *
+ * Collision is done per corner rather than at the centre of mass. A car whose
+ * CENTRE stops at the barrier has already buried a metre of bodywork in it,
+ * which is exactly the clipping you can see from the chase camera.
+ */
+const CORNERS: ReadonlyArray<readonly [number, number]> = [
+  [GEOMETRY.HALF_LEN, GEOMETRY.HALF_WID],
+  [GEOMETRY.HALF_LEN, -GEOMETRY.HALF_WID],
+  [-GEOMETRY.HALF_LEN, GEOMETRY.HALF_WID],
+  [-GEOMETRY.HALF_LEN, -GEOMETRY.HALF_WID],
+];
+
+/** Metres the nose is in front of the finish plane. Negative = not there yet. */
+function noseAxial(car: Car): number {
+  const nx = car.x + Math.cos(car.heading) * NOSE - LINE.x;
+  const ny = car.y + Math.sin(car.heading) * NOSE - LINE.y;
+  return nx * LINE.tx + ny * LINE.ty;
+}
+
+/* --- the barrier ------------------------------------------------------- */
+
+/** How much of the impact the wall gives back. Enough to read as steel. */
+const WALL_BOUNCE = 0.3;
+/** What is left of the speed along the wall after a scrape. */
+const WALL_SCRUB = 0.85;
+/** Seconds of crawling off the road before the car is put back on it. */
+const STUCK_SECONDS = 2.5;
 
 export const LAPS = 2;
 export const DT = 1 / 120;
@@ -48,7 +91,7 @@ export type GhostSample = {
 
 const GHOST_HZ = 30;
 
-export type RunEvent = "lap" | "finish" | "invalid";
+export type RunEvent = "lap" | "finish" | "invalid" | "respawn";
 
 export type Session = {
   phase: Phase;
@@ -69,6 +112,8 @@ export type Session = {
   gatesHit: number;
   /** Set when a gate was missed; cleared when the lap is re-run. */
   missedGate: boolean;
+  /** Seconds spent crawling off the road — the trigger for a rescue. */
+  stuckFor: number;
   trackIndex: number;
   offset: number;
   grip: number;
@@ -95,6 +140,7 @@ export function createSession(ghost: GhostSample[] | null): Session {
     distance: 0,
     gatesHit: 0,
     missedGate: false,
+    stuckFor: 0,
     trackIndex: -1,
     offset: 0,
     grip: 1,
@@ -145,6 +191,70 @@ export function advance(s: Session, input: Input, dt = DT): RunEvent | null {
      infield makes the projection jump hundreds of metres in one step and hands
      out a lap for free. */
   const after = project(s.car.x, s.car.y, s.trackIndex);
+
+  /* --- the barrier -----------------------------------------------------
+     One wall, on the outside only. The circuit is a closed loop, so that ring
+     bounds everything: cut across the infield and you are still inside it.
+     An inner barrier would collapse to a point at the hairpin and would not be
+     guarding anything anyway.
+
+     Tested at all four body corners and resolved against the deepest one, so
+     no part of the shell can be on the wrong side of the steel. */
+  {
+    const ch = Math.cos(s.car.heading);
+    const sh = Math.sin(s.car.heading);
+    let deepest = -Infinity;
+    let index = after.index;
+    let rx = 0;
+    let ry = 0;
+    for (const [lx, ly] of CORNERS) {
+      // Corner offset from the centre of mass, rotated into the world.
+      const ox = lx * ch - ly * sh;
+      const oy = lx * sh + ly * ch;
+      const hit2 = project(s.car.x + ox, s.car.y + oy, s.trackIndex);
+      const depth = outwardOf(hit2, s.car.x + ox, s.car.y + oy);
+      if (depth > deepest) {
+        deepest = depth;
+        index = hit2.index;
+        rx = ox;
+        ry = oy;
+      }
+    }
+
+    if (deepest > WALL_OFFSET) {
+      const n = outwardNormalAt(index);
+      // Slide the whole car back until that corner is on the face, not in it.
+      s.car.x -= n.x * (deepest - WALL_OFFSET);
+      s.car.y -= n.y * (deepest - WALL_OFFSET);
+
+      /* A proper impulse at the contact point, not just a reflected centre
+         velocity. The lever arm is what makes a corner strike spin the car
+         and a flat, square-on hit stop it dead — which is the difference
+         between hitting a wall and bouncing off a bumper. */
+      let vx = s.car.u * ch - s.car.v * sh;
+      let vy = s.car.u * sh + s.car.v * ch;
+      // Velocity of the contact patch itself: centre plus the spin about it.
+      const into = (vx - s.car.omega * ry) * n.x + (vy + s.car.omega * rx) * n.y;
+      if (into > 0) {
+        const lever = rx * n.y - ry * n.x;
+        const j =
+          -(1 + WALL_BOUNCE) * into /
+          (1 / GEOMETRY.MASS + (lever * lever) / GEOMETRY.INERTIA);
+        vx += (j * n.x) / GEOMETRY.MASS;
+        vy += (j * n.y) / GEOMETRY.MASS;
+        s.car.omega += (lever * j) / GEOMETRY.INERTIA;
+        // Friction along the face, so riding the barrier costs time rather
+        // than working as a free guide rail.
+        const alongX = vx - (vx * n.x + vy * n.y) * n.x;
+        const alongY = vy - (vx * n.x + vy * n.y) * n.y;
+        vx += alongX * (WALL_SCRUB - 1);
+        vy += alongY * (WALL_SCRUB - 1);
+      }
+      s.car.u = vx * ch + vy * sh;
+      s.car.v = -vx * sh + vy * ch;
+    }
+  }
+
   let ds = after.s - before;
   if (ds < -LAP_LENGTH / 2) ds += LAP_LENGTH;
   if (ds > LAP_LENGTH / 2) ds -= LAP_LENGTH;
@@ -178,6 +288,30 @@ export function advance(s: Session, input: Input, dt = DT): RunEvent | null {
     s.nextGhostAt = s.elapsed + 1 / GHOST_HZ;
   }
 
+  /* --- stuck, and the way out ------------------------------------------
+     The barrier means nobody can get lost any more, but it does not stop a car
+     ending up parked against it pointing at the scenery. Crawling along off
+     the asphalt is the signal. The clock keeps running through it, so this is
+     a rescue and never a shortcut. */
+  if (speedOf(s.car) < 1.5 && s.offset > HALF_WIDTH) s.stuckFor += dt;
+  else s.stuckFor = 0;
+  if (s.stuckFor >= STUCK_SECONDS) {
+    const t = tangentAt(after.index);
+    s.car.x = CENTER[after.index].x;
+    s.car.y = CENTER[after.index].y;
+    s.car.heading = Math.atan2(t.y, t.x);
+    s.car.u = 0;
+    s.car.v = 0;
+    s.car.omega = 0;
+    s.car.steer = 0;
+    s.stuckFor = 0;
+    // The car just teleported, so last step's reading of the finish plane
+    // describes a place it is no longer in. Re-seed it or the jump can read as
+    // a crossing and hand out a lap.
+    s.axial = noseAxial(s.car);
+    return "respawn";
+  }
+
   /* --- the finish line -------------------------------------------------
      A lap ends where the chequered band is, not where a counter says it
      should be. `lapProgress` is a sum of per-step deltas clamped by `reach`
@@ -188,12 +322,10 @@ export function advance(s: Session, input: Input, dt = DT): RunEvent | null {
      Measured at the NOSE, because that is the part of a car that breaks a
      timing beam, and `lateral` keeps the infinite plane from catching anything
      that is not actually on the road. */
+  const axial = noseAxial(s.car);
   const noseX = s.car.x + Math.cos(s.car.heading) * NOSE;
   const noseY = s.car.y + Math.sin(s.car.heading) * NOSE;
-  const dx = noseX - LINE.x;
-  const dy = noseY - LINE.y;
-  const axial = dx * LINE.tx + dy * LINE.ty;
-  const lateral = Math.abs(dx * -LINE.ty + dy * LINE.tx);
+  const lateral = Math.abs((noseX - LINE.x) * -LINE.ty + (noseY - LINE.y) * LINE.tx);
   const wasAxial = s.axial;
   s.axial = axial;
 

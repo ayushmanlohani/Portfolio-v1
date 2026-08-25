@@ -21,6 +21,7 @@ import {
   drawSky,
   drawStartLine,
   drawTrack,
+  drawWall,
   GHOST_PAINT,
   PLAYER_PAINT,
   pushSkid,
@@ -436,8 +437,11 @@ export function Racer() {
             skidAnchorRef.current = null;
           }
 
-          if (event === "invalid" && warnRef.current) {
-            warnRef.current.textContent = "Gate missed — lap does not count";
+          if ((event === "invalid" || event === "respawn") && warnRef.current) {
+            warnRef.current.textContent =
+              event === "respawn"
+                ? "Back on track — clock never stopped"
+                : "Gate missed — lap does not count";
             warnRef.current.dataset.show = "1";
             window.setTimeout(() => {
               if (warnRef.current) warnRef.current.dataset.show = "";
@@ -469,9 +473,12 @@ export function Racer() {
       const cam = chaseCamera(session.car, camYawRef.current, view);
       drawSky(ctx, cam, view);
       drawGround(ctx, cam, view);
-      drawTrack(ctx, cam, view);
+      drawTrack(ctx, cam);
       drawStartLine(ctx, cam);
       drawSkids(ctx, cam, skidRef.current);
+      // After the flat world, before the cars: the barrier is the only upright
+      // thing out there, and the cars are always inside the ring it makes.
+      drawWall(ctx, cam);
 
       let ghostPose: { x: number; y: number } | null = null;
       if (session.ghost) {
@@ -787,18 +794,6 @@ function GraphicsPanel({ gfx, onChange }: { gfx: GfxSettings; onChange: (g: GfxS
         />
       </div>
       <div className="rc-gfx-row">
-        <span>Draw distance</span>
-        <Seg
-          options={[
-            { v: "normal", label: "Far" },
-            { v: "reduced", label: "Near" },
-            { v: "minimal", label: "Close" },
-          ]}
-          value={gfx.range}
-          onChange={(v) => set({ range: v as GfxSettings["range"] })}
-        />
-      </div>
-      <div className="rc-gfx-row">
         <span>Grass detail</span>
         <Seg
           options={[
@@ -842,17 +837,6 @@ function GraphicsPanel({ gfx, onChange }: { gfx: GfxSettings; onChange: (g: GfxS
           ]}
           value={bool(gfx.ghostSimple)}
           onChange={(v) => set({ ghostSimple: v === "1" })}
-        />
-      </div>
-      <div className="rc-gfx-row">
-        <span>Gradients</span>
-        <Seg
-          options={[
-            { v: "1", label: "Flat" },
-            { v: "0", label: "Rich" },
-          ]}
-          value={bool(gfx.simpleGradients)}
-          onChange={(v) => set({ simpleGradients: v === "1" })}
         />
       </div>
     </div>

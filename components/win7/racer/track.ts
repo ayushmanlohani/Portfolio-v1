@@ -94,6 +94,9 @@ export type TrackHit = {
   offset: number;
   /** Distance travelled around the lap at that point, metres. */
   s: number;
+  /** The closest point itself, so a signed offset needs no second search. */
+  px: number;
+  py: number;
 };
 
 /**
@@ -136,7 +139,74 @@ export function project(x: number, y: number, near = -1): TrackHit {
   }
 
   const segLen = CUM[bestI + 1] - CUM[bestI];
-  return { index: bestI, offset: Math.sqrt(bestD), s: CUM[bestI] + segLen * bestT };
+  const a = CENTER[bestI];
+  const b = CENTER[(bestI + 1) % SEGMENTS];
+  return {
+    index: bestI,
+    offset: Math.sqrt(bestD),
+    s: CUM[bestI] + segLen * bestT,
+    px: a.x + (b.x - a.x) * bestT,
+    py: a.y + (b.y - a.y) * bestT,
+  };
+}
+
+/* ----------------------------------------------------------- the barrier */
+
+/**
+ * Metres from the centre line to the barrier.
+ *
+ * Deliberately well outside the kerbs. Running wide has to stay a mistake you
+ * can gather up — a wall at the edge of the asphalt turns every overshoot into
+ * a rail to scrape, which is both uglier and easier than driving the corner.
+ */
+export const WALL_OFFSET = 14;
+
+/**
+ * How tall the barrier stands. Render only; the collision is a 2D line.
+ *
+ * Tall on purpose. Anything above eye level projects above the horizon from
+ * any distance, so a wall this size closes the world off completely: the eye
+ * goes road, wall, sky, and never finds the seam where the ground plane ends.
+ * That seam is what the horizon haze gradient used to be hiding.
+ */
+export const WALL_HEIGHT = 18;
+
+/**
+ * Which way is "out".
+ *
+ * The circuit is one closed loop, so the left-hand normal points inward all
+ * the way round or outward all the way round — never both. Which one depends
+ * on the winding of CONTROL, so it is read from the signed area rather than
+ * written down, and re-shaping the track above cannot silently flip it.
+ */
+export const OUTWARD = (() => {
+  let twiceArea = 0;
+  for (let i = 0; i < SEGMENTS; i += 1) {
+    const a = CENTER[i];
+    const b = CENTER[(i + 1) % SEGMENTS];
+    twiceArea += a.x * b.y - b.x * a.y;
+  }
+  // Left normal is (-t.y, t.x). On an anticlockwise loop that faces the
+  // infield, so the outward side is the other one.
+  return twiceArea > 0 ? -1 : 1;
+})();
+
+/** The outward unit normal at a sample — which way the barrier faces. */
+export function outwardNormalAt(i: number): Vec {
+  const t = tangentAt(i);
+  return { x: -t.y * OUTWARD, y: t.x * OUTWARD };
+}
+
+/**
+ * Signed metres from the centre line, positive OUTSIDE the loop.
+ *
+ * `offset` on a TrackHit is an unsigned distance, which cannot tell a car that
+ * has run wide from one cutting the infield. The barrier only exists on one of
+ * those sides, so it needs the sign.
+ */
+export function outwardOf(hit: TrackHit, x: number, y: number): number {
+  const n = outwardNormalAt(hit.index);
+  return (x - hit.px) * n.x + (y - hit.py) * n.y;
 }
 
 /** Grip multiplier where the car is standing: 1 on asphalt, much less on grass. */

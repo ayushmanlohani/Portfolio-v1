@@ -3,8 +3,10 @@
  *
  * The renderer's cost is dominated by things a player cannot see missing at
  * speed — backbuffer pixels beyond CSS resolution, grass detail, rubber too
- * old to matter, gradients painted over distances the eye reads as one
- * colour. Every field here is one of those trade-offs with a name on it.
+ * old to matter. Every field here is one of those trade-offs with a name on
+ * it. Draw distance is deliberately NOT one of them: the circuit is drawn
+ * whole, every frame, because detail appearing out of nothing ahead of the car
+ * is worse to look at than anything it saves.
  *
  * Two presets ship with the game and a "custom" state is reached the moment
  * any single option is moved off its preset. Settings persist in localStorage
@@ -21,16 +23,12 @@ export type GfxSettings = {
   fpsCap: number;
   /** Ground tuft density — the only thing that makes open grass readable. */
   tufts: "full" | "sparse" | "off";
-  /** How much of the circuit may be transformed per frame. */
-  range: "normal" | "reduced" | "minimal";
   /** Rubber history left on the track. */
   skids: "normal" | "short" | "off";
   /** Tyre smoke and dust particles. */
   smoke: boolean;
   /** Ghost as four blocks instead of the full nine-box model. */
   ghostSimple: boolean;
-  /** Flat colour bands where the haze and distance-fade gradients were. */
-  simpleGradients: boolean;
 };
 
 /**
@@ -43,11 +41,9 @@ export const BALANCED: GfxSettings = {
   dprCap: 1,
   fpsCap: 60,
   tufts: "sparse",
-  range: "reduced",
   skids: "short",
   smoke: false,
   ghostSimple: true,
-  simpleGradients: true,
 };
 
 /** Emergency mode for machines that are still struggling on Balanced. */
@@ -56,11 +52,9 @@ export const POTATO: GfxSettings = {
   dprCap: 1,
   fpsCap: 30,
   tufts: "off",
-  range: "minimal",
   skids: "off",
   smoke: false,
   ghostSimple: true,
-  simpleGradients: true,
 };
 
 const KEY = "win7.racer.gfx.v1";
@@ -74,11 +68,9 @@ function sameGfx(a: GfxSettings, b: GfxSettings): boolean {
     a.dprCap === b.dprCap &&
     a.fpsCap === b.fpsCap &&
     a.tufts === b.tufts &&
-    a.range === b.range &&
     a.skids === b.skids &&
     a.smoke === b.smoke &&
-    a.ghostSimple === b.ghostSimple &&
-    a.simpleGradients === b.simpleGradients
+    a.ghostSimple === b.ghostSimple
   );
 }
 
@@ -89,12 +81,9 @@ export function normalizeGfx(input: unknown): GfxSettings {
     dprCap: raw.dprCap === 2 ? 2 : 1,
     fpsCap: raw.fpsCap === 30 ? 30 : 60,
     tufts: pick(raw.tufts, ["full", "sparse", "off"] as const, BALANCED.tufts),
-    range: pick(raw.range, ["normal", "reduced", "minimal"] as const, BALANCED.range),
     skids: pick(raw.skids, ["normal", "short", "off"] as const, BALANCED.skids),
     smoke: typeof raw.smoke === "boolean" ? raw.smoke : BALANCED.smoke,
     ghostSimple: typeof raw.ghostSimple === "boolean" ? raw.ghostSimple : BALANCED.ghostSimple,
-    simpleGradients:
-      typeof raw.simpleGradients === "boolean" ? raw.simpleGradients : BALANCED.simpleGradients,
     preset: "custom",
   };
   s.preset = sameGfx(s, BALANCED) ? "balanced" : sameGfx(s, POTATO) ? "potato" : "custom";

@@ -275,4 +275,10 @@ export function wheelPositions(car: Car) {
   };
 }
 
-export const GEOMETRY = { A, B, WHEELBASE, HALF_TRACK, TOP_SPEED };
+/* The body shell, as the renderer draws it. Collision needs the same numbers:
+   a car that stops when its CENTRE reaches a wall has already put a corner
+   through it. */
+export const HALF_LEN = 2.0;
+export const HALF_WID = 0.93;
+
+export const GEOMETRY = { A, B, WHEELBASE, HALF_TRACK, TOP_SPEED, MASS, INERTIA, HALF_LEN, HALF_WID };
