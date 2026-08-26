@@ -8,6 +8,7 @@ import {
   NetworkIcon,
   NotepadIcon,
   PdfIcon,
+  PingPongIcon,
   RacerIcon,
   RecycleBinIcon,
   StarIcon,
@@ -315,12 +316,21 @@ const NODE_LIST: FsNode[] = [
   },
 
   {
+    id: "pingpong",
+    label: "Ping Pong",
+    Icon: PingPongIcon,
+    kind: "app",
+    type: "Application",
+    deletable: true,
+  },
+
+  {
     id: "drive-c/games",
     label: "Games",
     Icon: FolderIcon,
     kind: "folder",
     type: "File folder",
-    children: ["racer"],
+    children: ["racer", "pingpong"],
   },
 
   {
@@ -349,7 +359,7 @@ const NODE_LIST: FsNode[] = [
     label: "Desktop",
     Icon: FolderIcon,
     kind: "folder",
-    children: ["computer", ...DESKTOP_FOLDERS, "chrome", "racer", "recycle"],
+    children: ["computer", ...DESKTOP_FOLDERS, "chrome", "racer", "pingpong", "recycle"],
     type: "File folder",
   },
   { id: "downloads", label: "Downloads", Icon: FolderIcon, kind: "folder", type: "File folder" },

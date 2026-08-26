@@ -63,7 +63,7 @@ function sizeOf(id: string): number {
  * Time Attack is a real game, not a folder of text files, so it leads; the
  * rest of the desktop falls in behind by the ordinary size rule below.
  */
-const SIZE_PRIORITY = ["racer", "chrome", "computer", "recycle", "contact", "about"];
+const SIZE_PRIORITY = ["racer", "pingpong", "chrome", "computer", "recycle", "contact", "about"];
 
 /** Comparator for one Sort by mode. Ties fall back to name, same as Explorer
  *  breaking a Size or Type tie alphabetically rather than leaving it to
@@ -109,6 +109,7 @@ function compareBy(mode: SortMode, order: readonly string[]): (a: string, b: str
  * r2│ Chrome    │ Education │
  * r3│ Contact   │ Projects  │
  * r4│ Resume    │ Time Attack│
+ * r5│ Ping Pong │           │
  *   └───────────┴───────────┘
  */
 const DEFAULT_LAYOUT: Layout = {
@@ -121,8 +122,8 @@ const DEFAULT_LAYOUT: Layout = {
   contact: { c: 0, r: 3 },
   projects: { c: 1, r: 3 },
   resume: { c: 0, r: 4 },
-  // The one gap his arrangement left open, so nothing else has to move.
   racer: { c: 1, r: 4 },
+  pingpong: { c: 0, r: 5 },
 };
 
 /** How many rows the arrangement above needs to fit. */

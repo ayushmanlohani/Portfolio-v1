@@ -7,6 +7,7 @@ import {
   CONTROL_PANEL_ID,
   NOTEPAD_ID,
   PDF_ID,
+  PINGPONG_ID,
   RACER_ID,
   TERMINAL_ID,
   WMP_ID,
@@ -17,6 +18,7 @@ import {
   MediaPlayerIcon,
   NotepadIcon,
   PdfIcon,
+  PingPongIcon,
   PowerIcon,
   RacerIcon,
   TerminalIcon,
@@ -75,6 +77,12 @@ const RECENT: Program[] = [
     id: RACER_ID,
     label: "Time Attack",
     icon: <RacerIcon className="sm-icon" />,
+    opens: true,
+  },
+  {
+    id: PINGPONG_ID,
+    label: "Ping Pong",
+    icon: <PingPongIcon className="sm-icon" />,
     opens: true,
   },
 ];

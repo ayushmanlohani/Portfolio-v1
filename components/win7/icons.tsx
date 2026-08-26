@@ -780,3 +780,60 @@ export function RacerIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/**
+ * Ping Pong / Deparkanoid. An arcade breakout paddle, bouncing ball, and bricks.
+ */
+export function PingPongIcon({ className }: IconProps) {
+  return (
+    <svg {...BASE} className={className}>
+      <defs>
+        <linearGradient id="pp-paddle" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffa133" />
+          <stop offset="0.5" stopColor="#e47b1a" />
+          <stop offset="1" stopColor="#b35400" />
+        </linearGradient>
+        <radialGradient id="pp-ball" cx="35%" cy="35%" r="65%">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="40" stopColor="#ffe4b8" />
+          <stop offset="100%" stopColor="#e47b1a" />
+        </radialGradient>
+      </defs>
+
+      {/* Retro bricks at top */}
+      <g>
+        <rect x="4" y="5" width="6" height="3" rx="0.5" fill="#ffa133" stroke="#222" strokeWidth="0.5" />
+        <rect x="11" y="5" width="6" height="3" rx="0.5" fill="#666666" stroke="#222" strokeWidth="0.5" />
+        <rect x="18" y="5" width="6" height="3" rx="0.5" fill="#ffa133" stroke="#222" strokeWidth="0.5" />
+        <rect x="25" y="5" width="4" height="3" rx="0.5" fill="#666666" stroke="#222" strokeWidth="0.5" />
+
+        <rect x="4" y="9" width="5" height="3" rx="0.5" fill="#666666" stroke="#222" strokeWidth="0.5" />
+        <rect x="10" y="9" width="6" height="3" rx="0.5" fill="#e47b1a" stroke="#222" strokeWidth="0.5" />
+        <rect x="17" y="9" width="6" height="3" rx="0.5" fill="#666666" stroke="#222" strokeWidth="0.5" />
+        <rect x="24" y="9" width="5" height="3" rx="0.5" fill="#e47b1a" stroke="#222" strokeWidth="0.5" />
+      </g>
+
+      {/* Ball trail & Glowing Ball */}
+      <circle cx="16" cy="18" r="3.2" fill="url(#pp-ball)" stroke="#8e3d00" strokeWidth="0.6" />
+      <circle cx="15.2" cy="17.2" r="1" fill="#ffffff" opacity="0.8" />
+      <path d="M14 20.5 L11 23.5" stroke="#ffa133" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+
+      {/* Paddle at bottom */}
+      <g>
+        <rect
+          x="6"
+          y="24"
+          width="20"
+          height="4.5"
+          rx="1.5"
+          fill="url(#pp-paddle)"
+          stroke="#7a3400"
+          strokeWidth="0.7"
+        />
+        <rect x="7" y="24.6" width="18" height="1.2" rx="0.6" fill="#fff" opacity="0.45" />
+        <rect x="12" y="26.2" width="8" height="1.5" rx="0.5" fill="#ffffff" opacity="0.3" />
+      </g>
+    </svg>
+  );
+}
+

@@ -1,7 +1,7 @@
 "use client";
 
 import { readDesk } from "@/components/win7/desk";
-import { MediaPlayerIcon, RacerIcon } from "@/components/win7/icons";
+import { MediaPlayerIcon, PingPongIcon, RacerIcon } from "@/components/win7/icons";
 import { node } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 import { useWindowStore } from "@/store/windows";
@@ -65,12 +65,14 @@ export const SCREEN_RES_SIZE = { width: 560, height: 480 };
  */
 export const RACER_ID = "racer";
 export const RACER_TITLE = "Time Attack";
-/* Wide enough for the HUD to sit clear of the car, and short enough to open
-   whole on a 585px-tall browser window — the shape Ayushman actually reviews
-   at, where the desktop is only 545px once the taskbar has taken its 40. A
-   taller default just gets clamped and lands looking wrong. Maximise is right
-   there for anyone who wants more road. */
 export const RACER_SIZE = { width: 880, height: 520 };
+
+/**
+ * Ping Pong (Deparkanoid), the breakout arcade game.
+ */
+export const PINGPONG_ID = "pingpong";
+export const PINGPONG_TITLE = "Ping Pong";
+export const PINGPONG_SIZE = { width: 880, height: 540 };
 
 /** Control Panel Home — the category grid, opened from the Start menu. */
 export const CONTROL_PANEL_ID = "controlpanel";
@@ -90,6 +92,7 @@ export const PDF_SIZE = { width: 780, height: 680 };
 export const CAPTION_ICONS: Record<string, (props: { className?: string }) => React.ReactElement> = {
   [WMP_ID]: MediaPlayerIcon,
   [RACER_ID]: RacerIcon,
+  [PINGPONG_ID]: PingPongIcon,
 };
 
 /** The file a `photos:` or `pdf:` window is showing. */
@@ -139,6 +142,11 @@ export function launchWindow(id: string) {
 
   if (id === RACER_ID) {
     open(id, { title: RACER_TITLE, ...RACER_SIZE, desk });
+    return;
+  }
+
+  if (id === PINGPONG_ID) {
+    open(id, { title: PINGPONG_TITLE, ...PINGPONG_SIZE, desk });
     return;
   }
 

@@ -11,6 +11,7 @@ import { Notepad } from "@/components/win7/Notepad";
 import { PdfViewer } from "@/components/win7/PdfViewer";
 import { Personalize } from "@/components/win7/Personalize";
 import { PhotoViewer } from "@/components/win7/PhotoViewer";
+import { PingPong } from "@/components/win7/pingpong/PingPong";
 import { Racer } from "@/components/win7/racer/Racer";
 import { ScreenResolution } from "@/components/win7/ScreenResolution";
 import { Terminal } from "@/components/win7/Terminal";
@@ -24,6 +25,7 @@ import {
   PDF_PREFIX,
   PERSONALIZE_ID,
   PHOTOS_PREFIX,
+  PINGPONG_ID,
   RACER_ID,
   SCREEN_RES_ID,
   TERMINAL_ID,
@@ -50,6 +52,7 @@ function contentFor(win: OpenWindow) {
   if (id === NOTEPAD_ID) return <Notepad windowId={id} />;
   if (id === WMP_ID) return <MediaPlayer />;
   if (id === RACER_ID) return <Racer />;
+  if (id === PINGPONG_ID) return <PingPong />;
   if (id === PDF_ID) return <PdfViewer />;
   if (id === PERSONALIZE_ID) return <Personalize />;
   if (id === SCREEN_RES_ID) return <ScreenResolution />;
