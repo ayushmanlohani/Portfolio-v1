@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   WALLPAPERS,
   LIVE_WALLPAPERS,
@@ -36,6 +38,13 @@ export function Personalize() {
 
   const selected = pending ?? current;
 
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const matches = (entry: WallpaperEntry) => !q || entry.label.toLowerCase().includes(q);
+  const staticMatches = WALLPAPERS.filter(matches);
+  const liveMatches = LIVE_WALLPAPERS.filter(matches);
+  const noResults = q.length > 0 && staticMatches.length === 0 && liveMatches.length === 0;
+
   const tile = (entry: WallpaperEntry) => (
     <button
       type="button"
@@ -65,7 +74,14 @@ export function Personalize() {
         </div>
 
         <div className="ex-search">
-          <span className="ex-search-text">Search Control Panel</span>
+          <input
+            type="text"
+            className="ex-search-input"
+            placeholder="Search Control Panel"
+            aria-label="Search Control Panel"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
           <SearchIcon className="ex-icon ex-search-icon" />
         </div>
       </div>
@@ -73,19 +89,29 @@ export function Personalize() {
       <div className="cp-body">
         <h1 className="cp-title">Change the wallpaper on your computer</h1>
 
-        <section>
-          <h2 className="cp-group-heading">
-            Static Wallpaper <span className="cp-count">({WALLPAPERS.length})</span>
-          </h2>
-          <div className="cp-themes">{WALLPAPERS.map(tile)}</div>
-        </section>
+        {noResults ? (
+          <p className="ex-empty">No results found for &ldquo;{query.trim()}&rdquo;.</p>
+        ) : (
+          <>
+            {staticMatches.length > 0 && (
+              <section>
+                <h2 className="cp-group-heading">
+                  Static Wallpaper <span className="cp-count">({staticMatches.length})</span>
+                </h2>
+                <div className="cp-themes">{staticMatches.map(tile)}</div>
+              </section>
+            )}
 
-        <section>
-          <h2 className="cp-group-heading">
-            Live Wallpaper <span className="cp-count">({LIVE_WALLPAPERS.length})</span>
-          </h2>
-          <div className="cp-themes">{LIVE_WALLPAPERS.map(tile)}</div>
-        </section>
+            {liveMatches.length > 0 && (
+              <section>
+                <h2 className="cp-group-heading">
+                  Live Wallpaper <span className="cp-count">({liveMatches.length})</span>
+                </h2>
+                <div className="cp-themes">{liveMatches.map(tile)}</div>
+              </section>
+            )}
+          </>
+        )}
       </div>
 
       {confirming && (
