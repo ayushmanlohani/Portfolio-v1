@@ -10,8 +10,9 @@ import { useWindowStore } from "@/store/windows";
  * Windows Photo Viewer.
  *
  * The menu strip across the top and the floating pill of controls along the
- * bottom, in that order left to right: zoom, fit to window, previous,
- * slide show, next, rotate counter-clockwise, rotate clockwise, delete.
+ * bottom, in that order left to right: zoom, fit-to-window/actual-size
+ * toggle, previous, slide show, next, rotate counter-clockwise, rotate
+ * clockwise, delete.
  *
  * Two things behave the way Windows does rather than the way a web page
  * usually would. Zoom sits at "fit to window" until you touch it, and the
@@ -282,11 +283,12 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
           <button
             type="button"
             className="pv-btn"
-            aria-label="Fit to window"
-            onClick={() => {
-              setZoom(null);
-              setAngle(0);
-            }}
+            aria-label={zoom === null ? "Actual size" : "Fit to window"}
+            // A no-op reset to "fit" when already fit looks broken — nothing
+            // on screen moves. Toggling to actual size instead means the
+            // button always visibly does something, same as double-clicking
+            // the picture does.
+            onClick={() => setZoom((z) => (z === null ? 1 : null))}
           >
             <svg {...ICON}>
               <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" {...STROKE} />
