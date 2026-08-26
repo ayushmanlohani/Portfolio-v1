@@ -1,6 +1,6 @@
 "use client";
 
-import { launchWindow, PERSONALIZE_ID, PHOTOS_PREFIX } from "@/components/win7/apps";
+import { launchWindow, PERSONALIZE_ID, PHOTOS_PREFIX, SCREEN_RES_ID } from "@/components/win7/apps";
 import {
   ClockRegionIcon,
   ComputerIcon,
@@ -75,7 +75,7 @@ function categories(): Category[] {
       title: "Appearance and Personalization",
       links: [
         { label: "Change the desktop background", onClick: () => launchWindow(PERSONALIZE_ID) },
-        { label: "Adjust screen resolution" },
+        { label: "Adjust screen resolution", onClick: () => launchWindow(SCREEN_RES_ID) },
       ],
     },
     {
