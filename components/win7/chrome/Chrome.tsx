@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { Clouds } from "@/components/win7/clouds/Clouds";
 import { SentinelLanding } from "@/components/win7/sentinel/SentinelLanding";
-import { GOOGLE, SENTINEL, UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
+import { AboutMeLanding } from "@/components/win7/aboutme/AboutMeLanding";
+import { ABOUTME, GOOGLE, SENTINEL, UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
 import { useWindowStore } from "@/store/windows";
 
 import {
@@ -67,6 +68,7 @@ const STATIC_SHORTCUTS = [
 function bookmarkHue(site: { url: string }): string {
   if (site.url === UNITWISE.url) return "#d9662e";
   if (site.url === SENTINEL.url) return "#0d1b26";
+  if (site.url === ABOUTME.url) return "#F76240";
   if (site.url === GOOGLE.url) return "#4285f4";
   return "#5a5a5a";
 }
@@ -466,6 +468,8 @@ export function Chrome({ windowId }: { windowId: string }) {
       <div key={`${active?.id}-${reloadKey}`} className="relative min-h-0 flex-1">
         {active?.site?.url === SENTINEL.url ? (
           <SentinelLanding />
+        ) : active?.site?.url === ABOUTME.url ? (
+          <AboutMeLanding />
         ) : active?.site?.url === GOOGLE.url ? (
           <NewTabPage />
         ) : active?.site ? (

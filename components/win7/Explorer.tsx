@@ -4,9 +4,9 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { Doc } from "@/components/win7/folders/Doc";
 import { CHROME_ID, launchWindow } from "@/components/win7/apps";
-import { contents, crumbIds, node, SENTINEL_FILE_ID, TREE, UNITWISE_FILE_ID } from "@/components/win7/fs";
+import { contents, crumbIds, node, SENTINEL_FILE_ID, TREE, UNITWISE_FILE_ID, ABOUTME_FILE_ID } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
-import { SENTINEL, UNITWISE, useChrome } from "@/store/chrome";
+import { SENTINEL, UNITWISE, ABOUTME, useChrome } from "@/store/chrome";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { RenameField } from "@/components/win7/RenameField";
@@ -435,6 +435,11 @@ function Contents({
                   launchWindow(CHROME_ID);
                   return;
                 }
+                if (single === ABOUTME_FILE_ID) {
+                  useChrome.getState().visit(ABOUTME);
+                  launchWindow(CHROME_ID);
+                  return;
+                }
                 if (node(single)?.kind === "file") {
                   launchWindow(single);
                   return;
@@ -445,6 +450,11 @@ function Contents({
               targets.forEach((cid) => {
                 if (cid === UNITWISE_FILE_ID || cid === SENTINEL_FILE_ID) {
                   useChrome.getState().visit(cid === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
+                  launchWindow(CHROME_ID);
+                  return;
+                }
+                if (cid === ABOUTME_FILE_ID) {
+                  useChrome.getState().visit(ABOUTME);
                   launchWindow(CHROME_ID);
                   return;
                 }
@@ -461,6 +471,11 @@ function Contents({
               // tab first so Chrome comes up already on it.
               if (childId === UNITWISE_FILE_ID || childId === SENTINEL_FILE_ID) {
                 useChrome.getState().visit(childId === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
+                launchWindow(CHROME_ID);
+                return;
+              }
+              if (childId === ABOUTME_FILE_ID) {
+                useChrome.getState().visit(ABOUTME);
                 launchWindow(CHROME_ID);
                 return;
               }

@@ -149,6 +149,9 @@ export const SENTINEL_FILE_ID = "projects/sentinel/sentinel.interactive";
 export const UNITWISE_TXT_ID = "projects/unitwise/unitwise.txt";
 export const SENTINEL_TXT_ID = "projects/sentinel/sentinel.txt";
 
+/** About Me's interactive page, sitting alongside its txt file. */
+export const ABOUTME_FILE_ID = "about/aboutme.interactive";
+
 /** About Me and Contact, each now the one file inside its folder rather
  *  than something the folder draws in place of a listing. */
 export const ABOUT_TXT_ID = "about/about.txt";
@@ -160,7 +163,7 @@ export const CONTACT_TXT_ID = "contact/contact.txt";
 // themselves are.
 const EXTRA_CHILDREN: Record<string, string[]> = {
   projects: ["projects/unitwise", "projects/sentinel"],
-  about: [ABOUT_TXT_ID],
+  about: [ABOUT_TXT_ID, ABOUTME_FILE_ID],
   contact: [CONTACT_TXT_ID],
 };
 
@@ -422,6 +425,13 @@ const NODE_LIST: FsNode[] = [
     Icon: TextFileIcon,
     kind: "file",
     type: "Text Document",
+  },
+  {
+    id: ABOUTME_FILE_ID,
+    label: "aboutme.interactive",
+    Icon: ChromeIcon,
+    kind: "folder",
+    type: "Chrome HTML Document",
   },
   {
     id: CONTACT_TXT_ID,

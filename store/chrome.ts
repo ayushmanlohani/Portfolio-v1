@@ -21,6 +21,7 @@ export type Site = { url: string; title: string };
  */
 export const UNITWISE: Site = { url: "unitwise.interactive", title: "Unitwise" };
 export const SENTINEL: Site = { url: "sentinel.interactive", title: "RBI Sentinel" };
+export const ABOUTME: Site = { url: "aboutme.interactive", title: "About Me" };
 /** The New Tab page itself, bookmarkable as "Google". */
 export const GOOGLE: Site = { url: "google.com", title: "Google" };
 
@@ -63,7 +64,7 @@ type ChromeState = {
 export const useChrome = create<ChromeState>((set) => ({
   tabs: [blank()],
   activeId: 0,
-  bookmarks: [UNITWISE, SENTINEL],
+  bookmarks: [UNITWISE, SENTINEL, ABOUTME],
 
   select: (id) => set({ activeId: id }),
 

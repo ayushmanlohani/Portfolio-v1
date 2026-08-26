@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, unregisterFile } from "@/components/win7/fs";
+import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, ABOUTME_FILE_ID, unregisterFile } from "@/components/win7/fs";
 import { CHROME_ID, launchWindow, PERSONALIZE_ID, SCREEN_RES_ID } from "@/components/win7/apps";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
-import { SENTINEL, UNITWISE, useChrome } from "@/store/chrome";
+import { SENTINEL, UNITWISE, ABOUTME, useChrome } from "@/store/chrome";
 import { type IconSize, type SortMode, useDesktopView } from "@/store/desktopView";
 import { useFiles } from "@/store/files";
 import { useFolders } from "@/store/folders";
@@ -378,6 +378,11 @@ export function DesktopContextMenu({
       ids.forEach((cid) => {
         if (cid === UNITWISE_FILE_ID || cid === SENTINEL_FILE_ID) {
           useChrome.getState().visit(cid === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
+          launchWindow(CHROME_ID);
+          return;
+        }
+        if (cid === ABOUTME_FILE_ID) {
+          useChrome.getState().visit(ABOUTME);
           launchWindow(CHROME_ID);
           return;
         }
