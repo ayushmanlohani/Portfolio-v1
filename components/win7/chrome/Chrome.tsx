@@ -141,8 +141,38 @@ function TabStrip({
   onClose: (id: number) => void;
   onAdd: () => void;
 }) {
+  const stripRef = useRef<HTMLDivElement>(null);
+  const [stripW, setStripW] = useState(0);
+
+  useEffect(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const update = () => setStripW(el.getBoundingClientRect().width);
+    update();
+    const ro = new ResizeObserver(() => update());
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  // Real Chrome: full 186px until strip would overflow, then shrink fluidly.
+  // Available = strip width minus the 6px left + 116px right padding that keeps
+  // the caption buttons (min/max/close) clear. Tabs overlap by 8px, nub is
+  // 42px + 14px gap = 56px.
+  const TAB_MAX = 186;
+  const TAB_MIN = 48;
+  const OVERLAP = 8;
+  const NUB_TOTAL = 56;
+  const n = tabs.length;
+  const available = Math.max(0, stripW - 6 - 116);
+  const ideal = n > 0 ? (available - NUB_TOTAL + (n - 1) * OVERLAP) / n : TAB_MAX;
+  const tabW = stripW === 0 ? TAB_MAX : Math.max(TAB_MIN, Math.min(TAB_MAX, Math.floor(ideal)));
+
   return (
-    <div className="w7-drag flex h-[30px] shrink-0 items-end pl-[6px] pr-[116px]">
+    <div ref={stripRef} className="w7-drag flex h-[30px] shrink-0 items-end overflow-hidden pl-[6px] pr-[116px]">
       {tabs.map((tab) => {
         const active = tab.id === activeId;
         return (
@@ -152,19 +182,27 @@ function TabStrip({
             // Tabs overlap by the width of their slant, so the leans interlock
             // instead of leaving a wedge of frame between every pair. The outer
             // div is the 1px outline; clip-path would eat a real border.
-            style={{ clipPath: TAB_CLIP, marginRight: -8, zIndex: active ? 2 : 1 }}
-            className="group h-[25px] w-[186px] shrink-0 cursor-pointer bg-[#6d82a0] px-px pt-px"
+            style={{
+              clipPath: TAB_CLIP,
+              marginRight: -8,
+              zIndex: active ? 2 : 1,
+              width: tabW,
+              minWidth: tabW,
+              maxWidth: tabW,
+              transition: "width 150ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+            }}
+            className="group flex h-[25px] shrink-0 cursor-pointer bg-[#6d82a0] px-px pt-px"
           >
             <div
               style={{ clipPath: TAB_CLIP }}
-              className={`flex h-full items-center gap-[5px] px-[6px] text-[12px] ${
+              className={`flex h-full w-full min-w-0 items-center gap-[5px] overflow-hidden px-[6px] text-[12px] ${
                 active
                   ? "bg-gradient-to-b from-[#fcfcfc] to-[#f0f0f0] text-[#1a1a1a]"
                   : "bg-gradient-to-b from-[#e3eaf3] to-[#c6d3e3] text-[#3d4652] group-hover:from-[#f2f6fa] group-hover:to-[#dae3ee]"
               }`}
             >
               <ChromeMarkIcon className="ml-[7px] h-4 w-4 shrink-0" />
-              <span className="flex-1 truncate">{tab.site?.title ?? "New Tab"}</span>
+              <span className="min-w-0 flex-1 truncate">{tab.site?.title ?? "New Tab"}</span>
               <button
                 type="button"
                 aria-label="Close tab"
