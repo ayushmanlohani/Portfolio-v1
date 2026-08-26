@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, unregisterFile } from "@/components/win7/fs";
-import { CHROME_ID, launchWindow, PERSONALIZE_ID } from "@/components/win7/apps";
+import { CHROME_ID, launchWindow, PERSONALIZE_ID, SCREEN_RES_ID } from "@/components/win7/apps";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
 import { SENTINEL, UNITWISE, useChrome } from "@/store/chrome";
 import { type IconSize, type SortMode, useDesktopView } from "@/store/desktopView";
@@ -83,7 +83,8 @@ type Action =
   | "pin"
   | "unpin"
   | "close"
-  | "personalize";
+  | "personalize"
+  | "screenres";
 
 /** Bare desktop. Gadgets was removed on request. */
 const DESKTOP_ENTRIES: Entry[] = [
@@ -96,7 +97,7 @@ const DESKTOP_ENTRIES: Entry[] = [
   { kind: "sep" },
   { kind: "item", label: "New", submenu: true, opens: "new" },
   { kind: "sep" },
-  { kind: "item", label: "Screen resolution" },
+  { kind: "item", label: "Screen resolution", action: "screenres" },
   { kind: "item", label: "Personalize", action: "personalize" },
 ];
 
@@ -361,6 +362,10 @@ export function DesktopContextMenu({
     if (action === "refresh") onRefresh?.();
     if (action === "personalize") {
       launchWindow(PERSONALIZE_ID);
+      return;
+    }
+    if (action === "screenres") {
+      launchWindow(SCREEN_RES_ID);
       return;
     }
     if (!target) return;

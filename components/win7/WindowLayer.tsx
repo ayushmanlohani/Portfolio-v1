@@ -12,6 +12,7 @@ import { PdfViewer } from "@/components/win7/PdfViewer";
 import { Personalize } from "@/components/win7/Personalize";
 import { PhotoViewer } from "@/components/win7/PhotoViewer";
 import { Racer } from "@/components/win7/racer/Racer";
+import { ScreenResolution } from "@/components/win7/ScreenResolution";
 import { Terminal } from "@/components/win7/Terminal";
 import {
   CALC_ID,
@@ -24,6 +25,7 @@ import {
   PERSONALIZE_ID,
   PHOTOS_PREFIX,
   RACER_ID,
+  SCREEN_RES_ID,
   TERMINAL_ID,
   WMP_ID,
 } from "@/components/win7/apps";
@@ -50,6 +52,7 @@ function contentFor(win: OpenWindow) {
   if (id === RACER_ID) return <Racer />;
   if (id === PDF_ID) return <PdfViewer />;
   if (id === PERSONALIZE_ID) return <Personalize />;
+  if (id === SCREEN_RES_ID) return <ScreenResolution />;
   if (id === CONTROL_PANEL_ID) return <ControlPanel />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
   if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;

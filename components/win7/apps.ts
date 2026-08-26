@@ -52,6 +52,14 @@ export const PERSONALIZE_ID = "personalize";
 export const PERSONALIZE_SIZE = { width: 820, height: 600 };
 
 /**
+ * The desktop right-click menu's "Screen resolution" — informational only,
+ * reading real numbers off `window.screen` rather than actually resizing
+ * anything (the monitor always fills the viewport, see CLAUDE.md).
+ */
+export const SCREEN_RES_ID = "screenres";
+export const SCREEN_RES_SIZE = { width: 560, height: 480 };
+
+/**
  * Time Attack, the racing game. One window, opens on its own menu, and like
  * every other application here it is only ever its id.
  */
@@ -146,6 +154,11 @@ export function launchWindow(id: string) {
 
   if (id === PERSONALIZE_ID) {
     open(id, { title: "Personalization", ...PERSONALIZE_SIZE, desk });
+    return;
+  }
+
+  if (id === SCREEN_RES_ID) {
+    open(id, { title: "Screen Resolution", ...SCREEN_RES_SIZE, desk });
     return;
   }
 
