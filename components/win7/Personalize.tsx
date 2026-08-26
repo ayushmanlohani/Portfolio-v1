@@ -9,6 +9,7 @@ import {
   type WallpaperEntry,
 } from "@/store/wallpaper";
 
+import { launchWindow, CONTROL_PANEL_ID } from "@/components/win7/apps";
 import { NavArrowIcon, PersonalizeIcon, SearchIcon } from "@/components/win7/icons";
 
 function Thumb({ entry }: { entry: WallpaperEntry }) {
@@ -84,6 +85,12 @@ export function Personalize() {
           />
           <SearchIcon className="ex-icon ex-search-icon" />
         </div>
+      </div>
+
+      <div className="cp-seealso">
+        <button type="button" className="cp-seealso-link" onClick={() => launchWindow(CONTROL_PANEL_ID)}>
+          Check Control Panel for more options
+        </button>
       </div>
 
       <div className="cp-body">

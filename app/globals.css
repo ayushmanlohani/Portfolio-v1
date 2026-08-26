@@ -4561,6 +4561,26 @@ img.project-crest {
   background: #ffffff;
 }
 
+.cp-seealso {
+  display: flex;
+  justify-content: flex-end;
+  padding: calc(4 * var(--px)) calc(18 * var(--px)) 0;
+}
+
+.cp-seealso-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: calc(11 * var(--px));
+  color: #3f6ea5;
+  cursor: pointer;
+}
+
+.cp-seealso-link:hover {
+  text-decoration: underline;
+}
+
 .cp-body {
   flex: 1;
   min-height: 0;

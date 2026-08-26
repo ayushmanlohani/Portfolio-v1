@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ComputerIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
-import { SCREEN_RES_ID } from "@/components/win7/apps";
+import { CONTROL_PANEL_ID, launchWindow, SCREEN_RES_ID } from "@/components/win7/apps";
 import { type Scale, useDisplayScale } from "@/store/displayScale";
 import { useWallpaper } from "@/store/wallpaper";
 import { useWindowStore } from "@/store/windows";
@@ -141,6 +141,12 @@ export function ScreenResolution() {
           />
           <SearchIcon className="ex-icon ex-search-icon" />
         </div>
+      </div>
+
+      <div className="cp-seealso">
+        <button type="button" className="cp-seealso-link" onClick={() => launchWindow(CONTROL_PANEL_ID)}>
+          Check Control Panel for more options
+        </button>
       </div>
 
       <div className="cp-body">
