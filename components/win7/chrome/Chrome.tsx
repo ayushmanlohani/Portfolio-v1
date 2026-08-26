@@ -439,6 +439,8 @@ export function Chrome({ windowId }: { windowId: string }) {
     };
   }, [reset]);
 
+  const [reloadKey, setReloadKey] = useState(0);
+
   function onClose(id: number) {
     // Closing the last tab closes the browser, same as the real thing.
     if (tabs.length <= 1) {
@@ -450,6 +452,7 @@ export function Chrome({ windowId }: { windowId: string }) {
 
   function reload() {
     setLoading(true);
+    setReloadKey((k) => k + 1);
     window.setTimeout(() => setLoading(false), 500);
   }
 
@@ -460,7 +463,7 @@ export function Chrome({ windowId }: { windowId: string }) {
       {/* `relative` because a page can fill itself with `absolute inset-0` —
           both project pages do. Without it that anchors to .w7-body instead
           and the page covers the tabs and the toolbar. */}
-      <div className="relative min-h-0 flex-1">
+      <div key={`${active?.id}-${reloadKey}`} className="relative min-h-0 flex-1">
         {active?.site?.url === SENTINEL.url ? (
           <SentinelLanding />
         ) : active?.site?.url === GOOGLE.url ? (
