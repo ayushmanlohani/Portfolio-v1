@@ -4,21 +4,23 @@ import { useEffect, useState } from "react";
 
 import { ComputerIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { SCREEN_RES_ID } from "@/components/win7/apps";
+import { type Scale, useDisplayScale } from "@/store/displayScale";
 import { useWallpaper } from "@/store/wallpaper";
 import { useWindowStore } from "@/store/windows";
 
 /**
- * Control Panel's Screen Resolution page. Informational only — the monitor
- * fills the viewport by design (see CLAUDE.md), so there is no lower
- * resolution to actually switch to. Every number on it is read live from
- * `window.screen`, not invented.
+ * Control Panel's Screen Resolution page. The resolution/orientation/color
+ * fields are informational — the monitor fills the viewport by design (see
+ * CLAUDE.md), so there's no lower resolution to actually switch to — but DPI
+ * scaling is real: Apply pushes the chosen percentage into `--os-px` on the
+ * CRT (see Monitor.tsx), which resizes every OS measurement live.
  */
 
 type Reading = {
   resolution: string;
   available: string;
   colorDepth: string;
-  scaling: string;
+  browserScale: string;
 };
 
 function readScreen(): Reading {
@@ -35,15 +37,26 @@ function readScreen(): Reading {
     resolution: `${w} x ${h}`,
     available: `${aw} x ${ah}`,
     colorDepth: `${s.colorDepth}-bit`,
-    scaling: `${scale}%${scale === 100 ? "" : " (Custom)"}`,
+    browserScale: `${scale}%`,
   };
 }
+
+const SCALE_OPTIONS: { value: Scale; label: string }[] = [
+  { value: 1, label: "100% (Recommended)" },
+  { value: 1.25, label: "125%" },
+  { value: 1.5, label: "150%" },
+];
 
 export function ScreenResolution() {
   const close = useWindowStore((s) => s.close);
   const wallpaper = useWallpaper((s) => s.current);
+  const scale = useDisplayScale((s) => s.scale);
+  const setScale = useDisplayScale((s) => s.setScale);
   // Real screen values, not knowable at server-render time.
   const [reading, setReading] = useState<Reading | null>(null);
+  // Picking a size doesn't move the actual UI until Apply/OK, same as real
+  // Windows — it just previews as text next to the dropdown.
+  const [pending, setPending] = useState<Scale>(scale);
 
   useEffect(() => {
     setReading(readScreen());
@@ -51,6 +64,8 @@ export function ScreenResolution() {
     window.addEventListener("resize", onChange);
     return () => window.removeEventListener("resize", onChange);
   }, []);
+
+  const apply = () => setScale(pending);
 
   return (
     <div className="cp">
@@ -88,7 +103,7 @@ export function ScreenResolution() {
           <div className="sr-fields">
             <div className="sr-row">
               <span className="sr-label">Display:</span>
-              <span className="sr-value">1. Generic PnP Monitor</span>
+              <span className="sr-value">1. MULTISYNC</span>
             </div>
             <div className="sr-row">
               <span className="sr-label">Resolution:</span>
@@ -98,10 +113,6 @@ export function ScreenResolution() {
               <span className="sr-label">Orientation:</span>
               <span className="sr-value">Landscape</span>
             </div>
-            <div className="sr-row">
-              <span className="sr-label">Multiple displays:</span>
-              <span className="sr-value">Show desktop only on 1</span>
-            </div>
 
             <div className="sr-sep" />
 
@@ -110,30 +121,54 @@ export function ScreenResolution() {
               <span className="sr-value">{reading?.colorDepth ?? "—"}</span>
             </div>
             <div className="sr-row">
-              <span className="sr-label">Display scaling:</span>
-              <span className="sr-value">{reading?.scaling ?? "—"}</span>
+              <span className="sr-label">Browser scaling:</span>
+              <span className="sr-value">{reading?.browserScale ?? "—"}</span>
             </div>
             <div className="sr-row">
               <span className="sr-label">Available area:</span>
               <span className="sr-value">{reading?.available ?? "—"}</span>
             </div>
+
+            <div className="sr-sep" />
+
+            <div className="sr-row">
+              <span className="sr-label">Make text larger:</span>
+              <select
+                className="sr-select"
+                value={pending}
+                onChange={(e) => setPending(Number(e.target.value) as Scale)}
+              >
+                {SCALE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         <p className="sr-note">
-          These values are read live from this monitor. Windows lets you make text and other
-          items larger or smaller by changing the resolution.
+          The resolution and color fields above are read live from this monitor, informational
+          only. &ldquo;Make text larger&rdquo; is real - Apply or OK actually resizes the desktop.
         </p>
       </div>
 
       <div className="sr-buttons">
-        <button type="button" className="win7-dialog-btn" onClick={() => close(SCREEN_RES_ID)}>
+        <button
+          type="button"
+          className="win7-dialog-btn"
+          onClick={() => {
+            apply();
+            close(SCREEN_RES_ID);
+          }}
+        >
           OK
         </button>
         <button type="button" className="win7-dialog-btn" onClick={() => close(SCREEN_RES_ID)}>
           Cancel
         </button>
-        <button type="button" className="win7-dialog-btn" disabled>
+        <button type="button" className="win7-dialog-btn" disabled={pending === scale} onClick={apply}>
           Apply
         </button>
       </div>

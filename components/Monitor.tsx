@@ -1,3 +1,7 @@
+"use client";
+
+import { useDisplayScale } from "@/store/displayScale";
+
 /**
  * The beige CRT the whole site lives inside. Children render into the glass;
  * this component owns nothing but the plastic.
@@ -8,10 +12,14 @@
  *
  * `data-frame="off"` strips the plastic entirely — Windows edge to edge.
  * Switch it to "on" to bring the bezel and chin back.
+ *
+ * `--os-px` is overridden here from the DPI scaling picked in Screen
+ * Resolution — the one real, visible effect its Apply button has.
  */
 export function Monitor({ children }: { children: React.ReactNode }) {
+  const scale = useDisplayScale((s) => s.scale);
   return (
-    <div className="crt" data-frame="off">
+    <div className="crt" data-frame="off" style={{ "--os-px": `${scale}px` } as React.CSSProperties}>
       <div className="crt-body">
         <div className="crt-screen">
           {children}

@@ -4881,6 +4881,16 @@ img.project-crest {
   border-top: calc(1 * var(--px)) solid #d8e0e8;
 }
 
+.sr-select {
+  padding: calc(2 * var(--px)) calc(6 * var(--px));
+  border: calc(1 * var(--px)) solid #7a9bb5;
+  border-radius: calc(2 * var(--px));
+  background: #ffffff;
+  font: inherit;
+  font-size: calc(12 * var(--px));
+  color: #1a1a1a;
+}
+
 .sr-note {
   margin-top: calc(16 * var(--px));
   max-width: calc(420 * var(--px));
