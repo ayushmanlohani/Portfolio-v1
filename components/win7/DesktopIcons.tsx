@@ -295,6 +295,27 @@ export function DesktopIcons() {
     if (autoArrange) setLayout({});
   }, [autoArrange]);
 
+  // A New Folder (or a file Notepad just saved) isn't in DEFAULT_LAYOUT, so
+  // `computeCells` gives it the first free cell through its fallback scan —
+  // but that fallback is recomputed fresh on every render, not stored. Left
+  // alone, deleting or moving some OTHER icon frees up an earlier cell and
+  // the new folder silently drifts into it on the next render, which reads
+  // as it teleporting itself. This pins that first-computed cell into
+  // `layout` the moment it appears, exactly as if the user had dragged it
+  // there themselves — after which it only moves if they actually drag it.
+  useEffect(() => {
+    if (!grid.measured || autoArrange) return;
+    const unpinned = items.filter((id) => !layout[id] && !DEFAULT_LAYOUT[id]);
+    if (unpinned.length === 0) return;
+
+    setLayout((moved) => {
+      const cells = computeCells(moved, grid.rows, items);
+      const next = { ...moved };
+      for (const id of unpinned) next[id] = cells[id];
+      return next;
+    });
+  }, [items, layout, grid.measured, grid.rows, autoArrange]);
+
   // Turning Align to grid back on captures wherever freeform dragging left
   // every icon and settles each one into the nearest cell, same collision
   // avoidance a normal drop uses so two icons can't land on top of each
