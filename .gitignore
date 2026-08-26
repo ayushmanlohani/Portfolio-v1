@@ -51,3 +51,6 @@ CLAUDE.md
 .agents
 skills-lock.json
 graphify-out
+
+# local-only
+AGENTS.md
