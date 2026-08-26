@@ -137,27 +137,54 @@ const DEFAULT_ROWS = Math.max(...Object.values(DEFAULT_LAYOUT).map((cell) => cel
  * column-major fill — top to bottom, then across — which fits any height. It's
  * all-or-nothing on purpose: letting only the icons that don't fit fall back
  * would drop them on top of the ones that do.
+ *
+ * Anything left over after those two — a New Folder, a saved file, or (when
+ * the window's too short) every icon — doesn't get a slot computed from its
+ * own index. That ignored whatever the user had actually dragged elsewhere,
+ * so a new folder could land straight on top of a moved icon. Instead it
+ * scans the grid the way Windows fills a desktop, top to bottom then across,
+ * and takes the first cell nothing else already claimed.
  */
 function computeCells(moved: Layout, rows: number, items: readonly string[]): Layout {
   const cells: Layout = {};
   const fits = rows >= DEFAULT_ROWS;
+  const taken = new Set<string>();
+  const pending: string[] = [];
 
   // Every icon keeps its default slot whether or not it is currently on the
   // desktop, so deleting one does not shuffle the ones below it up a row.
   // DEFAULT_LAYOUT only names the eight fixed items — a file Notepad just
-  // saved isn't in it, so it falls through to the column-major position like
-  // everything does when the window's too short for the named arrangement.
-  items.forEach((id, i) => {
-    // `fits ? ... : undefined` rather than `fits && ...`: `??` only falls
-    // through on null and undefined, so a `false` from `&&` would be taken as
-    // a real answer and every icon would end up with no cell at all — which
-    // rendered as translate(NaNpx, NaNpx) and stacked the whole desktop in the
-    // top-left corner on any window too short for the named arrangement.
-    cells[id] =
-      moved[id] ??
-      (fits ? DEFAULT_LAYOUT[id] : undefined) ??
-      { c: Math.floor(i / rows), r: i % rows };
+  // saved isn't in it, so it goes to `pending` like everything does when the
+  // window's too short for the named arrangement.
+  items.forEach((id) => {
+    const explicit = moved[id] ?? (fits ? DEFAULT_LAYOUT[id] : undefined);
+    if (explicit) {
+      cells[id] = explicit;
+      taken.add(`${explicit.c},${explicit.r}`);
+    } else {
+      pending.push(id);
+    }
   });
+
+  let c = 0;
+  let r = 0;
+  const nextFreeCell = (): Cell => {
+    while (taken.has(`${c},${r}`)) {
+      r++;
+      if (r >= rows) {
+        r = 0;
+        c++;
+      }
+    }
+    return { c, r };
+  };
+
+  pending.forEach((id) => {
+    const cell = nextFreeCell();
+    cells[id] = cell;
+    taken.add(`${cell.c},${cell.r}`);
+  });
+
   return cells;
 }
 
