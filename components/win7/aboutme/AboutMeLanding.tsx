@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Caveat, IBM_Plex_Mono } from "next/font/google";
+import { gsap } from "gsap";
 import MouseEffects from "./MouseEffects";
 
 /* ─── Fonts ─── Jackie uses Historia Sky Script 85px + IBM Plex Mono everywhere.
@@ -650,16 +651,12 @@ const RECENT_PROJECTS = [
     githubUrl: "https://github.com/ayushmanlohani/Unitwise",
     iconBg: "transparent",
     iconImg: "/letterbox/unitwise-logo.png",
+    images: [
+      "/letterbox/projects/unitwise-a.png",
+      "/letterbox/projects/unitwise-b.png",
+      "/letterbox/projects/unitwise-c.png",
+    ],
     accent: "#10B981",
-    desktop: {
-      title: "All documents",
-      tableRows: [
-        { id: "#17751", status: "Indexed", statusColor: "#10B981", statusBg: "#E6FBF0", size: "14.20 MB", name: "Bishop_PRML.pdf", date: "24 Aug, 2024" },
-        { id: "#17752", status: "Active RAG", statusColor: "#D97706", statusBg: "#FEF3C7", size: "21.50 MB", name: "Goodfellow_DL.pdf", date: "22 Aug, 2024" },
-        { id: "#17753", status: "Synced", statusColor: "#10B981", statusBg: "#E6FBF0", size: "4.80 MB", name: "LU_Curriculum_AI.pdf", date: "18 Aug, 2024" },
-        { id: "#17754", status: "Cached", statusColor: "#3B82F6", statusBg: "#EFF6FF", size: "18.20 MB", name: "Vector_Embeddings.bin", date: "15 Aug, 2024" },
-      ],
-    },
   },
   {
     id: "sentinel",
@@ -670,17 +667,23 @@ const RECENT_PROJECTS = [
     iconBg: "#E04824",
     iconText: "RBI",
     iconImg: "/letterbox/sentinel.png",
+    images: [
+      "/letterbox/projects/sentinel-a.png",
+      "/letterbox/projects/sentinel-b.png",
+      "/letterbox/projects/sentinel-c.png",
+    ],
     accent: "#F76240",
-    desktop: {
-      title: "Monetary releases",
-      tableRows: [
-        { id: "#08841", status: "Hawkish", statusColor: "#EF4444", statusBg: "#FEE2E2", size: "VIX +4.2%", name: "MPC_Resolution_2024_06.pdf", date: "07 Jun, 2024" },
-        { id: "#08842", status: "Neutral", statusColor: "#6B7280", statusBg: "#F3F4F6", size: "VIX -0.8%", name: "Governor_Statement_04.pdf", date: "05 Apr, 2024" },
-        { id: "#08843", status: "Dovish", statusColor: "#10B981", statusBg: "#E6FBF0", size: "VIX -2.4%", name: "Policy_Minutes_2024_02.pdf", date: "08 Feb, 2024" },
-        { id: "#08844", status: "Evaluated", statusColor: "#3B82F6", statusBg: "#EFF6FF", size: "R² = 0.91", name: "RandomForest_Model.pkl", date: "12 Jan, 2024" },
-      ],
-    },
   },
+];
+
+/** Where each of a project's 3 images lands in the hover cluster, and how far
+ *  out (in its own direction — left, top, right) it starts before sliding
+ *  and fading in. B leads from above but only by a small nudge, not from the
+ *  top of the screen — see the request this was built from. */
+const CLUSTER_LAYOUT = [
+  { dx: -85, dy: 18, rot: -7, z: 1, w: 175, h: 122, fromX: -140, fromY: 0 },
+  { dx: 25, dy: -22, rot: 2, z: 3, w: 210, h: 146, fromX: 0, fromY: -75 },
+  { dx: 100, dy: 30, rot: 8, z: 2, w: 175, h: 122, fromX: 140, fromY: 0 },
 ];
 
 function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
@@ -689,6 +692,34 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
   const activeProj = RECENT_PROJECTS.find((p) => p.id === activeId) || RECENT_PROJECTS[0];
   const isStacked = size.w > 0 && size.w < 880;
   const isNarrow = size.w > 0 && size.w < 600;
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Resting state (no hover) is empty — the cluster only assembles once a
+  // project tile is hovered, each image sliding in from its own side.
+  useEffect(() => {
+    const els = cardRefs.current;
+    if (els.some((el) => !el)) return;
+    gsap.killTweensOf(els);
+    els.forEach((el, i) => {
+      if (!el) return;
+      const l = CLUSTER_LAYOUT[i];
+      if (hoveredId) {
+        gsap.fromTo(
+          el,
+          { x: l.dx + l.fromX, y: l.dy + l.fromY, rotation: l.rot, opacity: 0 },
+          { x: l.dx, y: l.dy, rotation: l.rot, opacity: 1, duration: 0.6, delay: i * 0.08, ease: "power3.out" },
+        );
+      } else {
+        gsap.to(el, {
+          x: l.dx + l.fromX * 0.2,
+          y: l.dy + l.fromY * 0.2,
+          opacity: 0,
+          duration: 0.35,
+          ease: "power2.in",
+        });
+      }
+    });
+  }, [hoveredId]);
 
   return (
     <div
@@ -796,87 +827,53 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
         })}
       </div>
 
-      {/* Right Stage: Clean Desktop Orders/Data Table Window Mockup */}
+      {/* Right Stage: empty at rest — a cluster of the hovered project's own
+          screenshots assembles from three directions on hover. */}
       <div
         style={{
           position: "relative",
-          minHeight: isNarrow ? 240 : 280,
+          minHeight: isNarrow ? 220 : 280,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           overflow: "visible",
         }}
       >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 440,
-            background: "#FFFFFF",
-            borderRadius: 18,
-            border: "1px solid #EBE7DE",
-            boxShadow: "0 16px 44px rgba(62,62,66,0.11)",
-            padding: "16px 18px",
-            position: "relative",
-            transform: isStacked ? "none" : "rotate(0.5deg)",
-            transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
-          }}
-        >
-          {/* Top Bar with 3 macOS traffic light dots */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 10, borderBottom: "1px solid #F0ECE6" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF5F56", display: "inline-block" }} />
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#FFBD2E", display: "inline-block" }} />
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#27C93F", display: "inline-block" }} />
-              <span style={{ marginLeft: 8, fontSize: 11, fontFamily: "var(--font-jackie-mono)", fontWeight: 600, color: "#3E3E42" }}>
-                {activeProj.desktop.title}
-              </span>
-            </div>
-            <span style={{ fontSize: 9.5, fontFamily: "var(--font-jackie-mono)", color: "#8E8A83" }}>
-              1 — 4 • Export ▾
-            </span>
-          </div>
-
-          {/* Table Rows */}
-          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            {activeProj.desktop.tableRows.map((row) => (
+        <div style={{ position: "relative", width: 320, height: 220 }}>
+          {activeProj.images.map((src, i) => {
+            const l = CLUSTER_LAYOUT[i];
+            return (
               <div
-                key={row.id}
+                key={src}
+                ref={(el) => {
+                  cardRefs.current[i] = el;
+                }}
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  fontSize: 11,
-                  fontFamily: "var(--font-jackie-mono)",
-                  padding: "6px 8px",
-                  borderRadius: 6,
-                  background: "#FAF9F6",
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: l.w,
+                  height: l.h,
+                  marginLeft: -l.w / 2,
+                  marginTop: -l.h / 2,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(62,62,66,0.08)",
+                  boxShadow: "0 14px 34px rgba(62,62,66,0.16)",
+                  zIndex: l.z,
+                  opacity: 0,
+                  pointerEvents: "none",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                  <span style={{ color: "#8E8A83", fontSize: 9.5 }}>{row.id}</span>
-                  <span
-                    style={{
-                      fontSize: 9.5,
-                      fontWeight: 600,
-                      color: row.statusColor,
-                      background: row.statusBg,
-                      padding: "2px 7px",
-                      borderRadius: 999,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {row.status}
-                  </span>
-                  <span style={{ color: "#3E3E42", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {row.name}
-                  </span>
-                </div>
-                <span style={{ color: "#69645E", fontSize: 10, flexShrink: 0, marginLeft: 8 }}>
-                  {row.size}
-                </span>
+                <img
+                  src={src}
+                  alt={`${activeProj.name} preview`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                />
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
     </div>
