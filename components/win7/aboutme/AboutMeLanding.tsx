@@ -1105,7 +1105,71 @@ export function AboutMeLanding() {
             </div>
           </Draggable>
 
+          {/* Desk clutter — real PNGs from the Pictures folder, free to drag around */}
+          <Draggable targetX={260} targetY={40} rotate={-10} z={3} compact={compact} disabled={deskMode === "clean"}>
+            <img
+              src="/letterbox/pngs/cat-headphones.png"
+              alt=""
+              style={{ width: compact ? 84 : 110, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+            />
+          </Draggable>
 
+          <Draggable
+            targetX={300}
+            targetY={480}
+            rotate={14}
+            compact={compact}
+            disabled={deskMode === "clean"}
+          >
+            <img
+              src="/letterbox/pngs/coke-can.png"
+              alt=""
+              style={{ width: compact ? 76 : 100, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+            />
+          </Draggable>
+
+          <Draggable
+            targetX={size.w ? size.w - 420 : 720}
+            targetY={30}
+            rotate={9}
+            z={2}
+            compact={compact}
+            disabled={deskMode === "clean"}
+          >
+            <img
+              src="/letterbox/pngs/kitten.png"
+              alt=""
+              style={{ width: compact ? 84 : 110, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+            />
+          </Draggable>
+
+          <Draggable
+            targetX={size.w ? size.w - 380 : 760}
+            targetY={470}
+            rotate={-8}
+            compact={compact}
+            disabled={deskMode === "clean"}
+          >
+            <img
+              src="/letterbox/pngs/pow.png"
+              alt=""
+              style={{ width: compact ? 68 : 90, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+            />
+          </Draggable>
+
+          <Draggable
+            targetX={size.w ? size.w / 2 - 40 : 500}
+            targetY={20}
+            rotate={5}
+            compact={compact}
+            disabled={deskMode === "clean"}
+          >
+            <img
+              src="/letterbox/pngs/skull.png"
+              alt=""
+              style={{ width: compact ? 60 : 80, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+            />
+          </Draggable>
         </div>
 
         {/* Center stack – Jackie: script name + mono product design + tagline */}
@@ -1129,10 +1193,7 @@ export function AboutMeLanding() {
                 letterSpacing: "-0.02em",
                 whiteSpace: "nowrap",
                 display: "inline-block",
-                pointerEvents: "auto",
-                cursor: "default",
-                transformOrigin: "center center",
-                transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+                pointerEvents: "none",
               }}
             >
               <StaggerLetters text="Ayushman Lohani" delayStep={0.028} />
@@ -1312,9 +1373,6 @@ export function AboutMeLanding() {
           .mode-btn-wrapper:hover .mode-tooltip-right {
             opacity: 1;
             transform: translateY(-50%) translateX(0);
-          }
-          .hero-name-title:hover {
-            transform: scale(1.045);
           }
           .exp-card:hover {
             border-color: #D0CCC3;
