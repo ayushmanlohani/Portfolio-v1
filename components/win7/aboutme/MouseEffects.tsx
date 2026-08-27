@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { gsap } from "gsap";
 
 type Effect = { id: string; x: number; y: number };
@@ -132,22 +133,25 @@ export default function MouseEffects({
     transformOrigin: "center",
   });
 
-  return (
-    <>
-      <div ref={hostRef} style={{ display: "none" }} />
-      <div
-        style={{
-          position: "fixed",
-          left: bounds ? bounds.left : 0,
-          top: bounds ? bounds.top : 0,
-          width: bounds ? bounds.width : "100%",
-          height: bounds ? bounds.height : "100%",
-          pointerEvents: "none",
-          overflow: "hidden",
-          zIndex: 9999,
-        }}
-      >
-        {showLabel && (
+  // A `position: fixed` element is only fixed to the *viewport* when nothing
+  // between it and the root has a transform — react-rnd drags windows with
+  // `transform: translate()`, which turns "fixed" into "fixed to that
+  // window" instead. Portalling to `document.body` escapes every window's
+  // transform so the effect lands under the real cursor.
+  const overlay = (
+    <div
+      style={{
+        position: "fixed",
+        left: bounds ? bounds.left : 0,
+        top: bounds ? bounds.top : 0,
+        width: bounds ? bounds.width : "100%",
+        height: bounds ? bounds.height : "100%",
+        pointerEvents: "none",
+        overflow: "hidden",
+        zIndex: 9999,
+      }}
+    >
+      {showLabel && (
           <div
             style={{
               position: "absolute",
@@ -668,7 +672,13 @@ export default function MouseEffects({
               ))}
             </div>
           ))}
-      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div ref={hostRef} style={{ display: "none" }} />
+      {bounds && createPortal(overlay, document.body)}
     </>
   );
 }
