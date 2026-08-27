@@ -669,6 +669,7 @@ const RECENT_PROJECTS = [
     githubUrl: "https://github.com/ayushmanlohani/rbi-sentiment-volatility-forecasting",
     iconBg: "#E04824",
     iconText: "RBI",
+    iconImg: "/letterbox/sentinel.png",
     accent: "#F76240",
     desktop: {
       title: "Monetary releases",
