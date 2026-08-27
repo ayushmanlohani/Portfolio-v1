@@ -153,6 +153,8 @@ function StaggerLetters({
 }
 
 /* ─── Draggable desk prop ─── minimal grab physics, window-confined */
+export type EditValue = { x: number; y: number; rot: number; w: number };
+
 function Draggable({
   children,
   targetX,
@@ -162,6 +164,10 @@ function Draggable({
   compact,
   disabled = false,
   onFront,
+  editId,
+  baseWidth,
+  scaleFactor = 1,
+  onEditChange,
 }: {
   children: React.ReactNode;
   targetX: number;
@@ -172,9 +178,20 @@ function Draggable({
   disabled?: boolean;
   /** Claims the next z-index. Called whenever this prop is touched. */
   onFront?: () => number;
+  /** Set (with baseWidth + onEditChange) to turn on the ?edit=1 live-arrange
+   *  overlay: free dragging regardless of `disabled`, plus resize/rotate
+   *  handles, reporting values back in the same pre-scale units the JSX
+   *  ternaries are written in — copy-pasteable straight into the source. */
+  editId?: string;
+  baseWidth?: number;
+  scaleFactor?: number;
+  onEditChange?: (id: string, val: EditValue) => void;
 }) {
+  const editable = !!editId;
   const [pos, setPos] = useState({ x: targetX, y: targetY });
   const [drag, setDrag] = useState(false);
+  const [editRot, setEditRot] = useState(rotate);
+  const [editScale, setEditScale] = useState(1);
   // Nothing owns a fixed layer: `z` is only where this prop starts, and
   // touching it lifts it above every other prop for good.
   const [zi, setZi] = useState(z);
@@ -191,7 +208,31 @@ function Draggable({
     }
   }, [targetX, targetY]);
 
-  if (compact) {
+  // Draggable mounts before the ?edit=1 effect flips deskMode to "clean", so
+  // editRot's initial useState still snapshots the chaos-mode rotate prop.
+  // Resync once the real value arrives.
+  useEffect(() => {
+    setEditRot(rotate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rotate]);
+
+  useEffect(() => {
+    if (editable && editId && onEditChange && baseWidth) {
+      onEditChange(editId, {
+        x: Math.round(pos.x / scaleFactor),
+        y: Math.round(pos.y / scaleFactor),
+        rot: Math.round(editRot),
+        w: Math.round(baseWidth * editScale),
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editable, pos.x, pos.y, editRot, editScale]);
+
+  const disabledNow = editable ? false : disabled;
+  const displayRotate = editable ? editRot : rotate;
+  const displayScale = editable ? editScale : 1;
+
+  if (compact && !editable) {
     // on narrow window: flow as relative pills, no drag, no rotate craziness
     return (
       <div
@@ -207,11 +248,45 @@ function Draggable({
     );
   }
 
+  function startResize(e: React.PointerEvent) {
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startScale = editScale;
+    function move(ev: PointerEvent) {
+      const dx = ev.clientX - startX;
+      setEditScale(Math.max(0.2, startScale + (dx / (baseWidth || 100)) * 2));
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  function startRotate(e: React.PointerEvent) {
+    e.stopPropagation();
+    function move(ev: PointerEvent) {
+      const rect = ref.current!.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const angle = (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI + 90;
+      setEditRot(Math.round(angle));
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
   return (
     <div
       ref={ref}
+      className={editable ? "edit-item" : undefined}
       onPointerDown={(e) => {
-        if (disabled) return;
+        if (disabledNow) return;
         const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
         off.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         if (onFront) setZi(onFront());
@@ -219,7 +294,7 @@ function Draggable({
         (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
       }}
       onPointerMove={(e) => {
-        if (!drag || disabled) return;
+        if (!drag || disabledNow) return;
         const parent = (ref.current?.parentElement as HTMLElement)?.getBoundingClientRect();
         if (!parent) return;
         // Positions are offsets from the stage centre — where the name sits —
@@ -238,9 +313,9 @@ function Draggable({
         // minimised and restored.
         left: `calc(50% + ${pos.x}px)`,
         top: `calc(50% + ${pos.y}px)`,
-        transform: `rotate(${rotate}deg)`,
+        transform: `rotate(${displayRotate}deg) scale(${displayScale})`,
         zIndex: zi,
-        cursor: disabled ? "default" : drag ? "grabbing" : "grab",
+        cursor: disabledNow ? "default" : drag ? "grabbing" : "grab",
         touchAction: "none",
         userSelect: "none",
         pointerEvents: "auto",
@@ -250,6 +325,89 @@ function Draggable({
       }}
     >
       {children}
+      {editable && (
+        <>
+          <div className="edit-frame" />
+          <div className="edit-label">{editId}</div>
+          <div className="edit-handle resize" onPointerDown={startResize} />
+          <div className="edit-handle rotate" onPointerDown={startRotate} />
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Drag-only editable wrapper for the hero's text/button pieces — unlike
+ *  Draggable, position is a plain translate on top of normal document flow
+ *  (not stage-center-relative), so chaos mode's flex-stacked layout is
+ *  untouched when baseX/baseY are 0. Only active inside ?edit=1. */
+function EditableGroup({
+  id,
+  editMode,
+  baseX,
+  baseY,
+  k,
+  onEditChange,
+  children,
+}: {
+  id: string;
+  editMode: boolean;
+  baseX: number;
+  baseY: number;
+  k: number;
+  onEditChange: (id: string, val: EditValue) => void;
+  children: React.ReactNode;
+}) {
+  const [pos, setPos] = useState({ x: baseX, y: baseY });
+  const prevBase = useRef({ x: baseX, y: baseY });
+
+  useEffect(() => {
+    if (prevBase.current.x !== baseX || prevBase.current.y !== baseY) {
+      prevBase.current = { x: baseX, y: baseY };
+      setPos({ x: baseX, y: baseY });
+    }
+  }, [baseX, baseY]);
+
+  useEffect(() => {
+    if (editMode) onEditChange(id, { x: Math.round(pos.x / k), y: Math.round(pos.y / k), rot: 0, w: 0 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editMode, pos.x, pos.y]);
+
+  function startDrag(e: React.PointerEvent) {
+    if (!editMode) return;
+    const startX = e.clientX, startY = e.clientY;
+    const ox = pos.x, oy = pos.y;
+    function move(ev: PointerEvent) {
+      setPos({ x: ox + (ev.clientX - startX), y: oy + (ev.clientY - startY) });
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  return (
+    <div
+      className={editMode ? "edit-item" : undefined}
+      onPointerDown={startDrag}
+      style={{
+        position: "relative",
+        display: "inline-block",
+        transform: `translate(${pos.x}px, ${pos.y}px)`,
+        transition: editMode ? "none" : "transform 0.65s cubic-bezier(0.16,1,0.3,1)",
+        cursor: editMode ? "grab" : undefined,
+        pointerEvents: editMode ? "auto" : undefined,
+      }}
+    >
+      {children}
+      {editMode && (
+        <>
+          <div className="edit-frame" />
+          <div className="edit-label">{id}</div>
+        </>
+      )}
     </div>
   );
 }
@@ -926,7 +1084,24 @@ export function AboutMeLanding() {
   const zTop = useRef(20);
   const bringToFront = () => ++zTop.current;
 
-
+  // Live-arrange overlay: ?edit=1 turns every desk prop draggable/resizable/
+  // rotatable regardless of deskMode, reporting values in the same pre-scale
+  // units the JSX ternaries are written in. What you drag is the real DOM —
+  // no separate mockup to fall out of sync with.
+  const [editMode, setEditMode] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const on = params.get("edit") === "1";
+    setEditMode(on);
+    // Editing always targets one locked mode so flipping modes mid-edit never
+    // clobbers in-progress drags via the target-sync effect. ?edit=1 edits
+    // clean (default); ?edit=1&mode=chaos edits chaos — same tool, same
+    // reported x/y/rot/w, just reads/writes whichever ternary branch is active.
+    if (on) setDeskMode(params.get("mode") === "chaos" ? "chaos" : "clean");
+  }, []);
+  const [editValues, setEditValues] = useState<Record<string, EditValue>>({});
+  const handleEditChange = (id: string, val: EditValue) =>
+    setEditValues((prev) => ({ ...prev, [id]: val }));
 
   return (
     <div
@@ -995,11 +1170,15 @@ export function AboutMeLanding() {
         >
           {/* Sticky note */}
           <Draggable
-            targetX={px(deskMode === "chaos" ? -450 : -520)}
-            targetY={py(deskMode === "chaos" ? -270 : -180)}
-            rotate={deskMode === "chaos" ? -7 : 0}
+            targetX={px(deskMode === "chaos" ? -453 : 247)}
+            targetY={py(deskMode === "chaos" ? -304 : -71)}
+            rotate={deskMode === "chaos" ? -7 : 1}
             z={1}
             onFront={bringToFront}
+            editId={editMode ? "sticky-note" : undefined}
+            baseWidth={148}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1023,11 +1202,15 @@ export function AboutMeLanding() {
 
           {/* Vinyl player – Jackie music widget reinterpreted as coding lofi */}
           <Draggable
-            targetX={px(deskMode === "chaos" ? 273 : 406)}
-            targetY={py(deskMode === "chaos" ? -274 : -190)}
-            rotate={deskMode === "chaos" ? 3 : 0}
+            targetX={px(deskMode === "chaos" ? 287 : 127)}
+            targetY={py(deskMode === "chaos" ? -279 : -241)}
+            rotate={deskMode === "chaos" ? 7 : 0}
             z={2}
             onFront={bringToFront}
+            editId={editMode ? "vinyl" : undefined}
+            baseWidth={190}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1077,17 +1260,21 @@ export function AboutMeLanding() {
 
           {/* Polaroid – placeholder for Ayushman photo (AL monogram) */}
           <Draggable
-            targetX={px(deskMode === "chaos" ? -582 : -528)}
-            targetY={py(deskMode === "chaos" ? -126 : -30)}
+            targetX={px(deskMode === "chaos" ? -572 : -560)}
+            targetY={py(deskMode === "chaos" ? -186 : -37)}
             rotate={deskMode === "chaos" ? -12 : 0}
             z={3}
             onFront={bringToFront}
+            editId={editMode ? "polaroid" : undefined}
+            baseWidth={122}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
             <div
               style={{
-                width: compact ? 132 : 165,
+                width: compact ? 132 : deskMode === "clean" ? 159 : 165,
                 background: "#fff",
                 border: `1px solid ${T.border}`,
                 borderRadius: 12,
@@ -1136,11 +1323,15 @@ export function AboutMeLanding() {
 
           {/* Code snippet card */}
           <Draggable
-            targetX={px(deskMode === "chaos" ? 340 : 416)}
-            targetY={py(deskMode === "chaos" ? 50 : -30)}
+            targetX={px(deskMode === "chaos" ? 339 : -354)}
+            targetY={py(deskMode === "chaos" ? -2 : -55)}
             rotate={deskMode === "chaos" ? 8 : 0}
             z={4}
             onFront={bringToFront}
+            editId={editMode ? "code-snippet" : undefined}
+            baseWidth={182}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1174,7 +1365,19 @@ export function AboutMeLanding() {
           </Draggable>
 
           {/* Desk clutter — real PNGs from the Pictures folder, free to drag around */}
-          <Draggable targetX={px(368)} targetY={py(-170)} rotate={-20} z={7} onFront={bringToFront} compact={compact} disabled={deskMode === "clean"}>
+          <Draggable
+            targetX={px(deskMode === "chaos" ? 341 : -150)}
+            targetY={py(deskMode === "chaos" ? -250 : -147)}
+            rotate={deskMode === "chaos" ? -20 : 0}
+            z={7}
+            onFront={bringToFront}
+            editId={editMode ? "cat-headphones" : undefined}
+            baseWidth={242}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
+            compact={compact}
+            disabled={deskMode === "clean"}
+          >
             <img
               src="/letterbox/pngs/cat-headphones.png"
               alt=""
@@ -1185,11 +1388,15 @@ export function AboutMeLanding() {
           </Draggable>
 
           <Draggable
-            targetX={px(-300)}
-            targetY={py(80)}
-            rotate={14}
+            targetX={px(deskMode === "chaos" ? -383 : 441)}
+            targetY={py(deskMode === "chaos" ? 59 : -80)}
+            rotate={deskMode === "chaos" ? 14 : 0}
             z={5}
             onFront={bringToFront}
+            editId={editMode ? "coke-can" : undefined}
+            baseWidth={156}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1198,16 +1405,20 @@ export function AboutMeLanding() {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 76 : 190, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 76 : deskMode === "clean" ? 135 : 153, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
 
           <Draggable
-            targetX={px(-510)}
-            targetY={py(10)}
-            rotate={9}
+            targetX={px(deskMode === "chaos" ? -579 : 75)}
+            targetY={py(deskMode === "chaos" ? -50 : -89)}
+            rotate={deskMode === "chaos" ? 9 : 0}
             z={6}
             onFront={bringToFront}
+            editId={editMode ? "kitten" : undefined}
+            baseWidth={145}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1216,16 +1427,20 @@ export function AboutMeLanding() {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 84 : 242, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 84 : deskMode === "clean" ? 145 : 207, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
 
           <Draggable
-            targetX={px(183)}
-            targetY={py(80)}
-            rotate={5}
+            targetX={px(deskMode === "chaos" ? 231 : 412)}
+            targetY={py(deskMode === "chaos" ? 67 : -280)}
+            rotate={deskMode === "chaos" ? 5 : 0}
             z={8}
             onFront={bringToFront}
+            editId={editMode ? "skull" : undefined}
+            baseWidth={103}
+            scaleFactor={k}
+            onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1234,73 +1449,100 @@ export function AboutMeLanding() {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 60 : 117, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 60 : deskMode === "clean" ? 119 : 117, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
         </div>
 
-        {/* Center stack – Jackie: script name + mono product design + tagline */}
-        <div style={{ position: "relative", zIndex: 5, textAlign: "center", maxWidth: 760, width: "100%", pointerEvents: "none", userSelect: "none" }}>
+        {/* Center stack – Jackie: script name + mono product design + tagline.
+            Each piece below is wrapped in EditableGroup so ?edit=1 can drag it
+            independently; base offsets are chaos-mode-identical unless a
+            clean-mode override was hand-picked via that overlay. */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 5,
+            textAlign: "center",
+            maxWidth: 760,
+            width: "100%",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        >
           <Reveal delay={0.05}>
-            <div style={{ fontFamily: "var(--font-jackie-mono)", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: T.muted, fontWeight: 600, transform: "translateY(-55px)" }}>
-              University of Lucknow • B.Tech CSE (AI) 2023—2027
-            </div>
+            <EditableGroup
+              id="btech-line"
+              editMode={editMode}
+              baseX={deskMode === "clean" ? px(28) : px(0)}
+              baseY={deskMode === "clean" ? py(-153) : py(-65)}
+              k={k}
+              onEditChange={handleEditChange}
+            >
+              <div style={{ fontFamily: "var(--font-jackie-mono)", fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: T.muted, fontWeight: 600 }}>
+                University of Lucknow • B.Tech CSE (AI) 2023—2027
+              </div>
+            </EditableGroup>
           </Reveal>
 
           <div style={{ marginTop: narrow ? 12 : 18 }}>
             {/* Jackie 85px script – we use Caveat at 82-96px to echo hand-written */}
-            <div
-              className="hero-name-title"
-              style={{
-                fontFamily: "var(--font-jackie-script)",
-                fontSize: narrow ? "56px" : compact ? "66px" : "92px",
-                lineHeight: 0.9,
-                fontWeight: 700,
-                color: T.ink,
-                letterSpacing: "-0.02em",
-                whiteSpace: "nowrap",
-                display: "inline-block",
-                pointerEvents: "none",
-              }}
-            >
-              <StaggerLetters text="Ayushman Lohani" delayStep={0.028} />
-            </div>
-            <Reveal delay={0.28}>
+            <EditableGroup id="name" editMode={editMode} baseX={deskMode === "clean" ? px(-270) : px(0)} baseY={deskMode === "clean" ? py(-157) : py(-32)} k={k} onEditChange={handleEditChange}>
               <div
+                className="hero-name-title"
                 style={{
-                  marginTop: narrow ? 10 : 14,
-                  fontFamily: "var(--font-jackie-mono)",
-                  fontSize: narrow ? 13 : 15,
-                  fontWeight: 500,
-                  fontStyle: "italic",
-                  letterSpacing: "-0.01em",
-                  color: T.taupe,
-                  display: "inline-flex",
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "4px 8px",
+                  fontFamily: "var(--font-jackie-script)",
+                  fontSize: narrow ? "56px" : compact ? "66px" : "92px",
+                  lineHeight: 0.9,
+                  fontWeight: 700,
+                  color: T.ink,
+                  letterSpacing: "-0.02em",
+                  whiteSpace: "nowrap",
+                  display: "inline-block",
+                  pointerEvents: "none",
                 }}
               >
-                <span>“Interesting people are interested.”</span>
-                <span
+                <StaggerLetters text="Ayushman Lohani" delayStep={0.028} />
+              </div>
+            </EditableGroup>
+            <Reveal delay={0.28}>
+              <EditableGroup id="quote" editMode={editMode} baseX={deskMode === "clean" ? px(-227) : px(36)} baseY={deskMode === "clean" ? py(-158) : py(-44)} k={k} onEditChange={handleEditChange}>
+                <div
                   style={{
-                    fontStyle: "normal",
-                    fontSize: 11,
-                    color: T.muted,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    fontWeight: 600,
+                    marginTop: narrow ? 10 : 14,
+                    fontFamily: "var(--font-jackie-mono)",
+                    fontSize: narrow ? 13 : 15,
+                    fontWeight: 500,
+                    fontStyle: "italic",
+                    letterSpacing: "-0.01em",
+                    color: T.taupe,
+                    display: "inline-flex",
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "4px 8px",
                   }}
                 >
-                  — Anthony Bourdain
-                </span>
-              </div>
+                  <span>“Interesting people are interested.”</span>
+                  <span
+                    style={{
+                      fontStyle: "normal",
+                      fontSize: 11,
+                      color: T.muted,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      fontWeight: 600,
+                    }}
+                  >
+                    — Anthony Bourdain
+                  </span>
+                </div>
+              </EditableGroup>
             </Reveal>
           </div>
 
           {/* Chaos / Clean Mode Toggle – Sketch Buttons */}
           <Reveal delay={0.38}>
+            <EditableGroup id="buttons" editMode={editMode} baseX={0} baseY={0} k={k} onEditChange={handleEditChange}>
             <div
               style={{
                 marginTop: narrow ? 26 : 38,
@@ -1314,7 +1556,7 @@ export function AboutMeLanding() {
               <div className="mode-btn-wrapper">
                 <button
                   type="button"
-                  onClick={() => setDeskMode("chaos")}
+                  onClick={() => !editMode && setDeskMode("chaos")}
                   className={`mode-btn ${deskMode === "chaos" ? "active" : ""}`}
                   aria-label="Chaos mode"
                   style={{
@@ -1350,7 +1592,7 @@ export function AboutMeLanding() {
               <div className="mode-btn-wrapper">
                 <button
                   type="button"
-                  onClick={() => setDeskMode("clean")}
+                  onClick={() => !editMode && setDeskMode("clean")}
                   className={`mode-btn ${deskMode === "clean" ? "active" : ""}`}
                   aria-label="Clean mode"
                   style={{
@@ -1382,6 +1624,7 @@ export function AboutMeLanding() {
                 <div className="mode-tooltip mode-tooltip-right">clean mode</div>
               </div>
             </div>
+            </EditableGroup>
           </Reveal>
 
           <Reveal delay={0.58}>
@@ -1404,6 +1647,15 @@ export function AboutMeLanding() {
 
         <style>{`
           @keyframes j-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+          .edit-item{cursor:grab;}
+          .edit-item .edit-frame{position:absolute;inset:-6px;border:1.5px dashed transparent;border-radius:8px;pointer-events:none;transition:border-color .12s;}
+          .edit-item:hover .edit-frame{border-color:rgba(247,98,64,0.55);}
+          .edit-item .edit-label{position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);font-size:9.5px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:#F76240;white-space:nowrap;opacity:0;transition:opacity .12s;pointer-events:none;}
+          .edit-item:hover .edit-label{opacity:1;}
+          .edit-handle{position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #F76240;box-shadow:0 2px 6px rgba(0,0,0,0.15);opacity:0;transition:opacity .12s;}
+          .edit-item:hover .edit-handle{opacity:1;}
+          .edit-handle.resize{right:-14px;bottom:-14px;cursor:nwse-resize;}
+          .edit-handle.rotate{left:50%;top:-34px;transform:translateX(-50%);cursor:grab;background:#3E3E42;border-color:#3E3E42;}
           .mode-btn-wrapper { position: relative; display: inline-flex; }
           .mode-btn:hover { transform: rotate(7deg) scale(1.04); }
           .mode-btn:active { transform: rotate(4deg) scale(0.97); }
@@ -1761,6 +2013,168 @@ export function AboutMeLanding() {
         <span>Designed & built by Ayushman Lohani — inspired by jackiehu.design</span>
         <span style={{ color: T.ink, fontWeight: 600 }}>2026 • Lucknow, IN</span>
       </footer>
+
+      {editMode && <EditPanel values={editValues} />}
+    </div>
+  );
+}
+
+/** Live readout for the ?edit=1 overlay — drag/resize/rotate values from the
+ *  real Draggable instances, ready to paste into the clean-mode ternaries.
+ *  Starts collapsed to a small pill (it was sitting on top of the desk props
+ *  otherwise) and its own header is draggable so it can be parked anywhere. */
+function EditPanel({ values }: { values: Record<string, EditValue> }) {
+  const ids = ["btech-line", "name", "quote", "buttons", "sticky-note", "vinyl", "polaroid", "code-snippet", "cat-headphones", "coke-can", "kitten", "skull"];
+  const json = JSON.stringify(
+    ids.filter((id) => values[id]).map((id) => ({ id, ...values[id] })),
+    null,
+    2
+  );
+
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null); // null = default corner
+  const dragOff = useRef({ x: 0, y: 0 });
+
+  function startDrag(e: React.PointerEvent) {
+    const el = (e.currentTarget as HTMLElement).closest("[data-panel-root]") as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    dragOff.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    function move(ev: PointerEvent) {
+      setPos({ x: ev.clientX - dragOff.current.x, y: ev.clientY - dragOff.current.y });
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  const posStyle: React.CSSProperties = pos
+    ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" }
+    : { right: 16, top: 72, bottom: "auto", left: "auto" };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        data-panel-root
+        onClick={() => setOpen(true)}
+        style={{
+          position: "fixed",
+          ...posStyle,
+          zIndex: 999,
+          padding: "9px 16px",
+          borderRadius: 999,
+          border: "1px solid #E7E6DE",
+          background: "#3E3E42",
+          color: "#fff",
+          fontFamily: "var(--font-jackie-mono)",
+          fontSize: 11.5,
+          fontWeight: 600,
+          letterSpacing: "0.04em",
+          cursor: "pointer",
+          boxShadow: "0 8px 24px rgba(62,62,66,0.2)",
+        }}
+      >
+        Values &middot; {Object.keys(values).length}/{ids.length}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      data-panel-root
+      style={{
+        position: "fixed",
+        ...posStyle,
+        width: 240,
+        maxHeight: "70vh",
+        zIndex: 999,
+        background: "#FCF7F2",
+        border: "1px solid #E7E6DE",
+        borderRadius: 16,
+        boxShadow: "0 8px 28px rgba(62,62,66,0.14)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        fontFamily: "var(--font-jackie-mono)",
+      }}
+    >
+      <div
+        onPointerDown={startDrag}
+        style={{
+          padding: "10px 8px 10px 14px",
+          borderBottom: "1px solid #DEDEDE",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "#69645E",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "grab",
+          userSelect: "none",
+          touchAction: "none",
+        }}
+      >
+        <span>Live edit &middot; drag me</span>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => setOpen(false)}
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: "50%",
+            border: "1px solid #E7E6DE",
+            background: "#fff",
+            color: "#69645E",
+            fontSize: 13,
+            lineHeight: 1,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          &minus;
+        </button>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: 8, fontSize: 10.5, color: "#69645E" }}>
+        {ids.map((id) => {
+          const v = values[id];
+          return (
+            <div key={id} style={{ padding: "8px 8px", borderBottom: "1px solid #F0EEE8" }}>
+              <div style={{ fontWeight: 700, color: "#3E3E42", marginBottom: 3 }}>{id}</div>
+              {v ? (
+                <div>x:{v.x} y:{v.y} rot:{v.rot}&deg; w:{v.w}</div>
+              ) : (
+                <div>touch it to register</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ padding: 10, borderTop: "1px solid #DEDEDE" }}>
+        <button
+          type="button"
+          onClick={() => navigator.clipboard.writeText(json)}
+          style={{
+            width: "100%",
+            padding: "9px 12px",
+            borderRadius: 999,
+            border: "none",
+            background: "#3E3E42",
+            color: "#fff",
+            fontFamily: "var(--font-jackie-mono)",
+            fontSize: 11.5,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Copy JSON
+        </button>
+      </div>
     </div>
   );
 }
