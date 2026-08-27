@@ -39,7 +39,15 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const upd = () => setS({ w: el.clientWidth, h: el.clientHeight });
+    // A minimised window is `display:none`, so it measures 0×0. Keeping the
+    // last real measurement stops every desk prop from being repositioned
+    // (and any dragging the visitor did from being thrown away) each time the
+    // window is minimised and restored.
+    const upd = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w > 0 && h > 0) setS({ w, h });
+    };
     upd();
     const ro = new ResizeObserver(upd);
     ro.observe(el);
@@ -153,6 +161,7 @@ function Draggable({
   z = 1,
   compact,
   disabled = false,
+  onFront,
 }: {
   children: React.ReactNode;
   targetX: number;
@@ -161,9 +170,14 @@ function Draggable({
   z?: number;
   compact?: boolean;
   disabled?: boolean;
+  /** Claims the next z-index. Called whenever this prop is touched. */
+  onFront?: () => number;
 }) {
   const [pos, setPos] = useState({ x: targetX, y: targetY });
   const [drag, setDrag] = useState(false);
+  // Nothing owns a fixed layer: `z` is only where this prop starts, and
+  // touching it lifts it above every other prop for good.
+  const [zi, setZi] = useState(z);
   const off = useRef({ x: 0, y: 0 });
   const ref = useRef<HTMLDivElement>(null);
 
@@ -200,6 +214,7 @@ function Draggable({
         if (disabled) return;
         const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
         off.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        if (onFront) setZi(onFront());
         setDrag(true);
         (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
       }}
@@ -207,19 +222,24 @@ function Draggable({
         if (!drag || disabled) return;
         const parent = (ref.current?.parentElement as HTMLElement)?.getBoundingClientRect();
         if (!parent) return;
-        // parent is chaos container (position relative)
-        const nx = e.clientX - parent.left - off.current.x;
-        const ny = e.clientY - parent.top - off.current.y;
+        // Positions are offsets from the stage centre — where the name sits —
+        // so a drag has to be recorded the same way.
+        const nx = e.clientX - parent.left - off.current.x - parent.width / 2;
+        const ny = e.clientY - parent.top - off.current.y - parent.height / 2;
         setPos({ x: nx, y: ny });
       }}
       onPointerUp={() => setDrag(false)}
       onPointerCancel={() => setDrag(false)}
       style={{
         position: "absolute",
-        left: pos.x,
-        top: pos.y,
+        // Anchored to the centre of the stage in CSS rather than to a measured
+        // pixel value. The browser recomputes it on every resize, so the ring
+        // around the name keeps its shape and nothing drifts when the window is
+        // minimised and restored.
+        left: `calc(50% + ${pos.x}px)`,
+        top: `calc(50% + ${pos.y}px)`,
         transform: `rotate(${rotate}deg)`,
-        zIndex: drag ? 20 : z,
+        zIndex: zi,
         cursor: disabled ? "default" : drag ? "grabbing" : "grab",
         touchAction: "none",
         userSelect: "none",
@@ -891,6 +911,21 @@ export function AboutMeLanding() {
   const narrow = size.w > 0 && size.w < 600;
   const [deskMode, setDeskMode] = useState<"chaos" | "clean">("chaos");
 
+  // Every desk prop is an offset from the centre of the stage, which is exactly
+  // where the name sits — CSS does the centring, so there is no measurement to
+  // go stale. The offsets are tuned against the stage at its full 1200px width;
+  // on anything narrower the whole ring contracts by the same factor instead of
+  // flinging props off the edges.
+  const k = size.w ? Math.min(1, size.w / 1200) : 1;
+  const px = (off: number) => off * k;
+  const py = (off: number) => off * k;
+
+  // Touching a prop hands it the next number, so it lands above everything the
+  // visitor has not touched since. A ref, not state — the count itself never
+  // needs to re-render the whole desk, only the prop that just claimed it.
+  const zTop = useRef(20);
+  const bringToFront = () => ++zTop.current;
+
 
 
   return (
@@ -952,13 +987,19 @@ export function AboutMeLanding() {
             gap: compact ? 8 : undefined,
             pointerEvents: compact ? "auto" : "none",
             marginBottom: compact ? 18 : 0,
+            // Its own stacking context. However high a prop's z-index climbs as
+            // it is picked up, the whole desk stays one layer below the name —
+            // the text is the only thing locked to the top.
+            zIndex: 1,
           }}
         >
           {/* Sticky note */}
           <Draggable
-            targetX={deskMode === "chaos" ? 58 : 68}
-            targetY={deskMode === "chaos" ? 92 : 140}
+            targetX={px(deskMode === "chaos" ? -450 : -520)}
+            targetY={py(deskMode === "chaos" ? -270 : -180)}
             rotate={deskMode === "chaos" ? -7 : 0}
+            z={1}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -982,10 +1023,11 @@ export function AboutMeLanding() {
 
           {/* Vinyl player – Jackie music widget reinterpreted as coding lofi */}
           <Draggable
-            targetX={deskMode === "chaos" ? (size.w ? size.w - 248 : 820) : (size.w ? size.w - 240 : 830)}
-            targetY={deskMode === "chaos" ? 78 : 130}
+            targetX={px(deskMode === "chaos" ? 273 : 406)}
+            targetY={py(deskMode === "chaos" ? -274 : -190)}
             rotate={deskMode === "chaos" ? 3 : 0}
             z={2}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1035,15 +1077,17 @@ export function AboutMeLanding() {
 
           {/* Polaroid – placeholder for Ayushman photo (AL monogram) */}
           <Draggable
-            targetX={deskMode === "chaos" ? 72 : 72}
-            targetY={deskMode === "chaos" ? 320 : 290}
+            targetX={px(deskMode === "chaos" ? -582 : -528)}
+            targetY={py(deskMode === "chaos" ? -126 : -30)}
             rotate={deskMode === "chaos" ? -12 : 0}
+            z={3}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
             <div
               style={{
-                width: compact ? 132 : 168,
+                width: compact ? 132 : 165,
                 background: "#fff",
                 border: `1px solid ${T.border}`,
                 borderRadius: 12,
@@ -1052,17 +1096,39 @@ export function AboutMeLanding() {
                 pointerEvents: "auto",
               }}
             >
+              {/* ayush.png arrives as a 1421×1107 scan with a polaroid border
+                  already printed on it. Dropping it in whole would sit that
+                  border inside this card's own white frame, and letterboxing it
+                  would shrink him to a stamp. So the image is scaled until the
+                  photo *inside* its border fills this frame exactly — 874px of
+                  photo height stretched to 100% is 126.7% of the whole scan —
+                  and then slid left so his face, not the composition's middle,
+                  lands on the centre of the frame. */}
               <div
                 style={{
                   aspectRatio: "1.05 / 1",
                   background: "linear-gradient(180deg, #F3EFE8 0%, #EDE6DA 100%)",
                   borderRadius: 8,
-                  display: "grid",
-                  placeItems: "center",
                   border: "1px solid #EDE8D8",
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
-                <span style={{ fontFamily: "var(--font-jackie-script)", fontSize: compact ? 38 : 44, color: "#C9BFB0" }}>AL</span>
+                <img
+                  src="/letterbox/ayush.png"
+                  alt="Ayushman Lohani"
+                  draggable={false}
+                  onDragStart={(e) => e.preventDefault()}
+                  style={{
+                    position: "absolute",
+                    height: "127.2%",
+                    width: "auto",
+                    top: "-9.8%",
+                    left: "-22.4%",
+                    display: "block",
+                    maxWidth: "none",
+                  }}
+                />
               </div>
               <div style={{ marginTop: 10, fontSize: 11, letterSpacing: "0.10em", textTransform: "uppercase", color: T.muted, textAlign: "center" }}>Ayushman • 2026</div>
             </div>
@@ -1070,9 +1136,11 @@ export function AboutMeLanding() {
 
           {/* Code snippet card */}
           <Draggable
-            targetX={deskMode === "chaos" ? (size.w ? size.w - 220 : 860) : (size.w ? size.w - 230 : 850)}
-            targetY={deskMode === "chaos" ? 320 : 290}
+            targetX={px(deskMode === "chaos" ? 340 : 416)}
+            targetY={py(deskMode === "chaos" ? 50 : -30)}
             rotate={deskMode === "chaos" ? 8 : 0}
+            z={4}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1106,20 +1174,22 @@ export function AboutMeLanding() {
           </Draggable>
 
           {/* Desk clutter — real PNGs from the Pictures folder, free to drag around */}
-          <Draggable targetX={260} targetY={40} rotate={-10} z={3} compact={compact} disabled={deskMode === "clean"}>
+          <Draggable targetX={px(368)} targetY={py(-170)} rotate={-20} z={7} onFront={bringToFront} compact={compact} disabled={deskMode === "clean"}>
             <img
               src="/letterbox/pngs/cat-headphones.png"
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 84 : 110, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 84 : 242, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
 
           <Draggable
-            targetX={300}
-            targetY={480}
+            targetX={px(-300)}
+            targetY={py(80)}
             rotate={14}
+            z={5}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1128,15 +1198,16 @@ export function AboutMeLanding() {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 76 : 100, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 76 : 190, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
 
           <Draggable
-            targetX={size.w ? size.w - 420 : 720}
-            targetY={30}
+            targetX={px(-510)}
+            targetY={py(10)}
             rotate={9}
-            z={2}
+            z={6}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1145,30 +1216,16 @@ export function AboutMeLanding() {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 84 : 110, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 84 : 242, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
 
           <Draggable
-            targetX={size.w ? size.w - 380 : 760}
-            targetY={470}
-            rotate={-8}
-            compact={compact}
-            disabled={deskMode === "clean"}
-          >
-            <img
-              src="/letterbox/pngs/pow.png"
-              alt=""
-              draggable={false}
-              onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 68 : 90, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
-            />
-          </Draggable>
-
-          <Draggable
-            targetX={size.w ? size.w / 2 - 40 : 500}
-            targetY={20}
+            targetX={px(183)}
+            targetY={py(80)}
             rotate={5}
+            z={8}
+            onFront={bringToFront}
             compact={compact}
             disabled={deskMode === "clean"}
           >
@@ -1177,7 +1234,7 @@ export function AboutMeLanding() {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 60 : 80, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              style={{ width: compact ? 60 : 117, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
         </div>
@@ -1627,10 +1684,11 @@ export function AboutMeLanding() {
           }}
         >
           {[
-            "Hey — I'm Ayushman. Final-year CSE (AI) at University of Lucknow. I like things that people can actually click, break, and complain about.",
-            "Research side: lightweight YOLO, small models that run on not-small egos. I spend a lot of time pruning, distilling, and pretending eval is fun. RAG is the connective tissue — retrieval isn't a feature, it's the product.",
-            "Web side: React, Next.js, TypeScript. I rebuild marketing pages from scratch when I'm bored. Unitwise started because I pirated textbooks for mids and needed a bot that cites the page, not the hallucination. RBI Sentinel started because fiscal CSVs shouldn't need a decoder ring.",
-            "Outside the editor: Linux, Docker, Figma, VS Code, and a growing collection of half-finished side quests. If it's useful and a little stubborn, I probably shipped a v0.",
+            "Hey, I’m Ayushman. Final-year CSE (AI) at the University of Lucknow. I like building things that people can actually use, click, break, and complain about.",
+            "I work across AI/ML and web development, mostly around RAG, computer vision, smaller AI models, and building useful things around them. I like taking ideas out of notebooks and turning them into something you can actually try.",
+            "I’ve built things like Unitwise, an AI study tool, and RBI Sentinel, a project around sentiment and volatility forecasting. I also spend a questionable amount of time with different AI harnesses like Claude Code, Codex, and OpenCode.",
+            "If it’s useful and a little stubborn, I’ll probably build it. And if it works well enough, I’ve probably shipped a v0.",
+            "Other than that, I like taking photos and sometimes editing videos. If I’m not doing any of this, I’m probably playing guitar or flute, or cooking some random dish I saw an aunty make on Pinterest or Instagram."
           ].map((p, i) => (
             <Reveal key={i} delay={i * 0.06}>
               <p
