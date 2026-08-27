@@ -736,15 +736,19 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
         {RECENT_PROJECTS.map((proj) => {
           const isHovered = proj.id === hoveredId;
           return (
-            <div
+            <a
               key={proj.id}
+              href={proj.url}
+              target="_blank"
+              rel="noopener noreferrer"
               onMouseEnter={() => {
                 setHoveredId(proj.id);
                 setActiveId(proj.id);
               }}
               onMouseLeave={() => setHoveredId(null)}
-              onClick={() => window.open(proj.url, "_blank", "noopener,noreferrer")}
               style={{
+                textDecoration: "none",
+                color: "inherit",
                 background: "#FAF7F2",
                 border: "1px solid rgba(220, 216, 208, 0.6)",
                 borderRadius: 22,
@@ -822,7 +826,7 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
                   {proj.subtitle}
                 </div>
               </div>
-            </div>
+            </a>
           );
         })}
       </div>
