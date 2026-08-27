@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, ABOUTME_FILE_ID, unregisterFile } from "@/components/win7/fs";
 import { CHROME_ID, launchWindow, PERSONALIZE_ID, SCREEN_RES_ID } from "@/components/win7/apps";
@@ -166,12 +166,6 @@ type Target =
     Rename and Restore no longer go through a dialog; see `store/inlineEdit.ts`. */
 type ConfirmDialog = { ids: string[] };
 
-/** Roughly the menu's rendered box, used to flip it away from screen edges. */
-const MENU_W = 190;
-const MENU_H = 264;
-/** Height of one jump-list row — taller than a desktop row, it carries an icon. */
-const TASK_ROW = 30;
-
 export function DesktopContextMenu({
   onRefresh,
   onOpen,
@@ -210,6 +204,23 @@ export function DesktopContextMenu({
   // A closed top-level menu shouldn't reopen with a submenu already expanded.
   useEffect(() => {
     if (!at) setOpenSubmenu(null);
+  }, [at]);
+
+  // The menu opens at the cursor, but flipped back onto the screen when it
+  // would otherwise overflow. That needs the menu's real rendered size,
+  // which only exists once it's in the DOM — so this runs after the first
+  // paint of a freshly opened menu and nudges it back in, using the actual
+  // box instead of a guessed one. Runs before the browser paints, so there's
+  // no visible jump.
+  useLayoutEffect(() => {
+    if (!at || !menuRef.current) return;
+    const screen = document.querySelector(".win7");
+    if (!screen) return;
+    const box = screen.getBoundingClientRect();
+    const menuBox = menuRef.current.getBoundingClientRect();
+    const x = Math.max(0, at.x - Math.max(0, menuBox.right - box.right));
+    const y = Math.max(0, at.y - Math.max(0, menuBox.bottom - box.bottom));
+    if (x !== at.x || y !== at.y) setAt({ x, y });
   }, [at]);
 
   useEffect(() => {
@@ -261,15 +272,10 @@ export function DesktopContextMenu({
             : null,
       );
 
-      // Windows opens the menu at the cursor, and flips it back inside when
-      // there isn't room to the right or below. The jump list is only ever a
-      // row or two, so it gets its own height rather than the desktop menu's
-      // — reusing that one would fling it far up the screen.
-      const height = task ? (running ? 2 : 1) * TASK_ROW + 8 : MENU_H;
-      const box = screen.getBoundingClientRect();
-      const x = e.clientX + MENU_W > box.right ? e.clientX - MENU_W : e.clientX;
-      const y = e.clientY + height > box.bottom ? e.clientY - height : e.clientY;
-      setAt({ x: Math.max(0, x), y: Math.max(0, y) });
+      // Open at the cursor. The edge flip needs the menu's real rendered
+      // size, which isn't known until it's in the DOM — the layout effect
+      // below corrects this position once it is.
+      setAt({ x: e.clientX, y: e.clientY });
     };
 
     document.addEventListener("contextmenu", onContextMenu);
