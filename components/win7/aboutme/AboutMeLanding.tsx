@@ -1110,6 +1110,8 @@ export function AboutMeLanding() {
             <img
               src="/letterbox/pngs/cat-headphones.png"
               alt=""
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
               style={{ width: compact ? 84 : 110, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
@@ -1124,6 +1126,8 @@ export function AboutMeLanding() {
             <img
               src="/letterbox/pngs/coke-can.png"
               alt=""
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
               style={{ width: compact ? 76 : 100, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
@@ -1139,6 +1143,8 @@ export function AboutMeLanding() {
             <img
               src="/letterbox/pngs/kitten.png"
               alt=""
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
               style={{ width: compact ? 84 : 110, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
@@ -1153,6 +1159,8 @@ export function AboutMeLanding() {
             <img
               src="/letterbox/pngs/pow.png"
               alt=""
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
               style={{ width: compact ? 68 : 90, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
@@ -1167,6 +1175,8 @@ export function AboutMeLanding() {
             <img
               src="/letterbox/pngs/skull.png"
               alt=""
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
               style={{ width: compact ? 60 : 80, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
