@@ -25,11 +25,13 @@
 export const NAME = "Ayushman Lohani";
 
 export const PARAGRAPHS = [
-  `I'm a final-year CSE (AI) student at the University of Lucknow, currently working as a Research Assistant.`,
+  `Hey, I'm Ayushman. Final-year CSE (AI) at the University of Lucknow. I like building things that people can actually use, click, break, and complain about.`,
 
-  `I've built things that people actually use, watched them break, and then spent multiple nights fixing them. Right now, I'm working on a lightweight computer vision model with YOLO 26n, while exploring AI agents, RAG, and whatever else catches my attention.`,
+  `I work across AI/ML and web development, mostly around RAG, computer vision, smaller AI models, and building useful things around them. I like taking ideas out of notebooks and turning them into something you can actually try.`,
 
-  `Along the way, I've built [Unitwise](https://unitwise-weld.vercel.app/) and [RBI Sentinel](https://rbi-sentinel.streamlit.app).`,
+  `I've built things like [Unitwise](https://unitwise-weld.vercel.app/), an AI study tool, and [RBI Sentinel](https://rbi-sentinel.streamlit.app), a project around sentiment and volatility forecasting. I also spend a questionable amount of time with different AI harnesses like Claude Code, Codex, and OpenCode.`,
 
-  `Chekout my [Github](https://github.com/ayushmanlohani) and [Leetcode](https://leetcode.com/u/ayushmanlohani/).`,
+  `If it's useful and a little stubborn, I'll probably build it. And if it works well enough, I've probably shipped a v0.`,
+
+  `Other than that, I like taking photos and sometimes editing videos. If I'm not doing any of this, I'm probably playing guitar or flute, or cooking some random dish I saw an aunty make on Pinterest or Instagram.`,
 ];

@@ -1909,6 +1909,70 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
 
 
+      {/* ─── ABOUT ─── Jackie turbulence paragraphs, mono 18px */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: "min(1160px, 94%)",
+          margin: "0 auto",
+          padding: narrow ? "12px 14px 24px" : "16px 24px 32px",
+        }}
+      >
+        <Reveal>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              borderBottom: `1px solid ${T.line}`,
+              paddingBottom: 14,
+              marginBottom: 18,
+            }}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>
+              About
+            </h2>
+            <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: T.muted }}>
+              bio & philosophy
+            </span>
+          </div>
+        </Reveal>
+
+        <div
+          style={{
+            marginTop: 18,
+            display: "flex",
+            flexDirection: "column",
+            gap: narrow ? 14 : 18,
+            width: "100%",
+          }}
+        >
+          {[
+            "Hey, I’m Ayushman. Final-year CSE (AI) at the University of Lucknow. I like building things that people can actually use, click, break, and complain about.",
+            "I work across AI/ML and web development, mostly around RAG, computer vision, smaller AI models, and building useful things around them. I like taking ideas out of notebooks and turning them into something you can actually try.",
+            "I’ve built things like Unitwise, an AI study tool, and RBI Sentinel, a project around sentiment and volatility forecasting. I also spend a questionable amount of time with different AI harnesses like Claude Code, Codex, and OpenCode.",
+            "If it’s useful and a little stubborn, I’ll probably build it. And if it works well enough, I’ve probably shipped a v0.",
+            "Other than that, I like taking photos and sometimes editing videos. If I’m not doing any of this, I’m probably playing guitar or flute, or cooking some random dish I saw an aunty make on Pinterest or Instagram."
+          ].map((p, i) => (
+            <Reveal key={i} delay={i * 0.06}>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: narrow ? 14 : 15.5,
+                  lineHeight: 1.8,
+                  color: T.taupe,
+                  filter: "url(#j-turbulence)",
+                  width: "100%",
+                }}
+              >
+                {p}
+              </p>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
       {/* ─── LITTLE THINGS TEASER ─── Jackie "Currently cooking" centered poem */}
       <section
         id="section-experience"
@@ -1992,7 +2056,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             }}
           >
             <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>
-              Other Experience <span style={{ color: T.accent }}>✦</span>
+              Other Experience
             </h2>
             <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: T.muted }}>click to expand</span>
           </div>
@@ -2036,7 +2100,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             }}
           >
             <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>
-              Education <span style={{ color: T.muted }}>⌥</span>
+              Education
             </h2>
             <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: T.muted }}>
               hover logo for preview
@@ -2081,8 +2145,8 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
               marginBottom: 18,
             }}
           >
-            <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
-              Recently Made <span style={{ fontSize: 13, color: T.ink }}>▶</span>
+            <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>
+              Recently Made
             </h2>
             <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: T.muted }}>
               hover to preview • click to open
@@ -2096,7 +2160,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
       </section>
 
 
-      {/* ─── ABOUT ─── Jackie turbulence paragraphs, mono 18px */}
+      {/* ─── FIND ME ─── closing links row, same spot About used to end on */}
       <section
         style={{
           position: "relative",
@@ -2104,67 +2168,11 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
           maxWidth: "min(1160px, 94%)",
           margin: "0 auto",
           padding: narrow ? "20px 14px 28px" : "32px 24px 40px",
-          borderTop: `1px solid ${T.line}`,
-          marginTop: 8,
         }}
       >
         <Reveal>
           <div
             style={{
-              display: "flex",
-              alignItems: "baseline",
-              justifyContent: "space-between",
-              borderBottom: `1px solid ${T.line}`,
-              paddingBottom: 14,
-              marginBottom: 18,
-            }}
-          >
-            <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>
-              About <span style={{ color: T.muted }}>⌘</span>
-            </h2>
-            <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: T.muted }}>
-              bio & philosophy
-            </span>
-          </div>
-        </Reveal>
-
-        <div
-          style={{
-            marginTop: 18,
-            display: "flex",
-            flexDirection: "column",
-            gap: narrow ? 14 : 18,
-            width: "100%",
-          }}
-        >
-          {[
-            "Hey, I’m Ayushman. Final-year CSE (AI) at the University of Lucknow. I like building things that people can actually use, click, break, and complain about.",
-            "I work across AI/ML and web development, mostly around RAG, computer vision, smaller AI models, and building useful things around them. I like taking ideas out of notebooks and turning them into something you can actually try.",
-            "I’ve built things like Unitwise, an AI study tool, and RBI Sentinel, a project around sentiment and volatility forecasting. I also spend a questionable amount of time with different AI harnesses like Claude Code, Codex, and OpenCode.",
-            "If it’s useful and a little stubborn, I’ll probably build it. And if it works well enough, I’ve probably shipped a v0.",
-            "Other than that, I like taking photos and sometimes editing videos. If I’m not doing any of this, I’m probably playing guitar or flute, or cooking some random dish I saw an aunty make on Pinterest or Instagram."
-          ].map((p, i) => (
-            <Reveal key={i} delay={i * 0.06}>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: narrow ? 14 : 15.5,
-                  lineHeight: 1.8,
-                  color: T.taupe,
-                  filter: "url(#j-turbulence)",
-                  width: "100%",
-                }}
-              >
-                {p}
-              </p>
-            </Reveal>
-          ))}
-        </div>
-
-        <Reveal delay={0.28}>
-          <div
-            style={{
-              marginTop: 24,
               paddingTop: 16,
               borderTop: `1px dashed ${T.line}`,
               display: "flex",

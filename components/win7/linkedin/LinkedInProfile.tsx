@@ -82,15 +82,6 @@ function Pill({
   );
 }
 
-/** The grey pencil that sits in the corner of every editable LinkedIn card. */
-function Pencil() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-[24px] w-[24px] shrink-0" fill={C.muted} aria-hidden="true">
-      <path d="M21.13 2.86a3 3 0 0 0-4.24 0l-13 13L2 22l6.13-1.89 13-13a3 3 0 0 0 0-4.25zM6.87 18.13l-1.5-1.5 9.62-9.63 1.51 1.5zM19.72 5.28l-1.79 1.79-1.5-1.5 1.79-1.79a1 1 0 0 1 1.41 0 1 1 0 0 1 .09 1.5z" />
-    </svg>
-  );
-}
-
 function Verified() {
   return (
     <svg viewBox="0 0 24 24" className="h-[20px] w-[20px] shrink-0" fill={C.fg} aria-hidden="true">
@@ -133,9 +124,6 @@ function TopCard() {
           alt={LINKEDIN.name}
           className="-mt-[76px] h-[152px] w-[152px] rounded-full border-[4px] border-white object-cover"
         />
-        <span className="absolute right-[24px] top-[16px]">
-          <Pencil />
-        </span>
 
         <div className="mt-[12px] flex flex-wrap items-start justify-between gap-[16px]">
           <div className="min-w-0">
@@ -166,25 +154,10 @@ function TopCard() {
           </div>
         </div>
 
-        <div className="mt-[16px] flex flex-wrap items-center gap-[8px]">
-          <Pill variant="filled">Open to</Pill>
-          <Pill>Add section</Pill>
-          <Pill>Enhance profile</Pill>
-          <span
-            className="flex h-[32px] w-[32px] items-center justify-center rounded-full border text-[14px]"
-            style={{ borderColor: "rgba(0,0,0,0.6)", color: C.muted }}
-          >
-            •••
-          </span>
-        </div>
-
         <div className="mt-[16px] max-w-[400px] rounded-[8px] p-[12px]" style={{ background: "#dce6f1" }}>
-          <div className="flex items-start justify-between gap-[8px]">
-            <p className="text-[14px] font-semibold" style={{ color: C.fg }}>
-              {LINKEDIN.openTo.title}
-            </p>
-            <Pencil />
-          </div>
+          <p className="text-[14px] font-semibold" style={{ color: C.fg }}>
+            {LINKEDIN.openTo.title}
+          </p>
           <p className="mt-[2px] text-[14px]" style={{ color: C.muted }}>
             {LINKEDIN.openTo.detail}
           </p>
@@ -214,10 +187,7 @@ function About() {
   return (
     <Card>
       <div className="p-[24px]">
-        <div className="flex items-start justify-between gap-[16px]">
-          <CardTitle>About</CardTitle>
-          <Pencil />
-        </div>
+        <CardTitle>About</CardTitle>
         <p className="mt-[16px] text-[14px] leading-[1.5]" style={{ color: C.fg }}>
           {LINKEDIN.about}
         </p>
@@ -251,10 +221,6 @@ function Featured() {
       <div className="p-[24px]">
         <div className="flex items-start justify-between gap-[16px]">
           <CardTitle>Featured</CardTitle>
-          <span className="flex items-center gap-[16px] text-[24px] leading-none" style={{ color: C.muted }}>
-            +
-            <Pencil />
-          </span>
         </div>
 
         <div className="mt-[16px] rounded-[8px] border p-[12px]" style={{ borderColor: C.border }}>
@@ -294,10 +260,6 @@ function Experience() {
       <div className="p-[24px]">
         <div className="flex items-start justify-between gap-[16px]">
           <CardTitle>Experience</CardTitle>
-          <span className="flex items-center gap-[16px] text-[24px] leading-none" style={{ color: C.muted }}>
-            +
-            <Pencil />
-          </span>
         </div>
 
         {LINKEDIN.experience.map((e) => (
@@ -355,10 +317,6 @@ function Education() {
       <div className="p-[24px]">
         <div className="flex items-start justify-between gap-[16px]">
           <CardTitle>Education</CardTitle>
-          <span className="flex items-center gap-[16px] text-[24px] leading-none" style={{ color: C.muted }}>
-            +
-            <Pencil />
-          </span>
         </div>
 
         {LINKEDIN.education.map((e) => (
@@ -392,10 +350,6 @@ function Certifications() {
       <div className="p-[24px] pb-0">
         <div className="flex items-start justify-between gap-[16px]">
           <CardTitle>Licenses &amp; certifications ({LINKEDIN.certificationsCount})</CardTitle>
-          <span className="flex items-center gap-[16px] text-[24px] leading-none" style={{ color: C.muted }}>
-            +
-            <Pencil />
-          </span>
         </div>
 
         {LINKEDIN.certifications.map((c, i) => (
@@ -472,13 +426,13 @@ export function LinkedInProfile() {
 
           {/* The one honest exit. Everything above is a frozen copy. */}
           <Card>
-            <div className="flex flex-wrap items-center justify-between gap-[16px] p-[24px]">
+            <div className="flex flex-col items-center justify-center gap-[8px] p-[24px] text-center">
               <p className="text-[14px]" style={{ color: C.muted }}>
                 This is a copy, transcribed on 28 August 2026. The live profile has moved on.
               </p>
-              <Pill variant="filled" href={LINKEDIN_URL}>
+              <a href={LINKEDIN_URL} target="_blank" rel="noreferrer" className="text-[14px] font-semibold" style={{ color: C.blue }}>
                 View the real profile on LinkedIn ↗
-              </Pill>
+              </a>
             </div>
           </Card>
         </div>

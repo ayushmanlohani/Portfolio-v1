@@ -37,6 +37,7 @@ export const GITHUB_SITE: Site = { url: "github.com/ayushmanlohani", title: "ayu
 export const LINKEDIN_SITE: Site = { url: "linkedin.com/in/ayushmanlohani", title: "Ayushman Lohani | LinkedIn" };
 /** The New Tab page itself, bookmarkable as "Google". */
 export const GOOGLE: Site = { url: "google.com", title: "Google" };
+export const GMAIL_SITE: Site = { url: "mailto:aayushmanlohani@gmail.com", title: "Gmail" };
 
 /** A tab with no site is a new tab, showing the search page. */
 export type ChromeTab = {
@@ -77,7 +78,7 @@ type ChromeState = {
 export const useChrome = create<ChromeState>((set) => ({
   tabs: [blank()],
   activeId: 0,
-  bookmarks: [UNITWISE, SENTINEL, ABOUTME],
+  bookmarks: [UNITWISE, SENTINEL, ABOUTME, GITHUB_SITE, LINKEDIN_SITE],
 
   select: (id) => set({ activeId: id }),
 

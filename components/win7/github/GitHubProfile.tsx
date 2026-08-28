@@ -119,37 +119,22 @@ function Btn({
 function Header() {
   return (
     <header
-      className="flex items-center gap-[16px] border-b px-[16px] py-[12px]"
+      className="flex items-center gap-[12px] border-b px-[16px] py-[12px]"
       style={{ background: C.inset, borderColor: C.border }}
     >
       <svg viewBox="0 0 16 16" className="h-[32px] w-[32px] shrink-0" fill={C.fg} aria-hidden="true">
         <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
       </svg>
-      <div
-        className="flex h-[30px] min-w-0 flex-1 items-center justify-between gap-[8px] rounded-[6px] border px-[10px] text-[14px]"
-        style={{ borderColor: C.btnBorder, color: C.muted, maxWidth: 272 }}
-      >
-        <span className="truncate">Type / to search</span>
-        <span
-          className="rounded-[4px] border px-[5px] text-[12px] leading-[18px]"
-          style={{ borderColor: C.btnBorder }}
-        >
-          /
-        </span>
-      </div>
-      <nav className="hidden items-center gap-[16px] text-[14px] font-semibold md:flex" style={{ color: C.fg }}>
-        <span>Pull requests</span>
-        <span>Issues</span>
-        <span>Marketplace</span>
-        <span>Explore</span>
-      </nav>
-      <div className="ml-auto flex items-center gap-[16px]">
-        <span style={{ color: C.fg }} className="text-[14px]">
-          +▾
-        </span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={GITHUB.avatar} alt="" className="h-[20px] w-[20px] rounded-full" />
-      </div>
+      <span className="text-[16px] font-semibold leading-none" style={{ color: C.fg }}>
+        {GITHUB.login}
+      </span>
+      {/* real — leaves for the actual profile. */}
+      <Btn href={GITHUB_URL} className="ml-auto">
+        <svg viewBox="0 0 16 16" className="h-[16px] w-[16px]" fill="currentColor" aria-hidden="true">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
+        </svg>
+        View on GitHub
+      </Btn>
     </header>
   );
 }
@@ -228,17 +213,6 @@ function md(text: string) {
   );
 }
 
-function Tag({ children }: { children: React.ReactNode }) {
-  return (
-    <code
-      className="rounded-[6px] px-[6px] py-[2px] font-mono text-[13px]"
-      style={{ background: "#6e768166", color: C.fg }}
-    >
-      {children}
-    </code>
-  );
-}
-
 function Readme() {
   const r = GITHUB.readme;
   return (
@@ -261,41 +235,6 @@ function Readme() {
           <p key={i} className="mt-[16px] text-[16px] leading-[1.6]">
             {md(line)}
           </p>
-        ))}
-
-        <hr className="my-[24px] border-0" style={{ borderTop: `1px solid ${C.border}` }} />
-
-        <h3 className="text-[20px] font-semibold">🛠 What I Work With</h3>
-        {r.stack.map((row) => (
-          <div key={row.label} className="mt-[16px]">
-            <p className="text-[16px] font-semibold">{row.label}</p>
-            <div className="mt-[6px] flex flex-wrap gap-[6px]">
-              {row.tags.map((t) => (
-                <Tag key={t}>{t}</Tag>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        <hr className="my-[24px] border-0" style={{ borderTop: `1px solid ${C.border}` }} />
-
-        <h3 className="text-[20px] font-semibold">🚀 Featured Projects</h3>
-        {r.featured.map((f) => (
-          <div key={f.repo} className="mt-[16px]">
-            <a
-              href={`${GITHUB_URL}/${f.repo}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-[18px] font-semibold hover:underline"
-              style={{ color: C.accent }}
-            >
-              {f.title}
-            </a>
-            <p className="mt-[4px] text-[16px] leading-[1.6]">{f.blurb}</p>
-            <p className="text-[16px] leading-[1.6]" style={{ color: C.muted }}>
-              Built with {f.built}
-            </p>
-          </div>
         ))}
       </div>
     </section>
@@ -396,63 +335,58 @@ function Calendar() {
         {GITHUB.contributionsTotal} contributions in the last year
       </h2>
       <div className="rounded-[6px] border p-[16px]" style={{ borderColor: C.border }}>
-        <div className="overflow-x-auto">
-          <div className="flex gap-[4px]" style={{ minWidth: weeks * STEP + 30 }}>
-            {/* Mon / Wed / Fri, on GitHub's odd rows only. */}
-            <div className="mt-[16px] flex flex-col" style={{ gap: GAP }}>
-              {["", "Mon", "", "Wed", "", "Fri", ""].map((d, i) => (
-                <div
-                  key={i}
-                  className="pr-[4px] text-right text-[10px] leading-none"
-                  style={{ height: CELL, color: C.muted, lineHeight: `${CELL}px` }}
+        {(() => {
+          const LABEL_W = 20;
+          const LABEL_H = 16;
+          const w = LABEL_W + weeks * STEP - GAP;
+          const h = LABEL_H + 7 * STEP - GAP;
+          return (
+            <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ height: "auto", display: "block" }}>
+              {["Mon", "Wed", "Fri"].map((d, row) => (
+                <text
+                  key={d}
+                  x={LABEL_W - 4}
+                  y={LABEL_H + (row * 2 + 1) * STEP + CELL / 2 + 3}
+                  textAnchor="end"
+                  fontSize={10}
+                  fill={C.muted}
                 >
                   {d}
-                </div>
+                </text>
               ))}
-            </div>
-
-            <div>
-              <div className="relative h-[16px]" style={{ width: weeks * STEP }}>
-                {labels.map((l) => (
-                  <span
-                    key={`${l.col}-${l.text}`}
-                    className="absolute top-0 text-[10px]"
-                    style={{ left: l.col * STEP, color: C.muted }}
-                  >
-                    {l.text}
-                  </span>
-                ))}
-              </div>
-              <div className="flex" style={{ gap: GAP }}>
-                {Array.from({ length: weeks }, (_, w) => (
-                  <div key={w} className="flex flex-col" style={{ gap: GAP }}>
-                    {Array.from({ length: 7 }, (_, d) => {
-                      const i = w * 7 + d;
-                      if (i >= days.length) return <div key={d} style={{ width: CELL, height: CELL }} />;
-                      const date = new Date(start);
-                      date.setDate(date.getDate() + i);
-                      const n = days[i];
-                      return (
-                        <div
-                          key={d}
-                          title={`${n === 0 ? "No" : n} contribution${n === 1 ? "" : "s"} on ${date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
-                          style={{
-                            width: CELL,
-                            height: CELL,
-                            borderRadius: 2,
-                            background: LEVELS[level(n)],
-                            outline: "1px solid #ffffff0d",
-                            outlineOffset: -1,
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+              {labels.map((l) => (
+                <text key={`${l.col}-${l.text}`} x={LABEL_W + l.col * STEP} y={10} fontSize={10} fill={C.muted}>
+                  {l.text}
+                </text>
+              ))}
+              {Array.from({ length: weeks }, (_, wk) =>
+                Array.from({ length: 7 }, (_, d) => {
+                  const i = wk * 7 + d;
+                  if (i >= days.length) return null;
+                  const date = new Date(start);
+                  date.setDate(date.getDate() + i);
+                  const n = days[i];
+                  return (
+                    <rect
+                      key={`${wk}-${d}`}
+                      x={LABEL_W + wk * STEP}
+                      y={LABEL_H + d * STEP}
+                      width={CELL}
+                      height={CELL}
+                      rx={2}
+                      fill={LEVELS[level(n)]}
+                    >
+                      <title>
+                        {n === 0 ? "No" : n} contribution{n === 1 ? "" : "s"} on{" "}
+                        {date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                      </title>
+                    </rect>
+                  );
+                }),
+              )}
+            </svg>
+          );
+        })()}
 
         <div className="mt-[8px] flex items-center justify-end gap-[3px] text-[12px]" style={{ color: C.muted }}>
           <span className="mr-[2px]">Less</span>
@@ -530,15 +464,15 @@ export function GitHubProfile() {
 
         {/* The one honest exit. Everything above is a snapshot; this is live. */}
         <div
-          className="mt-[32px] flex flex-wrap items-center justify-between gap-[16px] rounded-[6px] border px-[24px] py-[20px]"
+          className="mt-[32px] flex flex-col items-center justify-center gap-[8px] rounded-[6px] border px-[24px] py-[20px] text-center"
           style={{ borderColor: C.border, background: C.subtle }}
         >
           <p className="text-[14px]" style={{ color: C.muted }}>
             This is a snapshot, frozen on 28 August 2026. The live profile has moved on.
           </p>
-          <Btn href={GITHUB_URL} primary>
+          <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="text-[14px] font-semibold" style={{ color: C.accent }}>
             View the real profile on GitHub ↗
-          </Btn>
+          </a>
         </div>
       </div>
     </div>
