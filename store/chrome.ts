@@ -22,6 +22,12 @@ export type Site = { url: string; title: string };
 export const UNITWISE: Site = { url: "unitwise.interactive", title: "Unitwise" };
 export const SENTINEL: Site = { url: "sentinel.interactive", title: "RBI Sentinel" };
 export const ABOUTME: Site = { url: "aboutme.interactive", title: "About Me" };
+/** Education and Experience's own interactive files — the same About Me
+ *  page, opened straight to that section. The hash is what tells Chrome and
+ *  AboutMeLanding which one, and what keeps each a distinct tab from a plain
+ *  About Me visit rather than the same one refocused. */
+export const EDUCATION: Site = { url: "aboutme.interactive#education", title: "About Me" };
+export const EXPERIENCE: Site = { url: "aboutme.interactive#experience", title: "About Me" };
 /** The New Tab page itself, bookmarkable as "Google". */
 export const GOOGLE: Site = { url: "google.com", title: "Google" };
 

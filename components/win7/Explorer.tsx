@@ -4,9 +4,9 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { Doc } from "@/components/win7/folders/Doc";
 import { CHROME_ID, launchWindow } from "@/components/win7/apps";
-import { contents, crumbIds, node, SENTINEL_FILE_ID, TREE, UNITWISE_FILE_ID, ABOUTME_FILE_ID } from "@/components/win7/fs";
+import { contents, crumbIds, node, SENTINEL_FILE_ID, TREE, UNITWISE_FILE_ID, ABOUTME_FILE_ID, EDUCATION_FILE_ID, EXPERIENCE_FILE_ID } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
-import { SENTINEL, UNITWISE, ABOUTME, useChrome } from "@/store/chrome";
+import { SENTINEL, UNITWISE, ABOUTME, EDUCATION, EXPERIENCE, useChrome } from "@/store/chrome";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { RenameField } from "@/components/win7/RenameField";
@@ -435,8 +435,10 @@ function Contents({
                   launchWindow(CHROME_ID);
                   return;
                 }
-                if (single === ABOUTME_FILE_ID) {
-                  useChrome.getState().visit(ABOUTME);
+                if (single === ABOUTME_FILE_ID || single === EDUCATION_FILE_ID || single === EXPERIENCE_FILE_ID) {
+                  useChrome.getState().visit(
+                    single === EDUCATION_FILE_ID ? EDUCATION : single === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
+                  );
                   launchWindow(CHROME_ID);
                   return;
                 }
@@ -453,8 +455,10 @@ function Contents({
                   launchWindow(CHROME_ID);
                   return;
                 }
-                if (cid === ABOUTME_FILE_ID) {
-                  useChrome.getState().visit(ABOUTME);
+                if (cid === ABOUTME_FILE_ID || cid === EDUCATION_FILE_ID || cid === EXPERIENCE_FILE_ID) {
+                  useChrome.getState().visit(
+                    cid === EDUCATION_FILE_ID ? EDUCATION : cid === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
+                  );
                   launchWindow(CHROME_ID);
                   return;
                 }
@@ -474,8 +478,10 @@ function Contents({
                 launchWindow(CHROME_ID);
                 return;
               }
-              if (childId === ABOUTME_FILE_ID) {
-                useChrome.getState().visit(ABOUTME);
+              if (childId === ABOUTME_FILE_ID || childId === EDUCATION_FILE_ID || childId === EXPERIENCE_FILE_ID) {
+                useChrome.getState().visit(
+                  childId === EDUCATION_FILE_ID ? EDUCATION : childId === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
+                );
                 launchWindow(CHROME_ID);
                 return;
               }

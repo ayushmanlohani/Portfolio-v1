@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, ABOUTME_FILE_ID, unregisterFile } from "@/components/win7/fs";
+import { type FsNode, node, SENTINEL_FILE_ID, UNITWISE_FILE_ID, ABOUTME_FILE_ID, EDUCATION_FILE_ID, EXPERIENCE_FILE_ID, unregisterFile } from "@/components/win7/fs";
 import { CHROME_ID, launchWindow, PERSONALIZE_ID, SCREEN_RES_ID } from "@/components/win7/apps";
 import { CloseIcon, PinIcon } from "@/components/win7/icons";
-import { SENTINEL, UNITWISE, ABOUTME, useChrome } from "@/store/chrome";
+import { SENTINEL, UNITWISE, ABOUTME, EDUCATION, EXPERIENCE, useChrome } from "@/store/chrome";
 import { type IconSize, type SortMode, useDesktopView } from "@/store/desktopView";
 import { useFiles } from "@/store/files";
 import { useFolders } from "@/store/folders";
@@ -387,8 +387,10 @@ export function DesktopContextMenu({
           launchWindow(CHROME_ID);
           return;
         }
-        if (cid === ABOUTME_FILE_ID) {
-          useChrome.getState().visit(ABOUTME);
+        if (cid === ABOUTME_FILE_ID || cid === EDUCATION_FILE_ID || cid === EXPERIENCE_FILE_ID) {
+          useChrome.getState().visit(
+            cid === EDUCATION_FILE_ID ? EDUCATION : cid === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
+          );
           launchWindow(CHROME_ID);
           return;
         }

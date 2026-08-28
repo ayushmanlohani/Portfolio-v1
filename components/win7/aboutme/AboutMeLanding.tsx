@@ -1251,7 +1251,7 @@ function ProjectEditPanel({ layout }: { layout: typeof CLUSTER_LAYOUT }) {
   );
 }
 
-export function AboutMeLanding() {
+export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useContainerSize(containerRef);
   const compact = size.w > 0 && size.w < 760;
@@ -1294,6 +1294,14 @@ export function AboutMeLanding() {
   const [editValues, setEditValues] = useState<Record<string, EditValue>>({});
   const handleEditChange = (id: string, val: EditValue) =>
     setEditValues((prev) => ({ ...prev, [id]: val }));
+
+  // Opened from Education's or Experience's own interactive file rather than
+  // About Me's — same page, jumped straight to that section instead of
+  // landing on the hero like a plain visit.
+  useEffect(() => {
+    if (!scrollTo) return;
+    containerRef.current?.querySelector(`#section-${scrollTo}`)?.scrollIntoView({ block: "start" });
+  }, [scrollTo]);
 
   return (
     <div
@@ -1903,6 +1911,7 @@ export function AboutMeLanding() {
 
       {/* ─── LITTLE THINGS TEASER ─── Jackie "Currently cooking" centered poem */}
       <section
+        id="section-experience"
         style={{
           position: "relative",
           zIndex: 1,
@@ -2006,6 +2015,7 @@ export function AboutMeLanding() {
 
       {/* ─── EDUCATION ─── 2-column side-by-side sleek boxes */}
       <section
+        id="section-education"
         style={{
           position: "relative",
           zIndex: 1,

@@ -152,6 +152,12 @@ export const SENTINEL_TXT_ID = "projects/sentinel/sentinel.txt";
 /** About Me's interactive page, sitting alongside its txt file. */
 export const ABOUTME_FILE_ID = "about/aboutme.interactive";
 
+/** Education and Experience each get their own interactive file, but both
+ *  just open About Me's own page scrolled to that section — see ABOUTME,
+ *  EDUCATION and EXPERIENCE in store/chrome.ts. */
+export const EDUCATION_FILE_ID = "education/education.interactive";
+export const EXPERIENCE_FILE_ID = "experience/experience.interactive";
+
 /** About Me and Contact, each now the one file inside its folder rather
  *  than something the folder draws in place of a listing. */
 export const ABOUT_TXT_ID = "about/about.txt";
@@ -165,6 +171,8 @@ const EXTRA_CHILDREN: Record<string, string[]> = {
   projects: ["projects/unitwise", "projects/sentinel"],
   about: [ABOUT_TXT_ID, ABOUTME_FILE_ID],
   contact: [CONTACT_TXT_ID],
+  experience: [EXPERIENCE_FILE_ID],
+  education: [EDUCATION_FILE_ID],
 };
 
 function childrenOf(id: string): string[] | undefined {
@@ -429,6 +437,20 @@ const NODE_LIST: FsNode[] = [
   {
     id: ABOUTME_FILE_ID,
     label: "aboutme.interactive",
+    Icon: ChromeIcon,
+    kind: "folder",
+    type: "Chrome HTML Document",
+  },
+  {
+    id: EDUCATION_FILE_ID,
+    label: "education.interactive",
+    Icon: ChromeIcon,
+    kind: "folder",
+    type: "Chrome HTML Document",
+  },
+  {
+    id: EXPERIENCE_FILE_ID,
+    label: "experience.interactive",
     Icon: ChromeIcon,
     kind: "folder",
     type: "Chrome HTML Document",

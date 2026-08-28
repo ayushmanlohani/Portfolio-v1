@@ -468,8 +468,8 @@ export function Chrome({ windowId }: { windowId: string }) {
       <div key={`${active?.id}-${reloadKey}`} className="relative min-h-0 flex-1">
         {active?.site?.url === SENTINEL.url ? (
           <SentinelLanding />
-        ) : active?.site?.url === ABOUTME.url ? (
-          <AboutMeLanding />
+        ) : active?.site?.url.startsWith(ABOUTME.url) ? (
+          <AboutMeLanding scrollTo={active.site.url.split("#")[1]} />
         ) : active?.site?.url === GOOGLE.url ? (
           <NewTabPage />
         ) : active?.site ? (
