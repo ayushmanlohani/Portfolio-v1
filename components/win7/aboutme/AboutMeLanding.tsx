@@ -830,9 +830,9 @@ const RECENT_PROJECTS = [
     iconBg: "transparent",
     iconImg: "/letterbox/unitwise-logo.png",
     images: [
-      "/letterbox/projects/unitwise-a.png",
-      "/letterbox/projects/unitwise-b.png",
-      "/letterbox/projects/unitwise-c.png",
+      "/letterbox/projects/unitwise-1.png",
+      "/letterbox/projects/unitwise-2.png",
+      "/letterbox/projects/unitwise-3.png",
     ],
     accent: "#10B981",
   },
@@ -857,14 +857,31 @@ const RECENT_PROJECTS = [
 /** Where each of a project's 3 images lands in the hover cluster, and how far
  *  out (in its own direction — left, top, right) it starts before sliding
  *  and fading in. B leads from above but only by a small nudge, not from the
- *  top of the screen — see the request this was built from. */
+ *  top of the screen — see the request this was built from. This is the
+ *  fallback shared by any project without its own `clusterLayout` below. */
 const CLUSTER_LAYOUT = [
   { dx: -85, dy: 18, rot: -7, z: 1, w: 175, h: 122, fromX: -140, fromY: 0 },
   { dx: 25, dy: -22, rot: 2, z: 3, w: 210, h: 146, fromX: 0, fromY: -75 },
   { dx: 100, dy: 30, rot: 8, z: 2, w: 175, h: 122, fromX: 140, fromY: 0 },
 ];
 
-function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
+/** Unitwise's own hierarchical cluster — three different sizes, spread wide
+ *  enough that none of them cover each other. Tune via ?editproj=1. */
+const UNITWISE_CLUSTER_LAYOUT: typeof CLUSTER_LAYOUT = [
+  // Box ratios match each screenshot's real aspect ratio (515x651, 768x336,
+  // 1480x565) so objectFit:"cover" never has to crop into the content.
+  { dx: -125, dy: 40, rot: -6, z: 1, w: 119, h: 150, fromX: -140, fromY: 0 },
+  { dx: 30, dy: -55, rot: 3, z: 3, w: 220, h: 96, fromX: 0, fromY: -75 },
+  { dx: 150, dy: 55, rot: 7, z: 2, w: 200, h: 76, fromX: 140, fromY: 0 },
+];
+
+function RecentlyMadeProjects({
+  size,
+  editProjMode,
+}: {
+  size: { w: number; h: number };
+  editProjMode?: boolean;
+}) {
   const [activeId, setActiveId] = useState("unitwise");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const activeProj = RECENT_PROJECTS.find((p) => p.id === activeId) || RECENT_PROJECTS[0];
@@ -872,15 +889,36 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
   const isNarrow = size.w > 0 && size.w < 600;
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Per-project cluster layout, editable live via ?editproj=1 (Unitwise only
+  // for now — Sentinel stays frozen on its old shared layout, "blocked" per
+  // request while this work is dedicated to Unitwise).
+  const [layouts, setLayouts] = useState<Record<string, typeof CLUSTER_LAYOUT>>(() => ({
+    unitwise: JSON.parse(JSON.stringify(UNITWISE_CLUSTER_LAYOUT)),
+    sentinel: JSON.parse(JSON.stringify(CLUSTER_LAYOUT)),
+  }));
+  const isEditingUnitwise = !!editProjMode && activeProj.id === "unitwise";
+
+  // ?editproj=1 pins the view on Unitwise, cluster permanently visible —
+  // hovering away no longer hides it, and Sentinel is blocked from taking over.
+  useEffect(() => {
+    if (editProjMode) {
+      setActiveId("unitwise");
+      setHoveredId("unitwise");
+    }
+  }, [editProjMode]);
+
   // Resting state (no hover) is empty — the cluster only assembles once a
   // project tile is hovered, each image sliding in from its own side.
+  // Skipped entirely while editing: edit mode drives style directly.
   useEffect(() => {
+    if (editProjMode) return;
     const els = cardRefs.current;
     if (els.some((el) => !el)) return;
     gsap.killTweensOf(els);
+    const activeLayout = layouts[activeProj.id] || CLUSTER_LAYOUT;
     els.forEach((el, i) => {
       if (!el) return;
-      const l = CLUSTER_LAYOUT[i];
+      const l = activeLayout[i];
       if (hoveredId) {
         gsap.fromTo(
           el,
@@ -897,7 +935,64 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
         });
       }
     });
-  }, [hoveredId]);
+  }, [hoveredId, activeProj.id, editProjMode, layouts]);
+
+  function updateImgLayout(i: number, patch: Partial<(typeof CLUSTER_LAYOUT)[0]>) {
+    setLayouts((prev) => {
+      const next = [...prev.unitwise];
+      next[i] = { ...next[i], ...patch };
+      return { ...prev, unitwise: next };
+    });
+  }
+
+  function startImgDrag(e: React.PointerEvent, i: number) {
+    const l = layouts.unitwise[i];
+    const startX = e.clientX, startY = e.clientY;
+    const ox = l.dx, oy = l.dy;
+    function move(ev: PointerEvent) {
+      updateImgLayout(i, { dx: Math.round(ox + (ev.clientX - startX)), dy: Math.round(oy + (ev.clientY - startY)) });
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  function startImgResize(e: React.PointerEvent, i: number) {
+    e.stopPropagation();
+    const l = layouts.unitwise[i];
+    const startX = e.clientX;
+    const ow = l.w, oh = l.h;
+    function move(ev: PointerEvent) {
+      const dx = ev.clientX - startX;
+      const scale = Math.max(0.3, 1 + dx / ow);
+      updateImgLayout(i, { w: Math.round(ow * scale), h: Math.round(oh * scale) });
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  function startImgRotate(e: React.PointerEvent, i: number, el: HTMLDivElement) {
+    e.stopPropagation();
+    function move(ev: PointerEvent) {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      const angle = (Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180) / Math.PI + 90;
+      updateImgLayout(i, { rot: Math.round(angle) });
+    }
+    function up() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
 
   return (
     <div
@@ -920,10 +1015,11 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
               target="_blank"
               rel="noopener noreferrer"
               onMouseEnter={() => {
+                if (editProjMode) return;
                 setHoveredId(proj.id);
                 setActiveId(proj.id);
               }}
-              onMouseLeave={() => setHoveredId(null)}
+              onMouseLeave={() => !editProjMode && setHoveredId(null)}
               style={{
                 textDecoration: "none",
                 color: "inherit",
@@ -1021,15 +1117,18 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
           overflow: "visible",
         }}
       >
-        <div style={{ position: "relative", width: 320, height: 220 }}>
+        <div style={{ position: "relative", width: isEditingUnitwise ? 420 : 320, height: isEditingUnitwise ? 300 : 220 }}>
           {activeProj.images.map((src, i) => {
-            const l = CLUSTER_LAYOUT[i];
+            const l = (layouts[activeProj.id] || CLUSTER_LAYOUT)[i];
+            const editableHere = isEditingUnitwise;
             return (
               <div
                 key={src}
                 ref={(el) => {
                   cardRefs.current[i] = el;
                 }}
+                className={editableHere ? "edit-item" : undefined}
+                onPointerDown={editableHere ? (e) => startImgDrag(e, i) : undefined}
                 style={{
                   position: "absolute",
                   left: "50%",
@@ -1038,26 +1137,116 @@ function RecentlyMadeProjects({ size }: { size: { w: number; h: number } }) {
                   height: l.h,
                   marginLeft: -l.w / 2,
                   marginTop: -l.h / 2,
-                  borderRadius: 12,
+                  borderRadius: 20,
                   overflow: "hidden",
                   background: "#FFFFFF",
                   border: "1px solid rgba(62,62,66,0.08)",
                   boxShadow: "0 14px 34px rgba(62,62,66,0.16)",
                   zIndex: l.z,
-                  opacity: 0,
-                  pointerEvents: "none",
+                  opacity: editableHere ? 1 : 0,
+                  pointerEvents: editableHere ? "auto" : "none",
+                  transform: editableHere ? `translate(${l.dx}px, ${l.dy}px) rotate(${l.rot}deg)` : undefined,
+                  cursor: editableHere ? "grab" : undefined,
+                  transition: editableHere ? "none" : undefined,
                 }}
               >
                 <img
                   src={src}
                   alt={`${activeProj.name} preview`}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", pointerEvents: "none" }}
                 />
+                {editableHere && (
+                  <>
+                    {/* Placeholder screenshots crop to mostly-blank regions at
+                        these sizes and vanish against the page background —
+                        this badge keeps each card identifiable regardless. */}
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        left: 8,
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        background: "rgba(62,62,66,0.85)",
+                        color: "#fff",
+                        fontFamily: "var(--font-jackie-mono)",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      {i + 1}
+                    </div>
+                    <div className="edit-frame" />
+                    <div className="edit-label">{`img ${i + 1}`}</div>
+                    <div className="edit-handle resize" onPointerDown={(e) => startImgResize(e, i)} />
+                    <div
+                      className="edit-handle rotate"
+                      onPointerDown={(e) => startImgRotate(e, i, cardRefs.current[i]!)}
+                    />
+                  </>
+                )}
               </div>
             );
           })}
         </div>
       </div>
+
+      {isEditingUnitwise && <ProjectEditPanel layout={layouts.unitwise} />}
+    </div>
+  );
+}
+
+/** Copy-JSON readout for the ?editproj=1 Unitwise cluster overlay. */
+function ProjectEditPanel({ layout }: { layout: typeof CLUSTER_LAYOUT }) {
+  const json = JSON.stringify(layout, null, 2);
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 16,
+        bottom: 16,
+        width: 230,
+        zIndex: 999,
+        background: "#FCF7F2",
+        border: "1px solid #E7E6DE",
+        borderRadius: 16,
+        boxShadow: "0 8px 28px rgba(62,62,66,0.14)",
+        padding: 12,
+        fontFamily: "var(--font-jackie-mono)",
+      }}
+    >
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#69645E", marginBottom: 8 }}>
+        Unitwise cluster
+      </div>
+      {layout.map((l, i) => (
+        <div key={i} style={{ fontSize: 10.5, color: "#69645E", marginBottom: 4 }}>
+          img {i + 1}: dx:{l.dx} dy:{l.dy} rot:{l.rot}&deg; w:{l.w} h:{l.h}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => navigator.clipboard.writeText(json)}
+        style={{
+          width: "100%",
+          marginTop: 8,
+          padding: "9px 12px",
+          borderRadius: 999,
+          border: "none",
+          background: "#3E3E42",
+          color: "#fff",
+          fontFamily: "var(--font-jackie-mono)",
+          fontSize: 11.5,
+          fontWeight: 600,
+          cursor: "pointer",
+        }}
+      >
+        Copy JSON
+      </button>
     </div>
   );
 }
@@ -1089,6 +1278,7 @@ export function AboutMeLanding() {
   // units the JSX ternaries are written in. What you drag is the real DOM —
   // no separate mockup to fall out of sync with.
   const [editMode, setEditMode] = useState(false);
+  const [editProjMode, setEditProjMode] = useState(false);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const on = params.get("edit") === "1";
@@ -1098,6 +1288,8 @@ export function AboutMeLanding() {
     // clean (default); ?edit=1&mode=chaos edits chaos — same tool, same
     // reported x/y/rot/w, just reads/writes whichever ternary branch is active.
     if (on) setDeskMode(params.get("mode") === "chaos" ? "chaos" : "clean");
+    // ?editproj=1 — separate overlay for the Recently Made project cluster.
+    setEditProjMode(params.get("editproj") === "1");
   }, []);
   const [editValues, setEditValues] = useState<Record<string, EditValue>>({});
   const handleEditChange = (id: string, val: EditValue) =>
@@ -1889,7 +2081,7 @@ export function AboutMeLanding() {
         </Reveal>
 
         <Reveal delay={0.08}>
-          <RecentlyMadeProjects size={size} />
+          <RecentlyMadeProjects size={size} editProjMode={editProjMode} />
         </Reveal>
       </section>
 
@@ -1984,7 +2176,7 @@ export function AboutMeLanding() {
             <a href="https://linkedin.com/in/ayushmanlohani" target="_blank" rel="noopener noreferrer" style={{ color: T.accent, textDecoration: "underline", textUnderlineOffset: 3 }}>
               LinkedIn
             </a>
-            <a href="mailto:ayushmanlohani@example.com" style={{ color: T.ink, textDecoration: "underline", textUnderlineOffset: 3 }}>
+            <a href="mailto:aayushmanlohani@gmail.com" style={{ color: T.ink, textDecoration: "underline", textUnderlineOffset: 3 }}>
               Email
             </a>
           </div>

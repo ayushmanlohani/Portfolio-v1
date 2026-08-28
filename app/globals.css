@@ -4480,6 +4480,20 @@ img.project-crest {
   max-width: calc(100% - calc(120 * var(--px)));
 }
 
+/* Ping Pong: icon + title read as the game's own logotype, so the pair sits
+   centred as a group in the caption bar rather than pinned left like every
+   other app window's icon-plus-label. */
+.w7-window[data-app="pingpong"] .w7-caption {
+  justify-content: center;
+  /* The shared icon-window rule above adds padding-left only, which would
+     push a centred group off-true by half of it. */
+  padding-left: 0;
+}
+
+.w7-window[data-app="pingpong"] .w7-title {
+  max-width: calc(100% - calc(140 * var(--px)));
+}
+
 /* The first-run library. Windows sets this message near the top of the pane,
    not at its centre — it is an instruction, not a placeholder. */
 .wmp-empty {

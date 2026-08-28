@@ -16,6 +16,60 @@ export const WALLPAPERS: WallpaperEntry[] = [
     type: "image",
     label: "Windows 7",
   },
+  {
+    id: "moraine-lake",
+    src: "/letterbox/wallpaper/wp10712770-windows-nature-wallpapers.jpg",
+    type: "image",
+    label: "Moraine Lake",
+  },
+  {
+    id: "maldives",
+    src: "/letterbox/wallpaper/wp12288247-nature-windows-wallpapers.jpg",
+    type: "image",
+    label: "Maldives",
+  },
+  {
+    id: "aero-leaves",
+    src: "/letterbox/wallpaper/wp13865974-windows-aero-wallpapers.png",
+    type: "image",
+    label: "Aero Leaves",
+  },
+  {
+    id: "w7-glow",
+    src: "/letterbox/wallpaper/wp14261814-w7-wallpapers.jpg",
+    type: "image",
+    label: "Windows 7 Glow",
+  },
+  {
+    id: "coastal-sunset",
+    src: "/letterbox/wallpaper/wp14261826-w7-wallpapers.jpg",
+    type: "image",
+    label: "Coastal Sunset",
+  },
+  {
+    id: "bliss-hills",
+    src: "/letterbox/wallpaper/wp14261828-w7-wallpapers.jpg",
+    type: "image",
+    label: "Bliss Hills",
+  },
+  {
+    id: "rolling-hills",
+    src: "/letterbox/wallpaper/wp15133312-windows-7-nature-wallpapers.webp",
+    type: "image",
+    label: "Rolling Hills",
+  },
+  {
+    id: "sandstone-wave",
+    src: "/letterbox/wallpaper/wp15133315-windows-7-nature-wallpapers.webp",
+    type: "image",
+    label: "Sandstone Wave",
+  },
+  {
+    id: "flying-turtle",
+    src: "/letterbox/wallpaper/wp4474573-characters-wallpapers.jpg",
+    type: "image",
+    label: "Flying Turtle",
+  },
 ];
 
 export const LIVE_WALLPAPERS: WallpaperEntry[] = [
