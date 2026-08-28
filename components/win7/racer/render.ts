@@ -28,6 +28,7 @@ import {
   WALL_OFFSET,
 } from "./track";
 import { GEOMETRY, type Car } from "./physics";
+import { formatTime, type Score } from "./leaderboard";
 import { type GfxSettings } from "./settings";
 
 export type View = { width: number; height: number };
@@ -551,6 +552,132 @@ export function drawWall(ctx: CanvasRenderingContext2D, cam: Cam) {
     ctx.beginPath();
     if (addPoly(ctx, cam, quad)) ctx.fill();
   }
+}
+
+/* ---------------------------------------------------------- score board */
+
+/**
+ * The trackside board, standing on the grass a short way down the opening
+ * straight and facing back at the grid.
+ *
+ * Facing matters: a billboard turned along the road is edge-on until you are
+ * level with it, which is one frame of reading. Turned across the road it is
+ * square to everyone still on the straight, so the top five is legible from the
+ * start line and again on every lap.
+ */
+const BOARD_AT = 6; /* sample index — the first straight, about 25 m past the line */
+const BOARD_OUT = 10.4; /* metres right of centre: clear of the 6.5 m kerb, inside the 14 m wall */
+const BOARD_W = 8;
+const BOARD_H = 4.4;
+const BOARD_FOOT = 2.6; /* ground clearance, so the panel clears the barrier behind it */
+
+/**
+ * The face is drawn in its own flat space and then squashed onto the projected
+ * quad, which is what leans the text with the board instead of pasting it flat
+ * in front. Every size below is in these panel units, not pixels.
+ */
+const PANEL_W = 200;
+const PANEL_H = 110;
+
+export function drawLedBoard(ctx: CanvasRenderingContext2D, cam: Cam, board: Score[]) {
+  const p = CENTER[BOARD_AT];
+  const t = tangentAt(BOARD_AT);
+  /* The road's right-hand normal. Canvas y points down, so the driver's right
+     is (-t.y, t.x) — getting this backwards puts the board on the far side of
+     the track and mirrors every row on it. The face looks back down the
+     straight, along -t. */
+  const nx = -t.y;
+  const ny = t.x;
+  const cx = p.x + nx * BOARD_OUT;
+  const cy = p.y + ny * BOARD_OUT;
+
+  const half = BOARD_W / 2;
+  const ax = cx - nx * half;
+  const ay = cy - ny * half;
+  const bx = cx + nx * half;
+  const by = cy + ny * half;
+  const top = BOARD_FOOT + BOARD_H;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  /* Two legs, then the panel over them. Without the legs it reads as a sign
+     hovering over the grass. */
+  ctx.fillStyle = "#2b3038";
+  for (const side of [-1, 1]) {
+    const lx = cx + nx * half * 0.6 * side;
+    const ly = cy + ny * half * 0.6 * side;
+    const w = 0.16;
+    ctx.beginPath();
+    if (
+      addPoly(ctx, cam, [
+        lx - t.x * w, ly - t.y * w, 0,
+        lx + t.x * w, ly + t.y * w, 0,
+        lx + t.x * w, ly + t.y * w, BOARD_FOOT,
+        lx - t.x * w, ly - t.y * w, BOARD_FOOT,
+      ])
+    ) {
+      ctx.fill();
+    }
+  }
+
+  ctx.fillStyle = "#10161d";
+  ctx.beginPath();
+  if (!addPoly(ctx, cam, [ax, ay, BOARD_FOOT, bx, by, BOARD_FOOT, bx, by, top, ax, ay, top])) return;
+  ctx.fill();
+  ctx.strokeStyle = "#39434f";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  /* Past the board, you are looking at its back: a real one is a blank panel,
+     and so is this. It also saves drawing the rows mirrored. */
+  if ((cam.x - cx) * -t.x + (cam.y - cy) * -t.y <= 0) return;
+
+  /* Three corners fix the whole face. The fourth follows from them, and a panel
+     this size is close enough to a parallelogram on screen that the difference
+     between that and a true projective fit does not read. */
+  const tl = projectPoint(cam, ax, ay, top);
+  const tr = projectPoint(cam, bx, by, top);
+  const bl = projectPoint(cam, ax, ay, BOARD_FOOT);
+  if (!tl || !tr || !bl) return;
+  /* Too far away, or too oblique, for any of it to be readable. */
+  if (Math.hypot(tr.x - tl.x, tr.y - tl.y) < 40) return;
+
+  ctx.save();
+  ctx.setTransform(
+    (tr.x - tl.x) / PANEL_W,
+    (tr.y - tl.y) / PANEL_W,
+    (bl.x - tl.x) / PANEL_H,
+    (bl.y - tl.y) / PANEL_H,
+    tl.x,
+    tl.y,
+  );
+
+  ctx.fillStyle = "#05090e";
+  ctx.fillRect(3, 3, PANEL_W - 6, PANEL_H - 6);
+
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#ffc233";
+  ctx.font = "700 13px ui-monospace, monospace";
+  ctx.fillText("TOP 5", PANEL_W / 2, 16);
+  ctx.fillRect(12, 26, PANEL_W - 24, 1);
+
+  /* Five rows always, so an empty board looks like a board waiting for names
+     rather than like a bug. */
+  ctx.font = "700 14px ui-monospace, monospace";
+  for (let i = 0; i < 5; i += 1) {
+    const row = board[i];
+    const y = 40 + i * 15;
+    ctx.fillStyle = row ? "#ffe066" : "#28332c";
+    ctx.textAlign = "left";
+    ctx.fillText(String(i + 1), 12, y);
+    ctx.fillText(row ? row.name.slice(0, 9).toUpperCase() : "-----", 30, y);
+    ctx.textAlign = "right";
+    ctx.fillText(row ? formatTime(row.ms) : "--:--.---", PANEL_W - 12, y);
+  }
+
+  ctx.restore();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 /* ----------------------------------------------------------- skid marks */

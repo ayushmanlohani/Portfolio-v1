@@ -6,7 +6,16 @@ import { RACER_ID } from "@/components/win7/apps";
 import { useWindowStore } from "@/store/windows";
 
 import { driftAngle, speedOf, wheelPositions, type Input } from "./physics";
-import { formatDelta, formatTime, leaderboard, type Score } from "./leaderboard";
+import {
+  askFor,
+  formatDelta,
+  formatTime,
+  readMe,
+  submitScore,
+  topScores,
+  updateMe,
+  type Score,
+} from "./leaderboard";
 import {
   applyGfx,
   chaseCamera,
@@ -14,6 +23,7 @@ import {
   createSkidTrail,
   drawCar,
   drawGround,
+  drawLedBoard,
   drawMinimap,
   drawParticles,
   drawShadow,
@@ -139,11 +149,18 @@ export function Racer() {
   const [paused, setPaused] = useState(false);
   const [focused, setFocused] = useState(false);
   const [result, setResult] = useState<number | null>(null);
-  const [personalBest, setPersonalBest] = useState<number | null>(null);
+  /* The personal best is local, so it can be read straight out of storage on
+     the first render — same reasoning as the graphics settings below. */
+  const [personalBest, setPersonalBest] = useState<number | null>(() => readMe().bestMs ?? null);
   const [board, setBoard] = useState<Score[]>([]);
   const [rank, setRank] = useState(0);
   const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [newBest, setNewBest] = useState(false);
+  /* Which question the finish card is asking, if any. "personal" is the one-off
+     "what should we call you", "board" is the louder one that only appears when
+     the run is going up in public. */
+  const [ask, setAsk] = useState<null | "personal" | "board">(null);
   /* Copied out of the session when the flag falls. Reading the live session
      while rendering the results card would be reading a mutable object React
      knows nothing about. */
@@ -152,6 +169,8 @@ export function Racer() {
   /* Graphics settings load synchronously with the first render so the menu
      shows the saved setup immediately; they are only rendered client-side,
      inside an open window, so there is no SSR value to disagree with. */
+  const [menuTab, setMenuTab] = useState<"controls" | "graphics">("controls");
+
   const [gfx, setGfx] = useState<GfxSettings>(() => loadGfx());
   /* The loop reads settings through a ref — same reasoning as phaseRef below. */
   const gfxRef = useRef(gfx);
@@ -165,10 +184,16 @@ export function Racer() {
 
   /* ------------------------------------------------------------ loading */
 
+  /* The draw loop paints the trackside board every frame and must not depend on
+     a React render to see a new one. */
+  const boardRef = useRef<Score[]>([]);
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
+
   useEffect(() => {
     let alive = true;
-    void leaderboard.top().then((s) => alive && setBoard(s));
-    void leaderboard.best().then((s) => alive && setPersonalBest(s?.ms ?? null));
+    void topScores().then((s) => alive && setBoard(s));
     try {
       const raw = window.localStorage.getItem(GHOST_KEY);
       if (raw) bestGhostRef.current = unpackGhost(raw);
@@ -215,32 +240,70 @@ export function Racer() {
     rootRef.current?.focus();
   }, []);
 
-  const finish = useCallback((session: Session) => {
-    const ms = session.result ?? 0;
-    setResult(ms);
-    setSplits([...session.lapTimes]);
-    setPhase("finished");
-    // A ghost is only worth keeping if it is the fastest one this browser has.
-    void leaderboard.best().then((best) => {
-      if (!best || ms < best.ms) {
-        bestGhostRef.current = session.recording;
-        try {
-          window.localStorage.setItem(GHOST_KEY, packGhost(session.recording));
-        } catch {
-          /* the ghost still works for this session */
-        }
-      }
-    });
+  /** Send a run to the global board and show where it landed. False if it never got there. */
+  const send = useCallback(async (who: string, ms: number) => {
+    const { rank: place, scores } = await submitScore(who, ms);
+    setRank(place);
+    // A board we could not reach is not an empty board; keep the last one.
+    if (scores) setBoard(scores);
+    setSubmitted(true);
+    return scores !== null;
   }, []);
+
+  const finish = useCallback(
+    (session: Session) => {
+      const ms = session.result ?? 0;
+      setResult(ms);
+      setSplits([...session.lapTimes]);
+      setPhase("finished");
+      setAsk(null);
+      setSubmitted(false);
+      setRank(0);
+
+      const me = readMe();
+      const best = me.bestMs == null || ms < me.bestMs;
+      setNewBest(best);
+      /* Only a personal best changes anything. It becomes the ghost you race
+         next time, and it is the only run worth sending: the board keeps one
+         row per player, so a slower lap has nothing to say to it. */
+      if (!best) return;
+
+      bestGhostRef.current = session.recording;
+      try {
+        window.localStorage.setItem(GHOST_KEY, packGhost(session.recording));
+      } catch {
+        /* the ghost still works for this session */
+      }
+      updateMe({ bestMs: ms });
+      setPersonalBest(ms);
+
+      /* Judged against the board already on screen. The server decides for real;
+         this only picks which question to ask, so a slightly stale copy costs
+         nothing. */
+      const question = askFor(me, ms, boardRef.current);
+      if (question) {
+        // Whatever they called themselves last time is the obvious starting point.
+        setName(me.name ?? "");
+        setAsk(question);
+      } else {
+        void send(me.name ?? "", ms);
+      }
+    },
+    [send],
+  );
 
   const submit = useCallback(async () => {
     if (result === null || submitted) return;
-    const { rank: place, scores } = await leaderboard.submit(name, result);
-    setRank(place);
-    setBoard(scores);
-    setSubmitted(true);
-    void leaderboard.best().then((s) => setPersonalBest(s?.ms ?? null));
-  }, [name, result, submitted]);
+    /* Blank is a real answer: it means "put me up as Anonymous". Storing it
+       keeps us from asking again, and the route turns it into the label. */
+    const chosen = name.trim().slice(0, 14);
+    updateMe({ name: chosen });
+    setAsk(null);
+    const landed = await send(chosen, result);
+    /* The loud ask is spent only once it has actually bought a place on the
+       board. A store that was down when they qualified gets to ask again. */
+    if (ask === "board" && landed) updateMe({ boardAsked: true });
+  }, [ask, name, result, send, submitted]);
 
   /* -------------------------------------------------------------- input */
 
@@ -479,6 +542,7 @@ export function Racer() {
       // After the flat world, before the cars: the barrier is the only upright
       // thing out there, and the cars are always inside the ring it makes.
       drawWall(ctx, cam);
+      drawLedBoard(ctx, cam, boardRef.current);
 
       let ghostPose: { x: number; y: number } | null = null;
       if (session.ghost) {
@@ -498,16 +562,16 @@ export function Racer() {
 
       /* --- HUD --------------------------------------------------------- */
       if (timeRef.current) timeRef.current.textContent = formatTime(session.elapsed * 1000);
+      if (deltaRef.current) {
+        const d = ghostDelta(session);
+        deltaRef.current.textContent = d === null ? "" : formatDelta(d * 1000);
+        deltaRef.current.dataset.sign = d === null ? "" : d <= 0 ? "up" : "down";
+      }
       if (speedRef.current) {
         speedRef.current.textContent = String(Math.round(speedOf(session.car) * 3.6));
       }
       if (lapRef.current) {
         lapRef.current.textContent = `${Math.min(session.lap + 1, LAPS)}/${LAPS}`;
-      }
-      if (deltaRef.current) {
-        const d = ghostDelta(session);
-        deltaRef.current.textContent = d === null ? "" : formatDelta(d * 1000);
-        deltaRef.current.dataset.sign = d === null ? "" : d <= 0 ? "up" : "down";
       }
       if (driftRef.current) {
         const angle = (driftAngle(session.car) * 180) / Math.PI;
@@ -536,7 +600,6 @@ export function Racer() {
 
   const showMenu = phase === "menu";
   const showResult = phase === "finished";
-  const beatenBest = result !== null && personalBest !== null && result <= personalBest;
 
   return (
     <div
@@ -601,41 +664,65 @@ export function Racer() {
             <div className="rc-menu-head">
               <div className="rc-menu-badge">Time Trial • {LAPS} Laps</div>
               <h2>Time Attack</h2>
-              <p className="rc-muted">
-                One clock, rear-wheel slip. Throttle in, handbrake to break the rear, counter-steer to catch it — three laps to find the line.
-              </p>
             </div>
-            <div className="rc-menu-body">
-              <div className="rc-menu-col">
-                <div className="rc-keys">
-                  <div><kbd>↑</kbd> / <kbd>W</kbd><span>Throttle</span></div>
-                  <div><kbd>↓</kbd> / <kbd>S</kbd><span>Brake &amp; reverse</span></div>
-                  <div><kbd>←</kbd> <kbd>→</kbd><span>Steer</span></div>
-                  <div><kbd>Space</kbd><span>Handbrake</span></div>
-                  <div><kbd>R</kbd><span>Restart</span></div>
-                  <div><kbd>Esc</kbd><span>Pause</span></div>
+            <div className="rc-tabs" role="tablist" aria-label="Menu sections">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={menuTab === "controls"}
+                data-active={menuTab === "controls" ? "1" : ""}
+                onClick={() => setMenuTab("controls")}
+              >
+                Controls
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={menuTab === "graphics"}
+                data-active={menuTab === "graphics" ? "1" : ""}
+                onClick={() => setMenuTab("graphics")}
+              >
+                Graphics
+              </button>
+            </div>
+            <div className="rc-menu-body" data-tab={menuTab}>
+              {menuTab === "controls" ? (
+                <div className="rc-tab-panel rc-tab-controls">
+                  <div className="rc-keys">
+                    <div><kbd>↑</kbd> / <kbd>W</kbd><span>Throttle</span></div>
+                    <div><kbd>↓</kbd> / <kbd>S</kbd><span>Brake &amp; reverse</span></div>
+                    <div><kbd>←</kbd> <kbd>→</kbd><span>Steer</span></div>
+                    <div><kbd>Space</kbd><span>Handbrake</span></div>
+                    <div><kbd>R</kbd><span>Restart</span></div>
+                    <div><kbd>Esc</kbd><span>Pause</span></div>
+                  </div>
                 </div>
-                <button type="button" className="rc-btn rc-btn-go rc-btn-primary" onClick={start}>
-                  {personalBest === null ? "Start race" : "Race again"}
-                  <span aria-hidden="true"> →</span>
-                </button>
-                {personalBest !== null ? (
-                  <p className="rc-muted rc-pb">
-                    Your best: <strong>{formatTime(personalBest)}</strong> — ghost drives it with you.
-                  </p>
-                ) : (
-                  <p className="rc-muted rc-pb">Set a time and race your ghost.</p>
-                )}
-              </div>
-              <div className="rc-menu-col">
-                <GraphicsPanel gfx={gfx} onChange={setGfx} />
-              </div>
+              ) : (
+                <div className="rc-tab-panel rc-tab-graphics">
+                  <GraphicsPanel gfx={gfx} onChange={setGfx} />
+                </div>
+              )}
+            </div>
+            <div className="rc-menu-actions">
+              <button type="button" className="rc-btn rc-btn-go rc-btn-primary" onClick={start}>
+                {personalBest === null ? "Start race" : "Race again"}
+                <span aria-hidden="true"> →</span>
+              </button>
+              {personalBest !== null ? (
+                <p className="rc-muted rc-pb">
+                  Your best: <strong>{formatTime(personalBest)}</strong> — ghost drives it with you.
+                </p>
+              ) : (
+                <p className="rc-muted rc-pb">Set a time and race your ghost.</p>
+              )}
             </div>
             {(board.length > 0 || personalBest !== null) && (
               <div className="rc-menu-foot">
                 <Board scores={board} highlight={null} />
                 <p className="rc-muted" style={{ margin: 0, textAlign: "center", marginTop: board.length ? 8 : 0 }}>
-                  {board.length === 0 ? "No scores yet — be the first on the board." : "Top 10 worldwide • Ghost saves in this browser"}
+                  {board.length === 0
+                    ? "Board is empty. Be the first name on it."
+                    : "Top five worldwide • your ghost is your own best"}
                 </p>
               </div>
             )}
@@ -646,7 +733,7 @@ export function Racer() {
       {showResult && (
         <div className="rc-overlay">
           <div className="rc-card">
-            <h2>{beatenBest ? "New personal best" : "Finished"}</h2>
+            <h2>{newBest ? "New personal best" : "Finished"}</h2>
             <p className="rc-final">{formatTime(result ?? 0)}</p>
             {splits.length > 0 && (
               <p className="rc-muted">
@@ -654,29 +741,43 @@ export function Racer() {
               </p>
             )}
 
-            {!submitted ? (
-              <form
-                className="rc-submit"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void submit();
-                }}
-              >
-                <input
-                  className="rc-input"
-                  value={name}
-                  maxLength={14}
-                  placeholder="Your name"
-                  onChange={(e) => setName(e.target.value)}
-                  aria-label="Name for the scoreboard"
-                />
-                <button type="submit" className="rc-btn">
-                  Put me on the board
-                </button>
-              </form>
-            ) : (
+            {ask && !submitted ? (
+              <>
+                <p className="rc-ask" data-loud={ask === "board" ? "1" : ""}>
+                  {ask === "board"
+                    ? "That one makes the top five. Your name goes on the board by the start line, where everyone racing will read it."
+                    : "Your best lap so far. Put a name to it, or leave it blank to stay anonymous."}
+                </p>
+                <form
+                  className="rc-submit"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void submit();
+                  }}
+                >
+                  <input
+                    className="rc-input"
+                    value={name}
+                    maxLength={14}
+                    placeholder={ask === "board" ? "Your name for the board" : "Your name, or blank for Anonymous"}
+                    onChange={(e) => setName(e.target.value)}
+                    aria-label="Name for the scoreboard"
+                    autoFocus
+                  />
+                  <button type="submit" className="rc-btn">
+                    {ask === "board" ? "Put me on the board" : "Save"}
+                  </button>
+                </form>
+              </>
+            ) : submitted ? (
               <p className="rc-rank">
-                {rank > 0 ? `#${rank} on the board` : "Not quite a top ten time"}
+                {rank > 0 ? `#${rank} on the board` : "Saved. Not in the top five yet."}
+              </p>
+            ) : (
+              <p className="rc-muted rc-ask">
+                {newBest
+                  ? "New best saved. Your ghost drives this run from now on."
+                  : "Not a best. Your ghost keeps its time."}
               </p>
             )}
 
@@ -684,7 +785,7 @@ export function Racer() {
             <button type="button" className="rc-btn rc-btn-go" onClick={start}>
               Race again
             </button>
-            <p className="rc-muted rc-note">Scores are saved in this browser.</p>
+            <p className="rc-muted rc-note">Your best lap and its ghost are saved in this browser.</p>
           </div>
         </div>
       )}
@@ -698,11 +799,7 @@ function Board({ scores, highlight }: { scores: Score[]; highlight: number | nul
     <table className="rc-board">
       <tbody>
         {scores.map((s, i) => (
-          <tr
-            key={`${s.name}-${s.at}-${i}`}
-            data-target={s.target ?? ""}
-            data-me={highlight === i + 1 ? "1" : ""}
-          >
+          <tr key={s.userId} data-me={highlight === i + 1 ? "1" : ""}>
             <td className="rc-pos">{i + 1}</td>
             <td className="rc-name">{s.name}</td>
             <td className="rc-score">{formatTime(s.ms)}</td>

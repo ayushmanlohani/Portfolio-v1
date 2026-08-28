@@ -5230,6 +5230,8 @@ img.project-crest {
   font-family: "Segoe UI", Tahoma, sans-serif;
   user-select: none;
   cursor: default;
+  container-type: size;
+  container-name: rc;
 }
 
 .rc-canvas {
@@ -5423,13 +5425,11 @@ img.project-crest {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 14px 16px;
+  padding: clamp(6px, 1.5cqh, 14px) clamp(8px, 1.5cqi, 16px);
   background: rgba(8, 14, 22, 0.52);
   backdrop-filter: blur(2px) saturate(1.08);
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
 }
 
 @media (min-height: 560px) {
@@ -5476,20 +5476,28 @@ img.project-crest {
   text-wrap: balance;
 }
 
-/* — Menu card: wider, two-column, scroll-safe — */
+/* — Menu card: scales with game window (no scroll) — */
 .rc-menu {
-  max-width: 640px;
+  width: min(92cqi, 460px);
+  max-height: 92cqh;
+  height: auto;
   padding: 0;
   text-align: left;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: calc(100% - 4px);
-  border-radius: 14px;
+  border-radius: clamp(10px, 1.6cqh, 14px);
+}
+
+.rc-menu-head,
+.rc-tabs,
+.rc-menu-actions,
+.rc-menu-foot {
+  flex: 0 0 auto;
 }
 
 .rc-menu-head {
-  padding: 18px 22px 16px;
+  padding: clamp(6px, 1.4cqh, 12px) clamp(10px, 2cqi, 18px) clamp(5px, 1.1cqh, 10px);
   background:
     linear-gradient(90deg, rgba(20, 56, 94, 0.06) 0%, transparent 42%),
     linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
@@ -5536,11 +5544,11 @@ img.project-crest {
 }
 
 .rc-menu-head h2 {
-  margin: 10px 0 8px;
-  font-size: 26px;
+  margin: clamp(2px, 0.5cqh, 6px) 0 clamp(0px, 0.3cqh, 2px);
+  font-size: clamp(15px, 3.2cqh, 22px);
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: 1.1;
   color: #0f2a46;
   overflow: visible;
   text-wrap: balance;
@@ -5552,37 +5560,90 @@ img.project-crest {
   color: #4a5a6c;
 }
 
-.rc-menu-body {
+.rc-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  padding: 16px 18px 14px;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #c5d6e7 transparent;
+  gap: clamp(4px, 0.7cqh, 6px);
+  padding: clamp(4px, 0.9cqh, 8px) clamp(8px, 1.5cqi, 14px);
+  background: linear-gradient(180deg, #eef4fb 0%, #e6eef8 100%);
+  border-bottom: 1px solid rgba(20, 56, 94, 0.08);
 }
 
-.rc-menu-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.rc-menu-body::-webkit-scrollbar-thumb {
-  background: #c5d6e7;
+.rc-tabs button {
+  appearance: none;
+  border: 1px solid transparent;
+  padding: clamp(4px, 0.9cqh, 7px) clamp(6px, 1cqi, 10px);
   border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: clamp(10px, 1.8cqh, 12.5px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #5a6e85;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.rc-tabs button[data-active="1"] {
+  background: #14385e;
+  color: #fff;
+  border-color: #0f2a46;
+  box-shadow:
+    0 2px 8px rgba(20, 56, 94, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.rc-tabs button:not([data-active="1"]):hover {
+  background: #fff;
+  color: #14385e;
+  border-color: #c5d6e7;
+}
+
+.rc-menu-body {
+  display: block;
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  padding: clamp(6px, 1cqh, 10px) clamp(8px, 1.5cqi, 14px);
+  overflow: hidden;
+}
+
+.rc-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.7cqh, 8px);
+  min-height: auto;
+  justify-content: flex-start;
+}
+
+.rc-menu-actions {
+  padding: clamp(6px, 1cqh, 10px) clamp(8px, 1.5cqi, 14px) clamp(6px, 1.1cqh, 12px);
+  border-top: 1px solid rgba(20, 56, 94, 0.08);
+  background: linear-gradient(180deg, #f7f9fc 0%, #eef4fb 100%);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(4px, 0.6cqh, 6px);
+}
+
+.rc-menu-actions .rc-pb {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(10px, 1.5cqh, 12px);
 }
 
 .rc-menu-foot {
-  padding: 12px 18px 16px;
+  padding: clamp(6px, 1cqh, 12px) clamp(8px, 1.5cqi, 14px) clamp(6px, 1.1cqh, 12px);
   border-top: 1px solid rgba(20, 56, 94, 0.08);
   background: linear-gradient(180deg, #f7f9fc 0%, #eef4fb 100%);
 }
 
 @media (max-width: 620px) {
-  .rc-menu-body {
-    grid-template-columns: 1fr;
-  }
   .rc-menu {
-    max-width: 380px;
+    width: min(96cqi, 380px);
   }
 }
 
@@ -5597,28 +5658,28 @@ img.project-crest {
 .rc-menu .rc-keys {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: clamp(3px, 0.6cqh, 6px);
   margin: 0;
 }
 
 .rc-menu .rc-keys > div {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 11px;
-  border-radius: 9px;
+  gap: clamp(5px, 0.9cqh, 8px);
+  padding: clamp(4px, 0.8cqh, 7px) clamp(6px, 1cqi, 10px);
+  border-radius: clamp(6px, 1cqh, 8px);
   background: #fff;
   border: 1px solid #dfe8f2;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(20, 56, 94, 0.06);
-  font-size: 12px;
+  font-size: clamp(10px, 1.6cqh, 11.5px);
   color: #34465a;
 }
 
 .rc-menu .rc-keys kbd {
   flex: none;
-  min-width: 28px;
-  padding: 4px 6px;
-  font-size: 11px;
+  min-width: clamp(20px, 3.5cqi, 24px);
+  padding: clamp(2px, 0.4cqh, 3px) clamp(3px, 0.7cqi, 5px);
+  font-size: clamp(9px, 1.4cqh, 10px);
   font-weight: 700;
   letter-spacing: 0.02em;
   background: linear-gradient(180deg, #fff 0%, #f3f7fb 100%);
@@ -5633,40 +5694,42 @@ img.project-crest {
 
 .rc-menu .rc-gfx {
   margin: 0;
-  padding: 12px 12px 10px;
+  padding: clamp(6px, 1cqh, 10px) clamp(6px, 1cqi, 10px) clamp(4px, 0.8cqh, 8px);
   border: 1px solid #dbe6f0;
-  border-radius: 10px;
+  border-radius: clamp(8px, 1cqh, 10px);
   background: #fff;
   box-shadow: 0 1px 0 #fff, 0 4px 14px rgba(20, 56, 94, 0.07);
 }
 
 .rc-menu .rc-gfx-title {
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  margin-bottom: clamp(4px, 0.8cqh, 10px);
+  padding-bottom: clamp(4px, 0.7cqh, 8px);
   border-bottom: 1px solid #eef3f8;
+  font-size: clamp(9px, 1.4cqh, 12px);
 }
 
 .rc-menu .rc-gfx-row {
-  gap: 8px;
-  margin: 6px 0;
+  gap: clamp(4px, 0.7cqh, 8px);
+  margin: clamp(2px, 0.5cqh, 6px) 0;
+  font-size: clamp(10px, 1.5cqh, 11.5px);
 }
 
 .rc-menu .rc-gfx-row > span:first-child {
-  width: 92px;
+  width: clamp(68px, 14cqi, 92px);
   font-weight: 600;
   color: #34465a;
 }
 
 .rc-btn-primary {
   width: 100%;
-  padding: 11px 18px;
-  font-size: 14px;
+  padding: clamp(6px, 1.2cqh, 11px) clamp(10px, 1.8cqi, 18px);
+  font-size: clamp(11px, 1.9cqh, 14px);
   font-weight: 800;
   letter-spacing: 0.01em;
   color: #fff;
   background: linear-gradient(180deg, #2e7ac7 0%, #1e5fa1 52%, #164a82 100%);
   border: 1px solid #12365e;
-  border-radius: 8px;
+  border-radius: clamp(6px, 1cqh, 8px);
   box-shadow:
     0 6px 18px rgba(20, 86, 148, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.28);
@@ -5790,6 +5853,21 @@ img.project-crest {
   text-align: center;
 }
 
+/* The line above the name field. The board version is the one that matters, so
+   it is the one that gets the weight. */
+.rc-ask {
+  margin: 8px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: #4a5a6c;
+  text-wrap: balance;
+}
+
+.rc-ask[data-loud="1"] {
+  font-weight: 600;
+  color: #14385e;
+}
+
 .rc-submit {
   display: flex;
   gap: 6px;
@@ -5843,35 +5921,6 @@ img.project-crest {
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: #14385e;
-}
-
-/* The shipped target times, rendered as medals so nobody mistakes them for
-   somebody's lap — they are goals, not people. */
-.rc-board tr[data-target] .rc-name::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 6px;
-  border-radius: 50%;
-  vertical-align: baseline;
-}
-
-.rc-board tr[data-target="gold"] .rc-name::before {
-  background: #e3b341;
-}
-
-.rc-board tr[data-target="silver"] .rc-name::before {
-  background: #b6bfc8;
-}
-
-.rc-board tr[data-target="bronze"] .rc-name::before {
-  background: #c07a3c;
-}
-
-.rc-board tr[data-target] td {
-  color: #6b7a8b;
-  font-style: italic;
 }
 
 .rc-board tr[data-me="1"] td {

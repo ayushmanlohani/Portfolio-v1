@@ -1,174 +1,121 @@
 /**
- * The scoreboard, behind one small interface.
+ * Who you are, what your best lap was, and the global top five.
  *
- * Every method is async because the board is now a network call: submit and
- * top hit /api/scores (Upstash Redis, one sorted set), and fall back to this
- * browser's localStorage when no store is configured or the network is down.
- * Personal best stays local either way — the ghost car replays it offline.
- * Nothing that renders a score has to know which one it is talking to.
+ * One player is one browser: a UUID minted on the first visit and kept in
+ * localStorage next to the name and the personal best. The ghost car replays
+ * that best run, so everything needed to race is local and the network is only
+ * ever asked about other people. A board that will not load is an empty board,
+ * never a lost lap.
  *
- * Anything the browser sends can be forged, so the route handler — not this
- * file — rejects implausible times before they reach the store.
+ * Anything the browser sends can be forged, so /api/scores — not this file —
+ * is where a submitted time is checked before it reaches the store.
  */
 
-export type Score = {
-  name: string;
-  /** Total time for the run, milliseconds. */
-  ms: number;
-  /** When it was set. */
-  at: number;
-  /** Target times shipped with the game rather than driven by a player. */
-  target?: "gold" | "silver" | "bronze";
-};
-
-export interface Leaderboard {
-  top(limit?: number): Promise<Score[]>;
-  /** Returns the new board and where this run landed (1-based, 0 = off the board). */
-  submit(name: string, ms: number): Promise<{ rank: number; scores: Score[] }>;
-  /** The fastest run this browser has driven, ghost included. */
-  best(): Promise<Score | null>;
-  clear(): Promise<void>;
-}
+/** One row of the global board. */
+export type Score = { userId: string; name: string; ms: number };
 
 /**
- * Times to beat, shipped with the game. They are goals, not people — the board
- * renders them as medals rather than as names, so nobody is being credited
- * with a lap they did not drive. A leaderboard with nothing on it reads as
- * broken; a leaderboard with three targets reads as a challenge.
+ * This browser's player.
+ *
+ * `name` being absent is what decides whether we have ever asked for one: an
+ * empty string is a real answer ("leave me anonymous"), a missing one means the
+ * question has not been put yet. Same idea for `boardAsked` — it is the record
+ * that the top-five prompt has been shown, so it only ever interrupts once.
  */
-export const TARGETS: Score[] = [
-  { name: "Gold", ms: 62000, at: 0, target: "gold" },
-  { name: "Silver", ms: 70000, at: 0, target: "silver" },
-  { name: "Bronze", ms: 80000, at: 0, target: "bronze" },
-];
+export type Me = {
+  id: string;
+  name?: string;
+  boardAsked?: boolean;
+  /** Personal best in milliseconds. The ghost blob is the run that set it. */
+  bestMs?: number;
+};
 
-const KEY = "win7.racer.scores.v1";
-const MAX = 10;
+const ME_KEY = "win7.racer.me.v2";
 
-const byTime = (a: Score, b: Score) => a.ms - b.ms;
+/** How many places the board shows. The server trims to the same number. */
+export const BOARD_SIZE = 5;
 
-function read(): Score[] {
-  if (typeof window === "undefined") return [];
+function store(me: Me) {
   try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .filter(
-        (s): s is Score =>
-          !!s && typeof s === "object" && typeof (s as Score).name === "string" && Number.isFinite((s as Score).ms),
-      )
-      .sort(byTime)
-      .slice(0, MAX);
+    window.localStorage.setItem(ME_KEY, JSON.stringify(me));
   } catch {
-    // Private mode, a full quota, or somebody editing the key by hand. An
-    // unreadable board is an empty board, never a crash mid-race.
-    return [];
+    /* private mode or a full quota — the run still counts for this session */
   }
 }
 
-function write(scores: Score[]) {
+export function readMe(): Me {
+  let me: Partial<Me> = {};
   try {
-    window.localStorage.setItem(KEY, JSON.stringify(scores));
+    const raw: unknown = JSON.parse(window.localStorage.getItem(ME_KEY) ?? "{}");
+    if (raw && typeof raw === "object") me = raw as Partial<Me>;
   } catch {
-    /* nothing to do — the run still counted for this session */
+    /* unreadable is the same as new here */
   }
+  if (!me.id) {
+    me = { ...me, id: crypto.randomUUID() };
+    store(me as Me);
+  }
+  return me as Me;
 }
 
-function makeEntry(name: string, ms: number): Score {
-  return { name: name.trim().slice(0, 14) || "Anonymous", ms, at: Date.now() };
+/** Merge a change into the stored player and hand back the result. */
+export function updateMe(patch: Partial<Me>): Me {
+  const next = { ...readMe(), ...patch };
+  store(next);
+  return next;
 }
 
 /**
- * Keep the run in this browser regardless of what the network board says. The
- * ghost car replays your personal best, so best() has to answer even offline.
- */
-function recordLocal(entry: Score): Score[] {
-  const scores = [...read(), entry].sort(byTime).slice(0, MAX);
-  write(scores);
-  return scores;
-}
-
-const localBoard: Leaderboard = {
-  async top(limit = MAX) {
-    return [...read(), ...TARGETS].sort(byTime).slice(0, limit);
-  },
-
-  async submit(name, ms) {
-    const entry = makeEntry(name, ms);
-    const merged = [...recordLocal(entry), ...TARGETS].sort(byTime);
-    // Identity, not equality: two runs can tie to the millisecond.
-    const rank = merged.findIndex((s) => s === entry) + 1;
-    return { rank, scores: merged.slice(0, MAX) };
-  },
-
-  async best() {
-    return read()[0] ?? null;
-  },
-
-  async clear() {
-    try {
-      window.localStorage.removeItem(KEY);
-    } catch {
-      /* see write() */
-    }
-  },
-};
-
-/**
- * The global board: /api/scores, backed by one Redis sorted set on Upstash.
+ * Which question a personal best earns, given who the player is and the board
+ * they can see. Null means ask nothing and just update the row.
  *
- * Every network call falls back to the local board rather than throwing. With
- * no store configured (a fresh clone, dev without env vars) the game behaves
- * exactly as it did before this file grew a second implementation — nobody
- * loses a lap to a 503.
+ * A player is interrupted at most twice in their life: once for a name at all,
+ * and once — louder — the first time a lap of theirs is going somewhere other
+ * people will read it. Every best after that is silent, which is the whole
+ * point of racing your own ghost.
  */
-async function fetchBoard(init?: RequestInit): Promise<Score[] | null> {
+export function askFor(me: Me, ms: number, board: Score[]): "board" | "personal" | null {
+  const qualifies = board.length < BOARD_SIZE || ms < board[board.length - 1].ms;
+  if (qualifies && !me.boardAsked) return "board";
+  if (me.name === undefined) return "personal";
+  return null;
+}
+
+async function api(init?: RequestInit): Promise<{ scores: Score[]; rank?: number } | null> {
   try {
     const res = await fetch("/api/scores", init);
     if (!res.ok) return null;
-    const { scores } = (await res.json()) as { scores?: Score[] };
-    return Array.isArray(scores) ? scores : null;
+    const data = (await res.json()) as { scores?: Score[]; rank?: number };
+    return Array.isArray(data.scores) ? { scores: data.scores, rank: data.rank } : null;
   } catch {
     return null;
   }
 }
 
-const remoteBoard: Leaderboard = {
-  async top(limit = MAX) {
-    const scores = await fetchBoard();
-    if (!scores) return localBoard.top(limit);
-    return [...scores, ...TARGETS].sort(byTime).slice(0, limit);
-  },
+/** The global top five. Empty when there is no store, or no network. */
+export async function topScores(): Promise<Score[]> {
+  return (await api())?.scores ?? [];
+}
 
-  async submit(name, ms) {
-    const entry = makeEntry(name, ms);
-    recordLocal(entry);
-    const scores = await fetchBoard({
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: entry.name, ms }),
-    });
-    if (!scores) {
-      const merged = [...read(), ...TARGETS].sort(byTime);
-      const rank = merged.findIndex((s) => s.name === entry.name && s.ms === entry.ms) + 1;
-      return { rank, scores: merged.slice(0, MAX) };
-    }
-    const merged = [...scores, ...TARGETS].sort(byTime);
-    // The server sent back its own objects, so match on the run rather than on
-    // identity. A tie to the millisecond with the same name is the same driver.
-    const rank = merged.findIndex((s) => s.name === entry.name && s.ms === entry.ms) + 1;
-    return { rank, scores: merged.slice(0, MAX) };
-  },
-
-  /** Personal best and the ghost it drives are this browser's, not the world's. */
-  best: localBoard.best,
-  clear: localBoard.clear,
-};
-
-/** The board the game talks to. One line to fall back to local-only. */
-export const leaderboard: Leaderboard = remoteBoard;
+/**
+ * Put a run on the global board.
+ *
+ * The server keeps one row per player and only ever lets that row get faster,
+ * so this is safe to call on every personal best without checking first.
+ * `scores` comes back null when the board could not be reached, which is the
+ * caller's cue to keep showing the one it already has.
+ */
+export async function submitScore(
+  name: string,
+  ms: number,
+): Promise<{ rank: number; scores: Score[] | null }> {
+  const data = await api({
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId: readMe().id, name, ms }),
+  });
+  return { rank: data?.rank ?? 0, scores: data?.scores ?? null };
+}
 
 /** 1:04.312 — the format every racing game has used for forty years. */
 export function formatTime(ms: number): string {
