@@ -374,14 +374,13 @@ const NODE_LIST: FsNode[] = [
     type: "File folder",
   },
   { id: "downloads", label: "Downloads", Icon: FolderIcon, kind: "folder", type: "File folder" },
-  { id: "recent", label: "Recent Places", Icon: FolderIcon, kind: "folder", type: "File folder" },
 
   {
     id: "favorites",
     label: "Favorites",
     Icon: StarIcon,
     kind: "group",
-    children: ["desktop", "downloads", "recent"],
+    children: ["desktop", "about", "projects"],
     type: "System folder",
   },
   {
@@ -599,7 +598,7 @@ export function contents(id: string, deleted: readonly string[]): string[] {
 
 /** The navigation pane, top to bottom. Libraries was removed on request. */
 export const TREE: { id: string; children?: string[] }[] = [
-  { id: "favorites", children: ["desktop", "downloads", "recent"] },
+  { id: "favorites", children: ["desktop", "about", "projects"] },
   { id: "computer", children: ["drive-c"] },
   { id: "network" },
 ];
