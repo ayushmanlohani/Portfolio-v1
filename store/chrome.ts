@@ -28,6 +28,13 @@ export const ABOUTME: Site = { url: "aboutme.interactive", title: "About Me" };
  *  About Me visit rather than the same one refocused. */
 export const EDUCATION: Site = { url: "aboutme.interactive#education", title: "About Me" };
 export const EXPERIENCE: Site = { url: "aboutme.interactive#experience", title: "About Me" };
+/**
+ * The two real addresses. Unlike the project mockups above, these URLs are
+ * the genuine ones — the pages they load are hand-built snapshots, but the
+ * omnibox has no reason to lie about where they live.
+ */
+export const GITHUB_SITE: Site = { url: "github.com/ayushmanlohani", title: "ayushmanlohani (Ayushman Lohani)" };
+export const LINKEDIN_SITE: Site = { url: "linkedin.com/in/ayushmanlohani", title: "Ayushman Lohani | LinkedIn" };
 /** The New Tab page itself, bookmarkable as "Google". */
 export const GOOGLE: Site = { url: "google.com", title: "Google" };
 

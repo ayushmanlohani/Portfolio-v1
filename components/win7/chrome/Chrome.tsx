@@ -5,7 +5,18 @@ import { useEffect, useRef, useState } from "react";
 import { Clouds } from "@/components/win7/clouds/Clouds";
 import { SentinelLanding } from "@/components/win7/sentinel/SentinelLanding";
 import { AboutMeLanding } from "@/components/win7/aboutme/AboutMeLanding";
-import { ABOUTME, GOOGLE, SENTINEL, UNITWISE, useChrome, type ChromeTab } from "@/store/chrome";
+import { GitHubProfile } from "@/components/win7/github/GitHubProfile";
+import { LinkedInProfile } from "@/components/win7/linkedin/LinkedInProfile";
+import {
+  ABOUTME,
+  GITHUB_SITE,
+  GOOGLE,
+  LINKEDIN_SITE,
+  SENTINEL,
+  UNITWISE,
+  useChrome,
+  type ChromeTab,
+} from "@/store/chrome";
 import { useWindowStore } from "@/store/windows";
 
 import {
@@ -55,13 +66,16 @@ const NUB_CLIP =
  * off the bookmarks bar and onto the page where he wanted them.
  *
  * Bookmarked sites (Unitwise, Sentinel, Google) come from the bookmark store
- * so starring/unstarring is reflected here. The remaining three are static
- * shortcuts that are always shown — they have no Site, so the star never
- * touches them.
+ * so starring/unstarring is reflected here. The rest are static shortcuts
+ * that are always shown — they have no Site, so the star never touches them.
+ *
+ * GitHub and LinkedIn carry a `site`, so clicking them loads a page like any
+ * other bookmark. Gmail does not, and stays a dead circle on purpose: there
+ * is no inbox behind it and a fake one would be a different kind of lie.
  */
-const STATIC_SHORTCUTS = [
-  { label: "GitHub", hue: "#24292f" },
-  { label: "LinkedIn", hue: "#0a66c2" },
+const STATIC_SHORTCUTS: { label: string; hue: string; site?: typeof GITHUB_SITE }[] = [
+  { label: "GitHub", hue: "#24292f", site: GITHUB_SITE },
+  { label: "LinkedIn", hue: "#0a66c2", site: LINKEDIN_SITE },
   { label: "Gmail", hue: "#d93025" },
 ];
 
@@ -70,6 +84,8 @@ function bookmarkHue(site: { url: string }): string {
   if (site.url === SENTINEL.url) return "#0d1b26";
   if (site.url === ABOUTME.url) return "#F76240";
   if (site.url === GOOGLE.url) return "#4285f4";
+  if (site.url === GITHUB_SITE.url) return "#24292f";
+  if (site.url === LINKEDIN_SITE.url) return "#0a66c2";
   return "#5a5a5a";
 }
 
@@ -377,6 +393,8 @@ function NewTabPage() {
           <button
             key={s.label}
             type="button"
+            onClick={s.site ? () => visit(s.site!) : undefined}
+            title={s.site?.url}
             className="group flex w-[76px] flex-col items-center gap-[7px]"
           >
             <span className="flex h-[48px] w-[48px] items-center justify-center rounded-full border border-[#cfcfcf] bg-gradient-to-b from-[#fdfdfd] to-[#e4e4e4] shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_1px_2px_rgba(0,0,0,0.12)] group-hover:from-[#ffffff] group-hover:to-[#d8e4f2] group-hover:border-[#9db8d8]">
@@ -470,6 +488,10 @@ export function Chrome({ windowId }: { windowId: string }) {
           <SentinelLanding />
         ) : active?.site?.url.startsWith(ABOUTME.url) ? (
           <AboutMeLanding scrollTo={active.site.url.split("#")[1]} />
+        ) : active?.site?.url === GITHUB_SITE.url ? (
+          <GitHubProfile />
+        ) : active?.site?.url === LINKEDIN_SITE.url ? (
+          <LinkedInProfile />
         ) : active?.site?.url === GOOGLE.url ? (
           <NewTabPage />
         ) : active?.site ? (
