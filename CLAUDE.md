@@ -118,10 +118,23 @@ Old files are in the session scratchpad, not the repo.)*
 ## Still open
 
 - Taskbar clock — the only taskbar piece still missing.
-- Whether Time Attack gets a real global leaderboard. He chose "local now,
-  global later" on purpose. Doing it needs a table (Supabase/Upstash), one
-  route handler, and server-side rejection of impossible times — including
-  runs where simulated time and wall time diverge, which is how a throttled
-  machine would otherwise farm a slow-motion lap.
+- Time Attack's global leaderboard is **done** (2026-08-28): one Upstash Redis
+  sorted set behind `app/api/scores/route.ts`, hit with plain fetch — no
+  client library. The route rejects times outside 45s–10min; that is the only
+  cheat check. Real proof would mean re-simulating the run server-side,
+  including runs where simulated time and wall time diverge, which is how a
+  throttled machine would otherwise farm a slow-motion lap. Personal best and
+  the ghost stay in localStorage, and the board silently falls back to
+  localStorage when the store is unreachable.
 - Whether the CRT frame comes back on. It's one attribute either way.
 - No mobile/small-screen design yet.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
