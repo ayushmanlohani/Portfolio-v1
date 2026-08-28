@@ -40,17 +40,23 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Tuned nameplate layout (written by /tune)
-/data/nameplate.json
-
-.lavish
-.claude
-.playwright-mcp
-.gitignore
-CLAUDE.md
+# agent tooling — scratch dirs, worktrees and lockfiles none of the site needs
 .agents
-skills-lock.json
+.claude
+.lavish
+.opencode
+.playwright-mcp
 graphify-out
+skills-lock.json
 
 # local-only
 AGENTS.md
+
+# other AI tool configs
+.clinerules
+.cursor
+.github
+.windsurf
+
+# stray local drop, wrong folder name
+/public/letterbox/linked in/

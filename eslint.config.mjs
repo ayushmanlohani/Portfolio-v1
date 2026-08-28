@@ -5,8 +5,14 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
+  // This list REPLACES every default ignore, ESLint's own included — which is
+  // why node_modules is spelled out. Leave it off and `npm run lint` walks
+  // 700 files of dependencies and worktrees instead of the 90 that are ours.
   globalIgnores([
+    "node_modules/**",
+    // Feature branches checked out under .claude/worktrees are their own
+    // copies of this repo; each one lints itself.
+    ".claude/**",
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",

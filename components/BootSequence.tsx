@@ -12,7 +12,6 @@ import { DesktopWelcomeToast } from "./DesktopWelcomeToast";
 import { useWindowStore } from "@/store/windows";
 
 export function BootSequence() {
-  const [loggedIn, setLoggedIn] = useState(false);
   const [loginVisible, setLoginVisible] = useState(true);
   const [resetKey, setResetKey] = useState(0);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -22,7 +21,6 @@ export function BootSequence() {
   const handleSignIn = () => {
     setLoginVisible(false);
     setTimeout(() => {
-      setLoggedIn(true);
       if (!welcomeShownRef.current) {
         welcomeShownRef.current = true;
         setShowWelcome(true);
@@ -32,7 +30,6 @@ export function BootSequence() {
 
   const handleShutdown = () => {
     closeAll();
-    setLoggedIn(false);
     setResetKey((k) => k + 1);
     setLoginVisible(true);
   };

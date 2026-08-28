@@ -759,12 +759,6 @@ body {
   color: #7a1f1f;
 }
 
-.sm-sep {
-  height: calc(1 * var(--px));
-  margin: calc(5 * var(--px)) calc(4 * var(--px));
-  background: #d5e0ea;
-}
-
 .sm-item {
   display: flex;
   align-items: center;
@@ -3092,13 +3086,6 @@ img.project-crest {
   margin: 0;
 }
 
-.net-note {
-  max-width: calc(460 * var(--px));
-  margin: calc(16 * var(--px)) 0 0;
-  color: #6d7d8b;
-  line-height: 1.55;
-}
-
 /* The Recycle Bin, lit up while a folder is being dragged onto it. Windows
    selects the target icon rather than drawing a separate drop zone. */
 .desktop-icon[data-drop] {
@@ -5101,6 +5088,101 @@ img.project-crest {
    padding, or the layers drift out of sync and double-expose. Near-zero
    here so the name sits in the sentence's own flow instead of the title's
    old block spacing. */
+/* ── The sparkling name in the login tagline ──────────────────────────────
+   Was a <style> block re-emitted from SparkleButton.tsx on every render.
+   The component now only springs --hover and --pos; every value below was
+   a prop with exactly one caller, so it is written here once instead. */
+.sparkle-button {
+  --padding: 24px 32px;
+  --color: #8fd2ff;
+  --shadow: #1742f5;
+  --glare: #ffffffcc;
+  --font-size: 27px;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  padding: var(--padding);
+  border-radius: 16px;
+  text-decoration: none;
+  color: transparent;
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sparkle-button span {
+  display: inline-block;
+  font-size: var(--font-size);
+  font-weight: 700;
+  text-decoration: none;
+  color: transparent;
+  text-shadow:
+    calc(var(--hover) * (var(--font-size) * -0)) calc(var(--hover) * (var(--font-size) * 0)) var(--shadow),
+    calc(var(--hover) * (var(--font-size) * -0.02)) calc(var(--hover) * (var(--font-size) * 0.02)) var(--shadow),
+    calc(var(--hover) * (var(--font-size) * -0.04)) calc(var(--hover) * (var(--font-size) * 0.04)) var(--shadow),
+    calc(var(--hover) * (var(--font-size) * -0.06)) calc(var(--hover) * (var(--font-size) * 0.06)) var(--shadow),
+    calc(var(--hover) * (var(--font-size) * -0.08)) calc(var(--hover) * (var(--font-size) * 0.08)) var(--shadow),
+    calc(var(--hover) * (var(--font-size) * -0.1)) calc(var(--hover) * (var(--font-size) * 0.1)) var(--shadow);
+  transform: translate(calc(var(--hover) * (var(--font-size) * 0.1)), calc(var(--hover) * (var(--font-size) * -0.1)));
+}
+
+/* The second copy of the name: the glare gradient, clipped to the glyphs. */
+.sparkle-button span:last-of-type {
+  position: absolute;
+  inset: 0;
+  padding: var(--padding);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    linear-gradient(
+        108deg,
+        transparent 0 55%,
+        var(--glare) 55% 60%,
+        transparent 60% 70%,
+        var(--glare) 70% 85%,
+        transparent 85%
+      )
+      calc(var(--pos) * -200%) 0% / 200% 100%,
+    var(--color);
+  -webkit-background-clip: text;
+  color: transparent;
+  z-index: 2;
+  text-shadow: none;
+}
+
+.sparkle-button svg {
+  position: absolute;
+  z-index: 3;
+  width: calc(var(--font-size) * 0.6);
+  aspect-ratio: 1;
+  pointer-events: none;
+  top: calc(var(--y, 50) * 1%);
+  left: calc(var(--x, 0) * 1%);
+  transform: translate(-50%, -50%) scale(0);
+}
+
+.sparkle-button svg path {
+  fill: var(--glare);
+}
+
+.sparkle-button:hover svg {
+  animation: sparkle 0.75s calc(0.15s * var(--d)) both;
+}
+
+/* Where each of the five sits, how big it pops, and its turn in the sequence. */
+.sparkle-button svg:nth-of-type(1) { --x: 0;   --y: 20; --s: 1.1;  --d: 1; }
+.sparkle-button svg:nth-of-type(2) { --x: 15;  --y: 80; --s: 1.25; --d: 2; }
+.sparkle-button svg:nth-of-type(3) { --x: 45;  --y: 40; --s: 1.1;  --d: 3; }
+.sparkle-button svg:nth-of-type(4) { --x: 75;  --y: 60; --s: 0.9;  --d: 2; }
+.sparkle-button svg:nth-of-type(5) { --x: 100; --y: 30; --s: 0.8;  --d: 4; }
+
+@keyframes sparkle {
+  50% {
+    transform: translate(-50%, -50%) scale(var(--s, 1));
+  }
+}
+
 .win7-login-tagline .sparkle-button {
   --padding: 0 3px;
   white-space: nowrap;
@@ -5645,14 +5727,6 @@ img.project-crest {
   .rc-menu {
     width: min(96cqi, 380px);
   }
-}
-
-/* — Menu columns & polished controls — */
-.rc-menu-col {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
 }
 
 .rc-menu .rc-keys {

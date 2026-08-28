@@ -114,6 +114,25 @@ export const CHROME_SIZE = { width: 1040, height: 680 };
 const FOLDER_SIZE = { width: 900, height: 600 };
 
 /**
+ * What each application window opens as: its caption and its size. Folders
+ * aren't here — they all open the same way, off the file tree, and so are the
+ * two media viewers, whose caption is the file they were handed.
+ */
+const APPS: Record<string, { title: string; width: number; height: number }> = {
+  [TERMINAL_ID]: { title: TERMINAL_TITLE, ...TERMINAL_SIZE },
+  [CALC_ID]: { title: "Calculator", ...CALC_SIZE },
+  [NOTEPAD_ID]: { title: "Untitled - Notepad", ...NOTEPAD_SIZE },
+  [RACER_ID]: { title: RACER_TITLE, ...RACER_SIZE },
+  [PINGPONG_ID]: { title: PINGPONG_TITLE, ...PINGPONG_SIZE },
+  [WMP_ID]: { title: WMP_TITLE, ...WMP_SIZE },
+  [PDF_ID]: { title: PDF_TITLE, ...PDF_SIZE },
+  [PERSONALIZE_ID]: { title: "Personalization", ...PERSONALIZE_SIZE },
+  [SCREEN_RES_ID]: { title: "Screen Resolution", ...SCREEN_RES_SIZE },
+  [CONTROL_PANEL_ID]: { title: "Control Panel", ...CONTROL_PANEL_SIZE },
+  [CHROME_ID]: { title: "New Tab - Google Chrome", ...CHROME_SIZE },
+};
+
+/**
  * Opens any window by id, folder or app, at the size and title that id calls
  * for. The store's own `open` already handles the re-open case: it
  * un-minimises and refocuses rather than spawning a second window.
@@ -125,56 +144,14 @@ export function launchWindow(id: string) {
   const { open } = useWindowStore.getState();
   const desk = readDesk();
 
-  if (id === TERMINAL_ID) {
-    open(id, { title: TERMINAL_TITLE, ...TERMINAL_SIZE, desk });
+  const app = APPS[id];
+  if (app) {
+    open(id, { ...app, desk });
     return;
   }
 
-  if (id === CALC_ID) {
-    open(id, { title: "Calculator", ...CALC_SIZE, desk });
-    return;
-  }
-
-  if (id === NOTEPAD_ID) {
-    open(id, { title: "Untitled - Notepad", ...NOTEPAD_SIZE, desk });
-    return;
-  }
-
-  if (id === RACER_ID) {
-    open(id, { title: RACER_TITLE, ...RACER_SIZE, desk });
-    return;
-  }
-
-  if (id === PINGPONG_ID) {
-    open(id, { title: PINGPONG_TITLE, ...PINGPONG_SIZE, desk });
-    return;
-  }
-
-  if (id === WMP_ID) {
-    open(id, { title: WMP_TITLE, ...WMP_SIZE, desk });
-    return;
-  }
-
-  if (id === PDF_ID) {
-    open(id, { title: PDF_TITLE, ...PDF_SIZE, desk });
-    return;
-  }
-
-  if (id === PERSONALIZE_ID) {
-    open(id, { title: "Personalization", ...PERSONALIZE_SIZE, desk });
-    return;
-  }
-
-  if (id === SCREEN_RES_ID) {
-    open(id, { title: "Screen Resolution", ...SCREEN_RES_SIZE, desk });
-    return;
-  }
-
-  if (id === CONTROL_PANEL_ID) {
-    open(id, { title: "Control Panel", ...CONTROL_PANEL_SIZE, desk });
-    return;
-  }
-
+  // A viewer's id carries the file it was opened on, so its caption is that
+  // file's name rather than anything fixed.
   if (id.startsWith(PHOTOS_PREFIX)) {
     open(id, { title: baseName(mediaSrc(id)), ...PHOTOS_SIZE, desk });
     return;
@@ -182,11 +159,6 @@ export function launchWindow(id: string) {
 
   if (id.startsWith(PDF_PREFIX)) {
     open(id, { title: baseName(mediaSrc(id)), ...PDF_SIZE, desk });
-    return;
-  }
-
-  if (id === CHROME_ID) {
-    open(id, { title: "New Tab - Google Chrome", ...CHROME_SIZE, desk });
     return;
   }
 

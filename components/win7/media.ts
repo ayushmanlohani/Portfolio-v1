@@ -40,13 +40,6 @@ export const MEDIA: MediaItem[] = [
     album: "Wallpapers",
     poster: "/letterbox/wallpaper-poster.jpg",
   },
-  {
-    src: "/letterbox/wallpaper-4k.mp4",
-    title: "Harmony (4K)",
-    kind: "video",
-    album: "Wallpapers",
-    poster: "/letterbox/wallpaper-poster.jpg",
-  },
   { src: "/letterbox/pngs/coke-can.png", title: "Coke Can", kind: "picture", album: "Drawings" },
   { src: "/letterbox/pngs/mustang.png", title: "Mustang", kind: "picture", album: "Drawings" },
   { src: "/letterbox/pngs/kitten.png", title: "Kitten", kind: "picture", album: "Drawings" },

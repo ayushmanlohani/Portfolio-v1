@@ -64,8 +64,6 @@ const WALL_CAP = "#6f7784";
  * arguments. `applyGfx` is the only writer.
  */
 export type RenderQuality = {
-  /** Backbuffer scale cap; 1 renders at CSS pixels. */
-  dprCap: number;
   skidRange: number;
   tufts: boolean;
   /** Draw every Nth precomputed tuft. 1 is all of them. */
@@ -78,7 +76,6 @@ export type RenderQuality = {
 /* Starts at full quality so a page that never loads settings looks exactly
    like the pre-settings renderer did. Racer applies real values on mount. */
 export const quality: RenderQuality = {
-  dprCap: 2,
   skidRange: 85,
   tufts: true,
   tuftStride: 1,
@@ -91,7 +88,6 @@ const SKID_CAPS = { normal: 1400, short: 600, off: 0 } as const;
 
 /** Push a settings object into the live render state. */
 export function applyGfx(s: GfxSettings): void {
-  quality.dprCap = s.dprCap;
   quality.skidRange = SKID_CAPS[s.skids] === 0 ? 0 : 85;
   quality.tufts = s.tufts !== "off";
   quality.tuftStride = s.tufts === "full" ? 1 : 2;

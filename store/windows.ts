@@ -227,10 +227,3 @@ export const useWindowStore = create<WindowStore>((set, get) => ({
 
   closeAll: () => set({ windows: [] }),
 }));
-
-/** True when `id` is the frontmost window. */
-export const useIsFocused = (id: string) =>
-  useWindowStore((s) => {
-    const target = s.windows.find((w) => w.id === id);
-    return !!target && target.z === s.topZ && !target.minimized;
-  });

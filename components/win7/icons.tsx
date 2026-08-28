@@ -49,21 +49,6 @@ export function FolderIcon({ className }: IconProps) {
   );
 }
 
-/** Getting Started — the Windows flag on a pale card. */
-export function FlagIcon({ className }: IconProps) {
-  return (
-    <svg {...BASE} className={className}>
-      <rect x="2" y="3" width="28" height="26" rx="3" fill="#f4f8fc" stroke="#a9bed4" />
-      <g transform="translate(6 7)">
-        <path d="M0 3.2 L8.6 1.6 L8.6 9.2 L0 9.6 Z" fill="#e8442e" />
-        <path d="M10.6 1.2 L20 0 L20 9 L10.6 9.2 Z" fill="#7cb61e" />
-        <path d="M0 11.4 L8.6 11 L8.6 18.6 L0 17 Z" fill="#2e8fd8" />
-        <path d="M10.6 11 L20 10.8 L20 19.6 L10.6 18.4 Z" fill="#f5a623" />
-      </g>
-    </svg>
-  );
-}
-
 /** Calculator — grey body, dark LCD, keypad. */
 export function CalculatorIcon({ className }: IconProps) {
   return (
@@ -104,34 +89,6 @@ export function NotepadIcon({ className }: IconProps) {
       <g stroke="#8fb4d6" strokeWidth="1.2">
         <path d="M9 14h14M9 18h14M9 22h14M9 26h9" />
       </g>
-    </svg>
-  );
-}
-
-/** Paint — artist's palette with wells of colour. */
-export function PaintIcon({ className }: IconProps) {
-  return (
-    <svg {...BASE} className={className}>
-      <path
-        d="M16 3c7.2 0 13 4.7 13 10.5S23.2 22 20 22c-2 0-2.6 1-2.6 2.2 0 1.4 1.1 1.9 1.1 3.1 0 1-.9 1.7-2.5 1.7C8.8 29 3 23.2 3 16S8.8 3 16 3z"
-        fill="#e7eef5"
-        stroke="#8298ab"
-      />
-      <circle cx="10" cy="10.5" r="2.2" fill="#e8442e" />
-      <circle cx="16.5" cy="8" r="2.2" fill="#f5a623" />
-      <circle cx="22.5" cy="11" r="2.2" fill="#7cb61e" />
-      <circle cx="9" cy="17.5" r="2.2" fill="#2e8fd8" />
-    </svg>
-  );
-}
-
-/** Snipping Tool — scissors. */
-export function ScissorsIcon({ className }: IconProps) {
-  return (
-    <svg {...BASE} className={className}>
-      <path d="M10 5l13 17M22 5L9 22" stroke="#93a5b6" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx="8.5" cy="25" r="3.6" fill="#f4f8fc" stroke="#6f8296" strokeWidth="1.6" />
-      <circle cx="23.5" cy="25" r="3.6" fill="#f4f8fc" stroke="#6f8296" strokeWidth="1.6" />
     </svg>
   );
 }

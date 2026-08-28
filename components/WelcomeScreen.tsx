@@ -64,16 +64,8 @@ export function WelcomeScreen({ onSignIn, resetKey }: Props) {
             Sits at a fixed offset below the centred core so its own size
             never drags the avatar off centre. */}
         <p className="win7-login-tagline">
-          Welcome to <SparkleButton
-            text="Ayushman Lohani"
-            fontFamily="'Segoe UI', Tahoma, sans-serif"
-            fontWeight={700}
-            fontSize={27}
-            textColor="#8fd2ff"
-            shadowColor="#1742F5"
-            glareColor="#FFFFFFCC"
-            glareSpeed={4}
-          />&rsquo;s portfolio, made to look and work like Windows 7.
+          Welcome to <SparkleButton text="Ayushman Lohani" />&rsquo;s portfolio,
+          made to look and work like Windows 7.
         </p>
       </div>
     </div>

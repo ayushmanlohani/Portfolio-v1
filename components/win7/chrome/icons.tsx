@@ -79,17 +79,6 @@ export function LockIcon({ className }: IconProps) {
   );
 }
 
-/** The plain-page icon the omnibox shows for anything that isn't https. */
-export function PageIcon({ className }: IconProps) {
-  return (
-    <svg {...BASE} className={className}>
-      <path d="M4 2h5l3 3v9H4z" fill="#fdfdfd" stroke="#9b9b9b" strokeWidth="1" strokeLinejoin="round" />
-      <path d="M9 2v3h3" fill="none" stroke="#9b9b9b" strokeWidth="1" strokeLinejoin="round" />
-      <path d="M5.8 7.6h4.4M5.8 9.5h4.4M5.8 11.4h2.8" stroke="#c2c2c2" strokeWidth="1" />
-    </svg>
-  );
-}
-
 export function CloseIcon({ className }: IconProps) {
   return (
     <svg {...BASE} className={className} fill="currentColor">

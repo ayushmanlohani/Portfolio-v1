@@ -166,13 +166,7 @@ type Target =
     Rename and Restore no longer go through a dialog; see `store/inlineEdit.ts`. */
 type ConfirmDialog = { ids: string[] };
 
-export function DesktopContextMenu({
-  onRefresh,
-  onOpen,
-}: {
-  onRefresh?: () => void;
-  onOpen?: (id: string) => void;
-}) {
+export function DesktopContextMenu({ onRefresh }: { onRefresh?: () => void }) {
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
   const [target, setTarget] = useState<Target>(null);
   const [confirm, setConfirm] = useState<ConfirmDialog | null>(null);
