@@ -1,15 +1,14 @@
 /**
  * The scoreboard, behind one small interface.
  *
- * Every method is async even though the current implementation answers
- * instantly out of localStorage. That is the whole point: swapping this for a
- * real table — Supabase, Upstash, a Next route handler — means writing another
- * object with these four methods and changing the one line at the bottom.
+ * Every method is async because the board is now a network call: submit and
+ * top hit /api/scores (Upstash Redis, one sorted set), and fall back to this
+ * browser's localStorage when no store is configured or the network is down.
+ * Personal best stays local either way — the ghost car replays it offline.
  * Nothing that renders a score has to know which one it is talking to.
  *
- * A network board will also need the server to re-check submitted times, since
- * anything the browser sends can be forged. That check belongs on the server
- * side of that implementation, not here.
+ * Anything the browser sends can be forged, so the route handler — not this
+ * file — rejects implausible times before they reach the store.
  */
 
 export type Score = {
@@ -77,16 +76,28 @@ function write(scores: Score[]) {
   }
 }
 
+function makeEntry(name: string, ms: number): Score {
+  return { name: name.trim().slice(0, 14) || "Anonymous", ms, at: Date.now() };
+}
+
+/**
+ * Keep the run in this browser regardless of what the network board says. The
+ * ghost car replays your personal best, so best() has to answer even offline.
+ */
+function recordLocal(entry: Score): Score[] {
+  const scores = [...read(), entry].sort(byTime).slice(0, MAX);
+  write(scores);
+  return scores;
+}
+
 const localBoard: Leaderboard = {
   async top(limit = MAX) {
     return [...read(), ...TARGETS].sort(byTime).slice(0, limit);
   },
 
   async submit(name, ms) {
-    const entry: Score = { name: name.trim().slice(0, 14) || "Anonymous", ms, at: Date.now() };
-    const scores = [...read(), entry].sort(byTime).slice(0, MAX);
-    write(scores);
-    const merged = [...scores, ...TARGETS].sort(byTime);
+    const entry = makeEntry(name, ms);
+    const merged = [...recordLocal(entry), ...TARGETS].sort(byTime);
     // Identity, not equality: two runs can tie to the millisecond.
     const rank = merged.findIndex((s) => s === entry) + 1;
     return { rank, scores: merged.slice(0, MAX) };
@@ -105,8 +116,59 @@ const localBoard: Leaderboard = {
   },
 };
 
-/** The board the game talks to. One line to repoint at a real database. */
-export const leaderboard: Leaderboard = localBoard;
+/**
+ * The global board: /api/scores, backed by one Redis sorted set on Upstash.
+ *
+ * Every network call falls back to the local board rather than throwing. With
+ * no store configured (a fresh clone, dev without env vars) the game behaves
+ * exactly as it did before this file grew a second implementation — nobody
+ * loses a lap to a 503.
+ */
+async function fetchBoard(init?: RequestInit): Promise<Score[] | null> {
+  try {
+    const res = await fetch("/api/scores", init);
+    if (!res.ok) return null;
+    const { scores } = (await res.json()) as { scores?: Score[] };
+    return Array.isArray(scores) ? scores : null;
+  } catch {
+    return null;
+  }
+}
+
+const remoteBoard: Leaderboard = {
+  async top(limit = MAX) {
+    const scores = await fetchBoard();
+    if (!scores) return localBoard.top(limit);
+    return [...scores, ...TARGETS].sort(byTime).slice(0, limit);
+  },
+
+  async submit(name, ms) {
+    const entry = makeEntry(name, ms);
+    recordLocal(entry);
+    const scores = await fetchBoard({
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: entry.name, ms }),
+    });
+    if (!scores) {
+      const merged = [...read(), ...TARGETS].sort(byTime);
+      const rank = merged.findIndex((s) => s.name === entry.name && s.ms === entry.ms) + 1;
+      return { rank, scores: merged.slice(0, MAX) };
+    }
+    const merged = [...scores, ...TARGETS].sort(byTime);
+    // The server sent back its own objects, so match on the run rather than on
+    // identity. A tie to the millisecond with the same name is the same driver.
+    const rank = merged.findIndex((s) => s.name === entry.name && s.ms === entry.ms) + 1;
+    return { rank, scores: merged.slice(0, MAX) };
+  },
+
+  /** Personal best and the ghost it drives are this browser's, not the world's. */
+  best: localBoard.best,
+  clear: localBoard.clear,
+};
+
+/** The board the game talks to. One line to fall back to local-only. */
+export const leaderboard: Leaderboard = remoteBoard;
 
 /** 1:04.312 — the format every racing game has used for forty years. */
 export function formatTime(ms: number): string {

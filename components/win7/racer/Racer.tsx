@@ -635,7 +635,7 @@ export function Racer() {
               <div className="rc-menu-foot">
                 <Board scores={board} highlight={null} />
                 <p className="rc-muted" style={{ margin: 0, textAlign: "center", marginTop: board.length ? 8 : 0 }}>
-                  {board.length === 0 ? "No scores yet — be the first on the board." : "Top 10 • Ghost saves in this browser"}
+                  {board.length === 0 ? "No scores yet — be the first on the board." : "Top 10 worldwide • Ghost saves in this browser"}
                 </p>
               </div>
             )}
