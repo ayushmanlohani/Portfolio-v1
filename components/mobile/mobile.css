@@ -477,6 +477,79 @@
   display: none !important;
 }
 
+/* The reverse of the two rules above: hidden by an inline display:none in
+   AboutMeLanding.tsx by default (so desktop never shows it without needing
+   its own guard), turned on only here.
+   A floating speed dial, not a sticky bar: the anchor sits above the phone's
+   own bottom bar (--ph-bar, defined on .phone) using the same safe-area
+   offset the page-dots indicator already uses, so it never overlaps the
+   Home orb. */
+.ph-jump-nav {
+  display: contents !important;
+}
+
+.ph-fab-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(38, 34, 30, 0.18);
+}
+
+.ph-fab-anchor {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--ph-bar) + env(safe-area-inset-bottom) + 16px);
+  z-index: 40;
+}
+
+.ph-fab {
+  position: relative;
+  overflow: hidden;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: #3E3E42;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 22px rgba(62, 62, 66, 0.32);
+}
+.ph-fab:active {
+  transform: scale(0.94);
+}
+
+.ph-fab-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.ph-fab-panel button {
+  font-family: var(--font-jackie-mono, "IBM Plex Mono", monospace);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #3E3E42;
+  background: #FCF7F2;
+  border: 1px solid #E7E6DE;
+  border-radius: 14px;
+  padding: 9px 16px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(62, 62, 66, 0.14);
+  transform-origin: right bottom;
+  transition: opacity 0.22s cubic-bezier(0.16,1,0.3,1), transform 0.22s cubic-bezier(0.16,1,0.3,1);
+}
+.ph-fab-panel button:active {
+  background: #F6F6F6;
+}
+
 .ph-page img {
   max-width: 100%;
   height: auto;

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { Caveat, IBM_Plex_Mono } from "next/font/google";
 import { gsap } from "gsap";
 import MouseEffects from "./MouseEffects";
+import { CHROME_ID, launchWindow } from "@/components/win7/apps";
+import { UNITWISE, SENTINEL, useChrome } from "@/store/chrome";
 
 /* ─── Fonts ─── Jackie uses Historia Sky Script 85px + IBM Plex Mono everywhere.
    We approximate script with Caveat (hand-written, warm) + mono for all UI. */
@@ -847,6 +849,87 @@ function SkillChip({ label, icon, delay }: { label: string; icon: React.ReactNod
   );
 }
 
+/* ─── Phone jump nav ─── the page is a long single scroll on a 390px screen
+   with nothing else to skim it by. A sticky top bar was the first attempt —
+   scrapped: it sat permanently in the layout eating vertical space, and its
+   own shortcuts needed a horizontal scroll to reach, defeating the point of
+   a shortcut. This is a floating speed dial instead: a single round button,
+   thumb-reachable at the bottom, that springs the five stops open in place
+   with nothing to scroll. Rendered on every visit but invisible by default
+   (inline display:none) — mobile.css is the only thing that turns it on. */
+const NAV_SECTIONS = [
+  { id: "about", label: "About" },
+  { id: "experience", label: "Experience" },
+  { id: "education", label: "Education" },
+  { id: "projects", label: "Projects" },
+  { id: "skills", label: "Skills" },
+];
+
+function PhoneJumpNav({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+  const [open, setOpen] = useState(false);
+
+  const goTo = (id: string) => {
+    containerRef.current?.querySelector(`#section-${id}`)?.scrollIntoView({ block: "start" });
+    setOpen(false);
+  };
+
+  return (
+    <div className="ph-jump-nav" style={{ display: "none" }}>
+      {open && <div className="ph-fab-scrim" onClick={() => setOpen(false)} />}
+
+      <div className="ph-fab-anchor">
+        {/* Stops spring open bottom-to-top, closest to the button first — the
+            button is the hinge the whole thing pivots from. */}
+        <div className="ph-fab-panel" aria-hidden={!open} style={{ pointerEvents: open ? "auto" : "none" }}>
+          {NAV_SECTIONS.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              tabIndex={open ? 0 : -1}
+              onClick={() => goTo(s.id)}
+              style={{
+                opacity: open ? 1 : 0,
+                transform: open ? "translateY(0) scale(1)" : "translateY(10px) scale(0.92)",
+                // About renders first (top, farthest from the button) so the
+                // list reads in the normal page order; the stagger still
+                // springs closest-to-button first, so the delay counts down
+                // from the far end rather than up from index 0.
+                transitionDelay: open ? `${(NAV_SECTIONS.length - 1 - i) * 0.03}s` : "0s",
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          className="ph-fab"
+          aria-label={open ? "Close jump menu" : "Jump to a section"}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          {/* dino.jpg, not a png — its own square blue-background frame, so
+              this crops and clips it into the button's circle rather than
+              relying on transparency. The crop rectangle (sx 119, sy 35,
+              side 560 of the 736px source) was picked by sampling pixels
+              around the edge of a test render until top/left/right showed
+              the blue background peeking in (a boundary) while the centre
+              still landed on the character, the same "zoom out until there's
+              a boundary" call as the face photo, just measured this time
+              instead of guessed. */}
+          <img
+            src="/letterbox/dino.jpg"
+            alt=""
+            draggable={false}
+            style={{ position: "absolute", width: "131.4%", height: "131.4%", maxWidth: "none", left: "-21.25%", top: "-6.25%", display: "block" }}
+          />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EducationItem({ item, narrow }: { item: (typeof EDUCATION_ITEMS)[0]; narrow: boolean }) {
   const [logoHovered, setLogoHovered] = useState(false);
 
@@ -1011,6 +1094,7 @@ const RECENT_PROJECTS = [
     name: "Unitwise",
     subtitle: "AI textbook citation & study engine",
     url: "https://unitwise-weld.vercel.app",
+    site: UNITWISE,
     githubUrl: "https://github.com/ayushmanlohani/Unitwise",
     iconBg: "transparent",
     iconImg: "/letterbox/unitwise-logo.png",
@@ -1026,6 +1110,7 @@ const RECENT_PROJECTS = [
     name: "RBI Sentinel",
     subtitle: "Central bank NLP & volatility forecaster",
     url: "https://rbi-sentinel.streamlit.app/",
+    site: SENTINEL,
     githubUrl: "https://github.com/ayushmanlohani/rbi-sentiment-volatility-forecasting",
     iconBg: "#E04824",
     iconText: "RBI",
@@ -1199,6 +1284,17 @@ function RecentlyMadeProjects({
               href={proj.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => {
+                // Touch has no hover, so the screenshot cluster never shows —
+                // send it to that project's own interactive Chrome page
+                // instead, which has the same screenshots plus a link out to
+                // the live site. Nothing leaves the site. Desktop keeps the
+                // hover preview and goes straight to the live link.
+                if (!coarsePointer()) return;
+                e.preventDefault();
+                useChrome.getState().visit(proj.site);
+                launchWindow(CHROME_ID);
+              }}
               onMouseEnter={() => {
                 if (editProjMode) return;
                 setHoveredId(proj.id);
@@ -1507,6 +1603,8 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
         WebkitFontSmoothing: "antialiased",
       }}
     >
+      <PhoneJumpNav containerRef={containerRef} />
+
       {/* SVG turbulence for About paragraphs – Jackie's wobbly ink */}
       <svg width={0} height={0} style={{ position: "absolute" }}>
         <defs>
@@ -1880,6 +1978,50 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             </EditableGroup>
           </Reveal>
 
+          {/* Phone only — the same avatar the Start menu shows above the
+              name, framed in the site's one accent color. The desk lost all
+              its clutter on phone (no room to drag anything on a 390px
+              screen), including the polaroid, so the hero had nothing of
+              him left in it. This is that, without needing a drag. Also
+              just useful visual weight between the B.Tech line and the
+              name, which otherwise sit right on top of each other. */}
+          {narrow && (
+            <Reveal delay={0.08}>
+              <div
+                style={{
+                  margin: "18px auto 16px",
+                  width: 120,
+                  height: 120,
+                  borderRadius: "50%",
+                  background: T.accent,
+                  padding: 4,
+                  boxSizing: "border-box",
+                  boxShadow: "0 10px 26px rgba(247,98,64,0.28)",
+                }}
+              >
+                <div style={{ position: "relative", width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", background: "#fff" }}>
+                  {/* dp.png, not 1234.png — transparent PNG, face bbox
+                      measured via the alpha channel (much more reliable than
+                      the colour-distance guess dino.jpg needed): x 20.3%-
+                      81.7%, y 10.7%-78.5% of the 1254px square, centred at
+                      (51.0%, 44.6%). Cropped and positioned the same way as
+                      the dino icon — absolute position + explicit width/
+                      height percentages, not transform:scale — since the
+                      content isn't dead-centre this time and transform's
+                      percentage math is exactly what got the first face crop
+                      wrong. sx 138, sy 58, side 1003 of the source leaves a
+                      small margin on every side. */}
+                  <img
+                    src="/letterbox/dp.png"
+                    alt="Ayushman Lohani"
+                    draggable={false}
+                    style={{ position: "absolute", width: "125.0%", height: "125.0%", maxWidth: "none", left: "-13.76%", top: "-5.78%", display: "block" }}
+                  />
+                </div>
+              </div>
+            </Reveal>
+          )}
+
           <div style={{ marginTop: narrow ? 12 : 18 }}>
             {/* Jackie 85px script – we use Caveat at 82-96px to echo hand-written.
                 On phone, the fixed 56px breakpoint was wider than some screens
@@ -2137,6 +2279,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
       {/* ─── ABOUT ─── Jackie turbulence paragraphs, mono 18px */}
       <section
+        id="section-about"
         style={{
           position: "relative",
           zIndex: 1,
@@ -2352,6 +2495,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
       {/* ─── RECENTLY MADE ─── Jackie Hu "Recently Made ▶" Project Showcase */}
       <section
+        id="section-projects"
         style={{
           position: "relative",
           zIndex: 1,
@@ -2391,6 +2535,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
           screen instead of chips just trailing off at whatever width is
           left. */}
       <section
+        id="section-skills"
         style={{
           position: "relative",
           zIndex: 1,
@@ -2429,6 +2574,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
       {/* ─── FIND ME ─── closing links row. The last content section on the
           page, right before the footer. */}
       <section
+        id="section-contact"
         style={{
           position: "relative",
           zIndex: 1,
