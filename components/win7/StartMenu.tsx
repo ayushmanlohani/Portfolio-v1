@@ -1,28 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  CALC_ID,
-  CHROME_ID,
-  CONTROL_PANEL_ID,
-  NOTEPAD_ID,
-  PDF_ID,
-  PINGPONG_ID,
-  RACER_ID,
-  TERMINAL_ID,
-  WMP_ID,
-} from "@/components/win7/apps";
-import {
-  CalculatorIcon,
-  ChromeIcon,
-  MediaPlayerIcon,
-  NotepadIcon,
-  PdfIcon,
-  PingPongIcon,
-  PowerIcon,
-  RacerIcon,
-  TerminalIcon,
-} from "@/components/win7/icons";
+import { CONTROL_PANEL_ID, PROGRAMS, WMP_ID } from "@/components/win7/apps";
+import { PowerIcon } from "@/components/win7/icons";
 
 /**
  * The Windows 7 Start menu.
@@ -31,61 +11,11 @@ import {
  * search box, a pale blue right column of text-only shortcuts, and the shut
  * down button in the bottom-right corner.
  *
- * The left column's "recently used" block lists what actually runs here; the
- * rest are placeholders holding the shape. Windows Photo Viewer is deliberately
+ * The left column's "recently used" block is PROGRAMS from apps.ts — the same
+ * list the phone shell draws its app pages from. Windows Photo Viewer is deliberately
  * absent, the same as in Windows: it has no Start entry because it is what a
  * picture opens in, not something you launch on its own.
  */
-
-type Program = {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  /** Entries without this are decoration — they render but do nothing. */
-  opens?: boolean;
-};
-
-/** The "recently used" block Windows fills in for you. */
-const RECENT: Program[] = [
-  {
-    id: CHROME_ID,
-    label: "Google Chrome",
-    icon: <ChromeIcon className="sm-icon" />,
-    opens: true,
-  },
-  {
-    id: TERMINAL_ID,
-    label: "Command Prompt",
-    icon: <TerminalIcon className="sm-icon" />,
-    opens: true,
-  },
-  { id: CALC_ID, label: "Calculator", icon: <CalculatorIcon className="sm-icon" />, opens: true },
-  { id: NOTEPAD_ID, label: "Notepad", icon: <NotepadIcon className="sm-icon" />, opens: true },
-  {
-    id: WMP_ID,
-    label: "Windows Media Player",
-    icon: <MediaPlayerIcon className="sm-icon" />,
-    opens: true,
-  },
-  {
-    id: PDF_ID,
-    label: "PDF Viewer",
-    icon: <PdfIcon className="sm-icon" />,
-    opens: true,
-  },
-  {
-    id: RACER_ID,
-    label: "Time Attack",
-    icon: <RacerIcon className="sm-icon" />,
-    opens: true,
-  },
-  {
-    id: PINGPONG_ID,
-    label: "Ping Pong",
-    icon: <PingPongIcon className="sm-icon" />,
-    opens: true,
-  },
-];
 
 /**
  * Right column. Windows renders these as text only — no icons.
@@ -117,18 +47,18 @@ export function StartMenu({ id, onLaunch, onShutdown }: { id: string; onLaunch: 
       "lohani".startsWith(easterEggQuery) ||
       "ayushman lohani".includes(easterEggQuery));
   const results = searching
-    ? RECENT.filter((p) => p.label.toLowerCase().includes(query.trim().toLowerCase()))
-    : RECENT;
+    ? PROGRAMS.filter((p) => p.label.toLowerCase().includes(query.trim().toLowerCase()))
+    : PROGRAMS;
 
-  const item = (p: Program) => (
+  const item = (p: (typeof PROGRAMS)[number]) => (
     <li key={p.id}>
       <button
         type="button"
         className="sm-item"
         role="menuitem"
-        onClick={p.opens ? () => onLaunch(p.id) : undefined}
+        onClick={() => onLaunch(p.id)}
       >
-        {p.icon}
+        <p.Icon className="sm-icon" />
         <span>{p.label}</span>
       </button>
     </li>

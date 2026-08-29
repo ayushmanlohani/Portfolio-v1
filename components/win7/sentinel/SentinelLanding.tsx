@@ -1,5 +1,6 @@
 "use client";
 
+import { coarsePointer } from "@/components/win7/coarsePointer";
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 
@@ -287,8 +288,8 @@ function DashboardPanel() {
     >
       <motion.div
         ref={ref}
-        onMouseMove={onMove}
-        onMouseLeave={() => setTilt({ x: 0, y: 0 })}
+        onMouseMove={coarsePointer() ? undefined : onMove}
+        onMouseLeave={coarsePointer() ? undefined : () => setTilt({ x: 0, y: 0 })}
         animate={{ rotateX: tilt.x, rotateY: tilt.y }}
         transition={{ type: "spring", stiffness: 120, damping: 14 }}
         className="overflow-hidden rounded-[18px] border border-[#212C38] bg-[#0F151C] shadow-[0_34px_70px_-30px_rgba(0,0,0,0.9)]"

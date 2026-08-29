@@ -1,5 +1,6 @@
 "use client";
 
+import { coarsePointer } from "@/components/win7/coarsePointer";
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
@@ -136,8 +137,8 @@ function AppPreview() {
     >
       <motion.div
         ref={ref}
-        onMouseMove={onMove}
-        onMouseLeave={() => setTilt({ x: 0, y: 0 })}
+        onMouseMove={coarsePointer() ? undefined : onMove}
+        onMouseLeave={coarsePointer() ? undefined : () => setTilt({ x: 0, y: 0 })}
         animate={{ rotateX: tilt.x, rotateY: tilt.y }}
         transition={{ type: "spring", stiffness: 120, damping: 14 }}
         className="overflow-hidden rounded-2xl border border-[#EAE2D3] bg-white shadow-[0_30px_60px_-25px_rgba(60,45,25,0.35)]"

@@ -28,6 +28,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0e0f11",
+  // The phone shell fills the screen and pads itself off the notch with
+  // env(safe-area-inset-*), which only reports real numbers under "cover".
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

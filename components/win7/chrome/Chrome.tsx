@@ -271,7 +271,7 @@ function TabStrip({
   const tabW = stripW === 0 ? TAB_MAX : Math.max(TAB_MIN, Math.min(TAB_MAX, Math.floor(ideal)));
 
   return (
-    <div ref={stripRef} className="w7-drag flex h-[30px] shrink-0 items-end overflow-hidden pl-[6px] pr-[116px]">
+    <div ref={stripRef} className="chrome-tabstrip w7-drag flex h-[30px] shrink-0 items-end overflow-hidden pl-[6px] pr-[116px]">
       {tabs.map((tab) => {
         const active = tab.id === activeId;
         return (

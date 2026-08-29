@@ -1,5 +1,6 @@
 "use client";
 
+import { coarsePointer } from "@/components/win7/coarsePointer";
 import { useEffect, useRef, useState } from "react";
 import { Caveat, IBM_Plex_Mono } from "next/font/google";
 import { gsap } from "gsap";
@@ -479,8 +480,8 @@ function ExperienceDossierCard({ exp, narrow }: { exp: (typeof INTERNSHIPS)[0]; 
   return (
     <div
       ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={coarsePointer() ? undefined : handleMouseMove}
+      onMouseLeave={coarsePointer() ? undefined : handleMouseLeave}
       onClick={() => setExpanded(!expanded)}
       style={{
         position: "relative",
@@ -1330,7 +1331,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
       </svg>
 
       {/* Cursor Click Effect */}
-      <MouseEffects color={T.accent} interactionMode="sniper" showLabel={false} />
+      {!coarsePointer() && <MouseEffects color={T.accent} interactionMode="sniper" showLabel={false} />}
 
       {/* ─── HERO CHAOS ─── Jackie flatlay: center stack + orbiting draggable props */}
       <section

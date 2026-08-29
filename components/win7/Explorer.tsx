@@ -4,9 +4,9 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { Doc } from "@/components/win7/folders/Doc";
 import { CHROME_ID, launchWindow } from "@/components/win7/apps";
-import { contents, crumbIds, node, SENTINEL_FILE_ID, TREE, UNITWISE_FILE_ID, ABOUTME_FILE_ID, EDUCATION_FILE_ID, EXPERIENCE_FILE_ID } from "@/components/win7/fs";
+import { contents, crumbIds, node, TREE } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
-import { SENTINEL, UNITWISE, ABOUTME, EDUCATION, EXPERIENCE, useChrome } from "@/store/chrome";
+import { SITE_FOR, useChrome } from "@/store/chrome";
 import { FolderIcon, NavArrowIcon, SearchIcon } from "@/components/win7/icons";
 import { Network } from "@/components/win7/Network";
 import { RenameField } from "@/components/win7/RenameField";
@@ -293,6 +293,20 @@ export function Explorer({ id, title }: { id: string; title: string }) {
 
 /* ── What a place shows ────────────────────────────────────── */
 
+/**
+ * A web page opens in the browser, not in Explorer — load the tab first so
+ * Chrome comes up already on it. Returns false for anything that isn't one,
+ * so callers can fall through to their normal open. The id-to-page mapping
+ * lives in store/chrome.ts, shared with the phone shell.
+ */
+function openInChrome(id: string) {
+  const site = SITE_FOR[id];
+  if (!site) return false;
+  useChrome.getState().visit(site);
+  launchWindow(CHROME_ID);
+  return true;
+}
+
 function Contents({
   view,
   deleted,
@@ -430,18 +444,7 @@ function Contents({
                   launchWindow(single);
                   return;
                 }
-                if (single === UNITWISE_FILE_ID || single === SENTINEL_FILE_ID) {
-                  useChrome.getState().visit(single === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
-                  launchWindow(CHROME_ID);
-                  return;
-                }
-                if (single === ABOUTME_FILE_ID || single === EDUCATION_FILE_ID || single === EXPERIENCE_FILE_ID) {
-                  useChrome.getState().visit(
-                    single === EDUCATION_FILE_ID ? EDUCATION : single === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
-                  );
-                  launchWindow(CHROME_ID);
-                  return;
-                }
+                if (openInChrome(single)) return;
                 if (node(single)?.kind === "file") {
                   launchWindow(single);
                   return;
@@ -450,18 +453,7 @@ function Contents({
                 return;
               }
               targets.forEach((cid) => {
-                if (cid === UNITWISE_FILE_ID || cid === SENTINEL_FILE_ID) {
-                  useChrome.getState().visit(cid === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
-                  launchWindow(CHROME_ID);
-                  return;
-                }
-                if (cid === ABOUTME_FILE_ID || cid === EDUCATION_FILE_ID || cid === EXPERIENCE_FILE_ID) {
-                  useChrome.getState().visit(
-                    cid === EDUCATION_FILE_ID ? EDUCATION : cid === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
-                  );
-                  launchWindow(CHROME_ID);
-                  return;
-                }
+                if (openInChrome(cid)) return;
                 launchWindow(cid);
               });
             }}
@@ -471,20 +463,7 @@ function Contents({
                 launchWindow(childId);
                 return;
               }
-              // A web page opens in the browser, not in Explorer — load the
-              // tab first so Chrome comes up already on it.
-              if (childId === UNITWISE_FILE_ID || childId === SENTINEL_FILE_ID) {
-                useChrome.getState().visit(childId === UNITWISE_FILE_ID ? UNITWISE : SENTINEL);
-                launchWindow(CHROME_ID);
-                return;
-              }
-              if (childId === ABOUTME_FILE_ID || childId === EDUCATION_FILE_ID || childId === EXPERIENCE_FILE_ID) {
-                useChrome.getState().visit(
-                  childId === EDUCATION_FILE_ID ? EDUCATION : childId === EXPERIENCE_FILE_ID ? EXPERIENCE : ABOUTME,
-                );
-                launchWindow(CHROME_ID);
-                return;
-              }
+              if (openInChrome(childId)) return;
               // A text file opens in Notepad rather than being navigated
               // into — the same rule DesktopIcons already applies to every
               // file kind of node.

@@ -1,7 +1,16 @@
 "use client";
 
 import { readDesk } from "@/components/win7/desk";
-import { MediaPlayerIcon, PingPongIcon, RacerIcon } from "@/components/win7/icons";
+import {
+  CalculatorIcon,
+  ChromeIcon,
+  MediaPlayerIcon,
+  NotepadIcon,
+  PdfIcon,
+  PingPongIcon,
+  RacerIcon,
+  TerminalIcon,
+} from "@/components/win7/icons";
 import { node } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 import { useWindowStore } from "@/store/windows";
@@ -109,6 +118,28 @@ const baseName = (src: string) => src.slice(src.lastIndexOf("/") + 1);
  */
 export const CHROME_ID = "chrome";
 export const CHROME_SIZE = { width: 1040, height: 680 };
+
+/**
+ * Every program on this desktop, in the order the Start menu lists them.
+ *
+ * One list, two readers: the Start menu's "recently used" column and the
+ * phone's app pages. `Icon` is the component rather than an element, so each
+ * reader draws it at its own size — 16px in the menu, 48px on a phone.
+ */
+export const PROGRAMS: {
+  id: string;
+  label: string;
+  Icon: (props: { className?: string }) => React.ReactElement;
+}[] = [
+  { id: CHROME_ID, label: "Google Chrome", Icon: ChromeIcon },
+  { id: TERMINAL_ID, label: "Command Prompt", Icon: TerminalIcon },
+  { id: CALC_ID, label: "Calculator", Icon: CalculatorIcon },
+  { id: NOTEPAD_ID, label: "Notepad", Icon: NotepadIcon },
+  { id: WMP_ID, label: "Windows Media Player", Icon: MediaPlayerIcon },
+  { id: PDF_ID, label: "PDF Viewer", Icon: PdfIcon },
+  { id: RACER_ID, label: RACER_TITLE, Icon: RacerIcon },
+  { id: PINGPONG_ID, label: PINGPONG_TITLE, Icon: PingPongIcon },
+];
 
 /** What a folder window opens at. */
 const FOLDER_SIZE = { width: 900, height: 600 };

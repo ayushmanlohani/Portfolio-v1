@@ -24,6 +24,8 @@ windows are `react-rnd`, animation is `motion` and `gsap`, and the PDF viewer is
 | `store/windows.ts` | The window manager — positions, z-order, pinning. |
 | `app/globals.css` | The whole Windows 7 skin, in one stylesheet. |
 | `app/api/scores/route.ts` | Time Attack's global board, on Upstash Redis. |
+| `components/Shell.tsx` | Picks the desktop or the phone shell by screen width. |
+| `components/mobile/` | The phone shell — home grid, one screen at a time. |
 
 The rest of `components/win7/` is one directory per application. `racer/` and
 `pingpong/` are the two games; `chrome/`, `clouds/`, `sentinel/`, `aboutme/`,

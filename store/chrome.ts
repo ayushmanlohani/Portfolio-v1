@@ -39,6 +39,22 @@ export const LINKEDIN_SITE: Site = { url: "linkedin.com/in/ayushmanlohani", titl
 export const GOOGLE: Site = { url: "google.com", title: "Google" };
 export const GMAIL_SITE: Site = { url: "mailto:aayushmanlohani@gmail.com", title: "Gmail" };
 
+/**
+ * Which page an `.interactive` file loads in Chrome.
+ *
+ * The mapping lived inline in Explorer, repeated once per way a file can be
+ * opened; it lives here now because the phone shell opens the same files and
+ * a second copy of this list is exactly the duplication we are avoiding.
+ * Keyed by node id from components/win7/fs.ts.
+ */
+export const SITE_FOR: Record<string, Site> = {
+  "projects/unitwise/unitwise.interactive": UNITWISE,
+  "projects/sentinel/sentinel.interactive": SENTINEL,
+  "about/aboutme.interactive": ABOUTME,
+  "education/education.interactive": EDUCATION,
+  "experience/experience.interactive": EXPERIENCE,
+};
+
 /** A tab with no site is a new tab, showing the search page. */
 export type ChromeTab = {
   id: number;

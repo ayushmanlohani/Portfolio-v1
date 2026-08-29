@@ -1,5 +1,5 @@
-import { BootSequence } from "@/components/BootSequence";
+import { Shell } from "@/components/Shell";
 
 export default function Home() {
-  return <BootSequence />;
+  return <Shell />;
 }

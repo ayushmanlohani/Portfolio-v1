@@ -1,0 +1,529 @@
+/*
+ * The phone shell.
+ *
+ * Loaded only by components/mobile/Phone.tsx, so none of it ships to a
+ * desktop visitor. Everything here is arrangement: the words, the icons and
+ * the pages come from the same files the desktop reads, and the rules that
+ * mention .about / .project / .doc below only undo sizes that were chosen
+ * for a 900px-wide window.
+ */
+
+.phone {
+  /* The desktop keeps these on .crt; the phone has no monitor around it, so
+     it declares its own. One Windows pixel is still one real pixel. */
+  --os-px: 1px;
+  --px: var(--os-px);
+  --ph-bar: 56px;
+  /* How far down page two's icons start — page one's are placed by the clock
+     above them instead. */
+  --ph-grid-top: max(148px, calc(env(safe-area-inset-top) + 140px));
+  /* One icon: the unit both pages are nudged by below. Change the two
+     multipliers, not this. */
+  --ph-step: 58px;
+
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  /* iOS Safari's URL bar makes 100vh taller than what you can see. */
+  height: 100dvh;
+  overscroll-behavior: none;
+}
+
+/*
+ * Two pages, swiped between. Scroll snapping does the whole gesture — the
+ * momentum, the settle, the rubber band at the ends are all the browser's own,
+ * and none of it is worth reimplementing in JavaScript.
+ */
+/*
+ * The wallpaper, nudged up. It still fills and crops the way Windows' own
+ * "Fill" does — this only shifts which 10px of it get cropped, and only on a
+ * phone; the desktop's stays centred.
+ */
+.phone .win7-wallpaper {
+  background-position: center calc(50% - 30px);
+}
+
+.phone .win7-wallpaper--video video {
+  object-position: center calc(50% - 30px);
+}
+
+/* ── Clock ───────────────────────────────────────────────────── */
+
+.ph-clock {
+  flex: none;
+  padding-top: max(34px, calc(env(safe-area-inset-top) + 26px));
+  padding-bottom: 22px;
+  text-align: center;
+  color: #fff;
+  pointer-events: none;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+/* Small, letterspaced and quiet — it is the caption to the time, not a
+   second headline. */
+.ph-clock-date {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.88;
+}
+
+/* The one big thing on the home screen. Thin, because 68px of semibold reads
+   as shouting; the size alone carries it. */
+.ph-clock-time {
+  margin-top: 4px;
+  font-size: 68px;
+  font-weight: 200;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ph-clock-suffix {
+  margin-left: 6px;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  vertical-align: baseline;
+}
+
+/* ── Home screens ────────────────────────────────────────────── */
+
+.ph-pager {
+  position: absolute;
+  inset: 0 0 var(--ph-bar) 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  /* Says up front that the only gesture here is sideways. Without it the
+     browser spends the start of every swipe deciding whether the finger meant
+     up or across — which is what made paging feel dead on a real phone. */
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.ph-pager::-webkit-scrollbar {
+  display: none;
+}
+
+.ph-page {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Page one sits low, down toward the bar, with the clock filling the space
+   above it. Page two rides higher, since it has no clock to make room for.
+   Both are one multiple of --ph-step away from where they started. */
+.ph-page:first-child .ph-page-grid {
+  padding-top: calc(4 * var(--ph-step));
+}
+
+.ph-page:not(:first-child) .ph-page-grid {
+  padding-top: max(
+    env(safe-area-inset-top),
+    calc(var(--ph-grid-top) - 2 * var(--ph-step))
+  );
+}
+
+.ph-page-grid {
+  scroll-snap-align: center;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: start;
+  gap: 20px 4px;
+  padding: 4px 12px 26px;
+  /* Deliberately not a scroller. A page holds at most eight icons, and a
+     nested vertical scroll container inside a horizontal pager is the classic
+     way to make swiping unreliable. */
+  overflow: hidden;
+}
+
+.ph-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  padding: 0;
+  background: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * The tile is the only thing here that isn't Windows 7: a phone home screen
+ * reads as rounded tiles, and a bare 48px folder on glass doesn't. The icon
+ * inside it is still the desktop's own, unchanged.
+ */
+.ph-tile {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  /* No backdrop-filter here. Thirteen live blurs inside a scroller is what
+     made the swipe stutter — the browser re-blurs every one of them on every
+     frame. A flat translucent fill looks near enough and costs nothing. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.13));
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
+  transition: transform 120ms ease;
+}
+
+.ph-icon:active .ph-tile {
+  transform: scale(0.92);
+}
+
+/* ── Rearranging ─────────────────────────────────────────────── */
+
+/*
+ * There is deliberately no `touch-action` change for edit mode. Switching it
+ * while a finger is already down made Chrome cancel the touch the moment the
+ * grid started jiggling — the icon lifted and then would not move. The drag
+ * stops the page sliding by calling preventDefault() instead; see Phone.tsx.
+ */
+
+@keyframes ph-jiggle {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(1.6deg); }
+}
+
+.ph-pager[data-edit] .ph-tile {
+  animation: ph-jiggle 0.32s ease-in-out infinite;
+}
+
+/* Every other icon jiggles on its own beat, the way a phone's do — one grid
+   moving in lockstep reads as a broken animation rather than a live one. */
+.ph-pager[data-edit] .ph-icon:nth-child(even) .ph-tile {
+  animation-delay: -0.16s;
+}
+
+/* The one being carried: lifted off the grid and out from under the finger. */
+.ph-icon[data-drag] {
+  position: relative;
+  z-index: 3;
+}
+
+.ph-icon[data-drag] .ph-tile {
+  animation: none;
+  transform: scale(1.18);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-pager[data-edit] .ph-tile {
+    animation: none;
+    outline: 2px dashed rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+/* Done, in the bar where the orb was. */
+.ph-done {
+  border: 0;
+  padding: 8px 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #14395f;
+  font-size: 15px;
+  font-weight: 600;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ph-icon-img {
+  width: 38px;
+  height: 38px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* Same treatment the desktop gives its icon labels: white on whatever the
+   wallpaper happens to be, legible on both. */
+.ph-icon-label {
+  font-size: 11px;
+  line-height: 1.25;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 3px rgba(0, 0, 0, 0.7);
+  word-break: break-word;
+}
+
+/* Which page you are on, sat just above the bar. */
+.ph-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--ph-bar) + env(safe-area-inset-bottom) + 8px);
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  pointer-events: none;
+}
+
+.ph-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  transition: background 150ms ease;
+}
+
+.ph-dots span[data-on] {
+  background: #fff;
+}
+
+/* ── A screen ────────────────────────────────────────────────── */
+
+.ph-screen {
+  position: absolute;
+  inset: 0 0 var(--ph-bar) 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* Chrome brings its own tab strip and toolbar, so it takes the whole screen
+   and the Start orb is the only way back. */
+.ph-screen--bleed {
+  padding-top: env(safe-area-inset-top);
+}
+
+.ph-titlebar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 46px;
+  padding: 0 12px;
+  padding-top: env(safe-area-inset-top);
+  height: calc(46px + env(safe-area-inset-top));
+  color: #123;
+  background: linear-gradient(180deg, #fbfcfd 0%, #eef3f9 52%, #e2eaf4 100%);
+  box-shadow: inset 0 -1px 0 #b7c7db;
+}
+
+.ph-titlebar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Windows' own close button, borrowed whole from the desktop caption
+   (.w7-cap-btn / .w7-cap-close in globals.css) — only the size changes, so a
+   finger can hit it and it fills the title bar's full height. */
+.ph-close {
+  flex: none;
+  width: 52px;
+  align-self: stretch;
+  margin-right: -12px;
+  border-top: 0;
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ph-close svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Chrome draws no title bar, so its button floats in the corner of the tab
+   strip instead — which is exactly where Windows would have put it. */
+.ph-close--float {
+  position: absolute;
+  top: env(safe-area-inset-top);
+  right: 0;
+  z-index: 2;
+  height: 30px;
+  width: 46px;
+  align-self: auto;
+  margin: 0;
+  border-radius: 0 0 0 3px;
+}
+
+.ph-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── A folder listing ────────────────────────────────────────── */
+
+.ph-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ph-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  /* 56px: comfortably past the 44px minimum a finger needs. */
+  min-height: 56px;
+  border: 0;
+  padding: 8px 14px;
+  background: none;
+  text-align: left;
+  box-shadow: inset 0 -1px 0 #e6ebf1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ph-row:active {
+  background: #eaf3fd;
+}
+
+.ph-row-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.ph-row-label {
+  flex: 1;
+  font-size: 15px;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.ph-row-chevron {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: #9aa7b4;
+}
+
+.ph-empty,
+.ph-blocked {
+  padding: 28px 20px;
+  color: #4a5560;
+  font-size: 14px;
+  text-align: center;
+}
+
+.ph-blocked-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.ph-open-pdf {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 11px 22px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f4f8fd 0%, #dfeaf7 50%, #cfdff2 51%, #e4eef9 100%);
+  border: 1px solid #93b7dc;
+  color: #123a63;
+  font-size: 15px;
+  text-decoration: none;
+}
+
+/* ── The written pages ───────────────────────────────────────── */
+
+/*
+ * About Me, the projects and every .txt page render through the desktop's
+ * own components. Those were laid out for a ~900px window: the name is 50px
+ * and the body is capped to a comfortable measure. Both of those are wrong
+ * on a 390px screen, and both are the only things that need saying.
+ */
+.ph-page {
+  padding: 18px 16px 40px;
+}
+
+.ph-page .about,
+.ph-page .project {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.ph-page .about-name {
+  font-size: 32px;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.ph-page .project-crest {
+  margin-top: 0;
+}
+
+.ph-page img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── The bar ─────────────────────────────────────────────────── */
+
+.ph-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  height: var(--ph-bar);
+  padding-bottom: env(safe-area-inset-bottom);
+  height: calc(var(--ph-bar) + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px) saturate(1.5);
+  background-color: rgba(9, 20, 38, 0.66);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.42) 0px,
+    rgba(255, 255, 255, 0.42) 1px,
+    rgba(170, 208, 245, 0.3) 2px,
+    rgba(110, 160, 210, 0.2) 22%,
+    rgba(70, 120, 175, 0.12) 45%,
+    rgba(0, 0, 0, 0.3) 46.5%,
+    rgba(0, 0, 0, 0.24) 85%,
+    rgba(40, 80, 130, 0.16) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* The taskbar's orb, centred rather than tucked into the left corner, and
+   without the overhang that only makes sense against a 40px bar. */
+.ph-orb {
+  width: 50px;
+  height: 50px;
+  margin: 0;
+  align-self: center;
+}
+
+.ph-orb:disabled {
+  opacity: 0.45;
+}
+
+/* ── Chrome, full screen ─────────────────────────────────────── */
+
+/*
+ * The browser keeps its tab strip and toolbar — it is the joke. The tabs
+ * already shrink to share the strip on their own (see TabStrip in
+ * chrome/Chrome.tsx); the only thing wrong on a phone is the 116px the strip
+ * reserves on the right for caption buttons this shell has none of.
+ */
+.phone .chrome-tabstrip {
+  /* Room for the close button above, and nothing like the 116px the desktop
+     reserves for a full caption. */
+  padding-right: 52px;
+}

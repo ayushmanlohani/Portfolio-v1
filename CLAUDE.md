@@ -95,6 +95,39 @@ tree everything reads, `components/win7/apps.ts` is every non-folder window, and
   front/rear grip split is structural, not taste** — one shared coefficient
   makes the car spin from a steady steering input. Ping Pong
   (`components/win7/pingpong/`) is the breakout arcade game.
+- **Phones get a different shell, not a different site** (2026-08-29).
+  `components/Shell.tsx` reads `(max-width: 767px)` on the client and
+  dynamic-imports exactly one of `BootSequence` or `components/mobile/Phone`,
+  both `ssr: false`, so neither device downloads the other's code. The phone is
+  two swiped home pages of app tiles — the six folders plus Chrome, then every
+  other program — one full-screen view at a time, and a Start orb that goes
+  home. No windows, no dragging, no Start menu. It reads `fs.ts`, `content/`
+  and the same folder components the desktop does; `pageFor.tsx` is the page
+  dispatch and `PROGRAMS` in `apps.ts` is the app list, both shared with the
+  desktop. The second page's programs all open onto "Open this on a computer"
+  rather than being hidden. The clock rides page one and slides away with it.
+  Long-press an icon and keep dragging to rearrange, Done to stop; the order
+  resets on reload like everything else. **The drag is a raw non-passive
+  `touchmove` listener, not React's `onPointerMove`, and it has to be**: a phone
+  decides at *touch start* whether a gesture may scroll, so flipping
+  `touch-action` when the hold fires is too late for the finger already down —
+  the browser claims the gesture, fires `pointercancel`, and the icon never
+  moves. `preventDefault()` on the first move after the hold takes it back, and
+  works only because the hold requires the finger to have stayed put. **Never
+  change `touch-action` while a finger is down** — an edit-mode rule that did
+  made Chrome cancel the touch the instant the grid started jiggling, so the
+  icon lifted and then would not move. The listeners are on `document`, not the
+  pager, so a finger wandering off the grid keeps dragging. The pager itself declares `touch-action: pan-x` and its
+  pages are not scrollers; a nested vertical scroller inside a horizontal pager
+  is what made swiping fail on a real phone. **The nav stack is kept in lockstep with browser
+  history** (`pushState` per screen, one `popstate` listener) so the phone's own
+  Back button walks back through folders instead of leaving the site — the base
+  entry is `replaceState`d to depth 0 on mount, because a reload restores the
+  old depth otherwise. The resume hands the phone its own PDF viewer. Mouse-only
+  effects (the cursor trail, the hover-tilts) are skipped behind
+  `coarsePointer()` rather than left attached. Anything mobile lives in
+  `components/mobile/mobile.css`, never in `globals.css`.
+
 - **The global leaderboard is done** (2026-08-28): one Upstash Redis sorted set
   behind `app/api/scores/route.ts`, hit with plain fetch — no client library.
   The route rejects times outside 45s–10min; that is the only cheat check. Real
@@ -132,9 +165,12 @@ tree everything reads, `components/win7/apps.ts` is every non-folder window, and
 ## Still open
 
 - Whether the CRT frame comes back on. It's one attribute either way.
-- No mobile/small-screen design yet. There is a `mobile-website-setup` worktree
-  under `.claude/worktrees/`; it is not working yet and main does not depend on
-  it. Leave it alone unless he asks.
+- Whether CloudShader and AuroraBackdrop stay full-fat on a phone. They ship as
+  they are; the fallback is a static image, and it is his call after testing on
+  a real device — DevTools can't measure GPU or battery.
+- The dead `mobile-website-setup` worktree under `.claude/worktrees/`
+  duplicated the content and file-tree logic. It is superseded by
+  `mobile-setup`; delete it.
 - Two animation libraries ship: `gsap` (the About Me page's mouse effects) and
   `motion` (three landing pages). Consolidating means rewriting
   `aboutme/MouseEffects.tsx`'s timelines, which is a design change — his call,
@@ -143,8 +179,12 @@ tree everything reads, `components/win7/apps.ts` is every non-folder window, and
   `isGroup`). Nothing uses it. Kept on purpose so he can nest content later;
   cut it if that never happens.
 
+<!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
