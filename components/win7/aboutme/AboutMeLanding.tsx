@@ -142,7 +142,11 @@ function StaggerLetters({
               opacity: on ? 1 : 0.001,
               filter: on ? "blur(0)" : "blur(10px)",
               transform: on ? "translateY(0)" : "translateY(10px)",
-              transition: `all 0.65s cubic-bezier(0.16,1,0.3,1) ${i * delayStep}s`,
+              // Explicit properties, not "all" — "all" was also catching
+              // font-size, so an inherited breakpoint/clamp change animated
+              // in over 0.65s instead of applying immediately, leaving the
+              // name oversized and clipped for most of that time on phone.
+              transition: `opacity 0.65s cubic-bezier(0.16,1,0.3,1) ${i * delayStep}s, filter 0.65s cubic-bezier(0.16,1,0.3,1) ${i * delayStep}s, transform 0.65s cubic-bezier(0.16,1,0.3,1) ${i * delayStep}s`,
             }}
           >
             {ch}
@@ -152,6 +156,7 @@ function StaggerLetters({
     </div>
   );
 }
+
 
 /* ─── Draggable desk prop ─── minimal grab physics, window-confined */
 export type EditValue = { x: number; y: number; rot: number; w: number };
@@ -663,6 +668,185 @@ const EDUCATION_ITEMS = [
   },
 ];
 
+/* ─── Skills & Technologies ─── one drawn, single-stroke mark per skill,
+   same 1.7-weight sketch line used by the chaos/clean mode buttons. */
+const SKILLS: { id: string; label: string; icon: React.ReactNode }[] = [
+  {
+    id: "python",
+    label: "Python",
+    icon: (
+      <>
+        <path d="M9 4h4a2 2 0 0 1 2 2v3H9a2 2 0 0 0-2 2v3H5a2 2 0 0 1-2-2V8a4 4 0 0 1 4-4h2z" />
+        <path d="M15 20h-4a2 2 0 0 1-2-2v-3h6a2 2 0 0 0 2-2V10h2a2 2 0 0 1 2 2v4a4 4 0 0 1-4 4h-2z" />
+        <circle cx="8" cy="7.2" r=".55" fill="currentColor" stroke="none" />
+        <circle cx="16" cy="16.8" r=".55" fill="currentColor" stroke="none" />
+      </>
+    ),
+  },
+  {
+    id: "sql",
+    label: "SQL",
+    icon: (
+      <>
+        <ellipse cx="12" cy="6" rx="7" ry="2.5" />
+        <path d="M5 6v12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5V6" />
+        <path d="M5 12c0 1.4 3.1 2.5 7 2.5s7-1.1 7-2.5" />
+      </>
+    ),
+  },
+  {
+    id: "pytorch",
+    label: "PyTorch",
+    icon: <path d="M12 3c2 3-1 4-1 6.5A3 3 0 0 0 14 12.5c0-1 .5-1.5.5-1.5C16 12 17 14 17 16a5 5 0 0 1-10 0c0-3 2-4 2.5-6C10 8 9 6 12 3z" />,
+  },
+  {
+    id: "deep-learning",
+    label: "Deep Learning",
+    icon: (
+      <>
+        <circle cx="5" cy="6" r="1.5" />
+        <circle cx="5" cy="18" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="19" cy="7" r="1.5" />
+        <circle cx="19" cy="17" r="1.5" />
+        <path d="M6.4 7L10.8 11M6.4 17L10.8 13M13.4 11L17.6 8M13.4 13L17.6 16" />
+      </>
+    ),
+  },
+  {
+    id: "cv",
+    label: "Computer Vision",
+    icon: (
+      <>
+        <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
+  },
+  {
+    id: "fastapi",
+    label: "FastAPI",
+    icon: <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" />,
+  },
+  {
+    id: "rest",
+    label: "REST APIs",
+    icon: (
+      <>
+        <path d="M4 8h13" />
+        <path d="M13 4l4 4-4 4" />
+        <path d="M20 16H7" />
+        <path d="M11 12l-4 4 4 4" />
+      </>
+    ),
+  },
+  {
+    id: "rag",
+    label: "RAG",
+    icon: (
+      <>
+        <rect x="4" y="3" width="10" height="13" rx="1.5" />
+        <path d="M7 7h4M7 10h4M7 13h2" />
+        <circle cx="16.5" cy="16.5" r="3.2" />
+        <path d="M18.8 18.8L21 21" />
+      </>
+    ),
+  },
+  {
+    id: "chromadb",
+    label: "ChromaDB",
+    icon: (
+      <>
+        <path d="M12 3l7 4v10l-7 4-7-4V7z" />
+        <path d="M12 3v18M5 7l7 4 7-4" />
+      </>
+    ),
+  },
+  {
+    id: "agents",
+    label: "AI Agents",
+    icon: (
+      <>
+        <rect x="6" y="8" width="12" height="10" rx="2.5" />
+        <path d="M12 8V4" />
+        <circle cx="12" cy="3" r="1" fill="currentColor" stroke="none" />
+        <circle cx="9.5" cy="13" r="1" fill="currentColor" stroke="none" />
+        <circle cx="14.5" cy="13" r="1" fill="currentColor" stroke="none" />
+        <path d="M3 12v3M21 12v3" />
+      </>
+    ),
+  },
+  {
+    id: "edge-yolo",
+    label: "Edge AI / YOLO",
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="8" />
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+      </>
+    ),
+  },
+  {
+    id: "fullstack",
+    label: "Full-Stack",
+    icon: (
+      <>
+        <rect x="4" y="4" width="16" height="4" rx="1" />
+        <rect x="4" y="10" width="16" height="4" rx="1" />
+        <rect x="4" y="16" width="16" height="4" rx="1" />
+      </>
+    ),
+  },
+  {
+    id: "pipelines",
+    label: "Data Pipelines",
+    icon: (
+      <>
+        <circle cx="4" cy="12" r="2" />
+        <path d="M6 12h4" />
+        <rect x="10" y="9" width="6" height="6" rx="1.5" />
+        <path d="M16 12h4" />
+        <circle cx="20" cy="12" r="2" />
+      </>
+    ),
+  },
+];
+
+function SkillChip({ label, icon, delay }: { label: string; icon: React.ReactNode; delay: number }) {
+  return (
+    <Reveal delay={delay}>
+      <button
+        type="button"
+        className="skill-chip"
+        aria-label={label}
+        style={{
+          display: "flex",
+          width: "100%",
+          boxSizing: "border-box",
+          alignItems: "center",
+          gap: 9,
+          padding: "10px 14px",
+          borderRadius: 14,
+          background: T.card,
+          border: `1px solid ${T.border}`,
+          color: T.ink,
+          fontFamily: "var(--font-jackie-mono)",
+          fontSize: 12.5,
+          fontWeight: 600,
+          letterSpacing: "-0.01em",
+          cursor: "default",
+        }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: T.taupe }}>
+          {icon}
+        </svg>
+        <span>{label}</span>
+      </button>
+    </Reveal>
+  );
+}
+
 function EducationItem({ item, narrow }: { item: (typeof EDUCATION_ITEMS)[0]; narrow: boolean }) {
   const [logoHovered, setLogoHovered] = useState(false);
 
@@ -1107,8 +1291,11 @@ function RecentlyMadeProjects({
       </div>
 
       {/* Right Stage: empty at rest — a cluster of the hovered project's own
-          screenshots assembles from three directions on hover. */}
+          screenshots assembles from three directions on hover. Hover never
+          fires on a phone, so this never shows anything there — just an
+          empty gap under the tile list. Hidden phone-only. */}
       <div
+        className="ph-hide-desk"
         style={{
           position: "relative",
           minHeight: isNarrow ? 220 : 280,
@@ -1384,6 +1571,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <div
+              className="ph-hide-desk"
               style={{
                 width: compact ? 116 : 148,
                 background: "#FFF6B5",
@@ -1416,6 +1604,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <div
+              className="ph-hide-desk"
               style={{
                 width: compact ? 148 : 190,
                 background: T.card,
@@ -1474,6 +1663,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <div
+              className="ph-hide-desk"
               style={{
                 width: compact ? 132 : deskMode === "clean" ? 159 : 165,
                 background: "#fff",
@@ -1537,6 +1727,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <div
+              className="ph-hide-desk"
               style={{
                 width: compact ? 150 : 182,
                 background: "#fff",
@@ -1580,6 +1771,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <img
+              className="ph-hide-png"
               src="/letterbox/pngs/cat-headphones.png"
               alt=""
               draggable={false}
@@ -1602,6 +1794,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <img
+              className="ph-hide-png"
               src="/letterbox/pngs/coke-can.png"
               alt=""
               draggable={false}
@@ -1624,6 +1817,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <img
+              className="ph-hide-png"
               src="/letterbox/pngs/kitten.png"
               alt=""
               draggable={false}
@@ -1646,6 +1840,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             disabled={deskMode === "clean"}
           >
             <img
+              className="ph-hide-png"
               src="/letterbox/pngs/skull.png"
               alt=""
               draggable={false}
@@ -1686,25 +1881,35 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
           </Reveal>
 
           <div style={{ marginTop: narrow ? 12 : 18 }}>
-            {/* Jackie 85px script – we use Caveat at 82-96px to echo hand-written */}
-            <EditableGroup id="name" editMode={editMode} baseX={deskMode === "clean" ? px(-270) : px(0)} baseY={deskMode === "clean" ? py(-157) : py(-32)} k={k} onEditChange={handleEditChange}>
-              <div
-                className="hero-name-title"
-                style={{
-                  fontFamily: "var(--font-jackie-script)",
-                  fontSize: narrow ? "56px" : compact ? "66px" : "92px",
-                  lineHeight: 0.9,
-                  fontWeight: 700,
-                  color: T.ink,
-                  letterSpacing: "-0.02em",
-                  whiteSpace: "nowrap",
-                  display: "inline-block",
-                  pointerEvents: "none",
-                }}
-              >
-                <StaggerLetters text="Ayushman Lohani" delayStep={0.028} />
-              </div>
-            </EditableGroup>
+            {/* Jackie 85px script – we use Caveat at 82-96px to echo hand-written.
+                On phone, the fixed 56px breakpoint was wider than some screens
+                have room for and got clipped by the section's own overflow — a
+                JS transform:scale rescue made it worse (text-align centres an
+                inline-block on its *pre-transform* width, so the scaled box
+                landed off-centre and still clipped). A plain fluid clamp()
+                sizes the text correctly the first time: it's tied to the
+                measured width of this exact string in this exact font
+                (~9.52px of width per 1px of font-size), against the width the
+                hero section actually leaves after its own 18px+18px padding
+                (100vw - 36px), with an 8% margin so no device ever cuts it. */}
+            <div
+              className="hero-name-title"
+              style={{
+                fontFamily: "var(--font-jackie-script)",
+                fontSize: narrow ? "clamp(26px, calc((100vw - 36px) / 9.55), 62px)" : compact ? "66px" : "92px",
+                lineHeight: 0.9,
+                fontWeight: 700,
+                color: T.ink,
+                letterSpacing: "-0.02em",
+                whiteSpace: "nowrap",
+                display: "inline-block",
+                pointerEvents: "none",
+              }}
+            >
+              <EditableGroup id="name" editMode={editMode} baseX={deskMode === "clean" ? px(-270) : px(0)} baseY={deskMode === "clean" ? py(-157) : py(-32)} k={k} onEditChange={handleEditChange}>
+                <StaggerLetters text="Ayushman Lohani" delayStep={0.028} style={{ flexWrap: "nowrap" }} />
+              </EditableGroup>
+            </div>
             <Reveal delay={0.28}>
               <EditableGroup id="quote" editMode={editMode} baseX={deskMode === "clean" ? px(-227) : px(36)} baseY={deskMode === "clean" ? py(-158) : py(-44)} k={k} onEditChange={handleEditChange}>
                 <div
@@ -1745,6 +1950,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
           <Reveal delay={0.38}>
             <EditableGroup id="buttons" editMode={editMode} baseX={0} baseY={0} k={k} onEditChange={handleEditChange}>
             <div
+              className="ph-hide-desk"
               style={{
                 marginTop: narrow ? 26 : 38,
                 display: "inline-flex",
@@ -1830,6 +2036,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
           <Reveal delay={0.58}>
             <div
+              className="ph-hide-desk"
               style={{
                 marginTop: 18,
                 display: "flex",
@@ -1904,6 +2111,24 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
           .edu-item:hover {
             border-color: #D0CCC3;
             box-shadow: 0 4px 16px rgba(62,62,66,0.08);
+          }
+          .skill-chip {
+            transition: transform 0.22s cubic-bezier(0.16,1,0.3,1), border-color 0.2s, box-shadow 0.2s, color 0.2s;
+          }
+          .skill-chip svg { transition: color 0.2s; }
+          @media (hover: hover) {
+            .skill-chip:hover {
+              transform: translateY(-2px);
+              border-color: #F76240;
+              color: #F76240;
+              box-shadow: 0 8px 20px rgba(247,98,64,0.14);
+            }
+            .skill-chip:hover svg { color: #F76240; }
+          }
+          .skill-chip:active { transform: translateY(0) scale(0.97); }
+          .skill-chip:focus-visible {
+            outline: 2px solid #F76240;
+            outline-offset: 2px;
           }
         `}</style>
       </section>
@@ -2161,7 +2386,48 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
       </section>
 
 
-      {/* ─── FIND ME ─── closing links row, same spot About used to end on */}
+      {/* ─── SKILLS & TECHNOLOGIES ─── one drawn-icon box per skill, in a real
+          grid (not a loose wrap) so the row count itself adapts to the
+          screen instead of chips just trailing off at whatever width is
+          left. */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: "min(1160px, 94%)",
+          margin: "0 auto",
+          padding: narrow ? "12px 14px 24px" : "16px 24px 32px",
+        }}
+      >
+        <Reveal>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+              borderBottom: `1px solid ${T.line}`,
+              paddingBottom: 14,
+              marginBottom: 18,
+            }}
+          >
+            <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 }}>
+              Skills &amp; Technologies
+            </h2>
+            <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: T.muted }}>
+              what I build with
+            </span>
+          </div>
+        </Reveal>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 }}>
+          {SKILLS.map((s, i) => (
+            <SkillChip key={s.id} label={s.label} icon={s.icon} delay={i * 0.03} />
+          ))}
+        </div>
+      </section>
+
+      {/* ─── FIND ME ─── closing links row. The last content section on the
+          page, right before the footer. */}
       <section
         style={{
           position: "relative",

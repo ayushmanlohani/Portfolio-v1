@@ -464,6 +464,19 @@
   margin-top: 0;
 }
 
+/* Desk clutter pngs (cat, coke can, kitten, skull) — decorative only, and a
+   390px-wide screen has no room to spare for them. This file only loads on
+   the phone shell (see file header), so no .ph-page/.ph-screen scoping is
+   needed — desktop never sees this rule. The About Me landing page (Chrome)
+   wraps its content in .ph-screen--bleed, not .ph-page, which is why a
+   scoped selector missed it. */
+.ph-hide-png,
+.ph-hide-desk {
+  /* The img carries an inline style="display:block" from AboutMeLanding.tsx
+     (shared with desktop), which otherwise beats any stylesheet rule. */
+  display: none !important;
+}
+
 .ph-page img {
   max-width: 100%;
   height: auto;
