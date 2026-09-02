@@ -849,14 +849,14 @@ function SkillChip({ label, icon, delay }: { label: string; icon: React.ReactNod
   );
 }
 
-/* ─── Phone jump nav ─── the page is a long single scroll on a 390px screen
-   with nothing else to skim it by. A sticky top bar was the first attempt —
-   scrapped: it sat permanently in the layout eating vertical space, and its
-   own shortcuts needed a horizontal scroll to reach, defeating the point of
-   a shortcut. This is a floating speed dial instead: a single round button,
-   thumb-reachable at the bottom, that springs the five stops open in place
-   with nothing to scroll. Rendered on every visit but invisible by default
-   (inline display:none) — mobile.css is the only thing that turns it on. */
+/* ─── Jump nav ─── the page is a long single scroll with nothing else to
+   skim it by. A sticky top bar was the first attempt — scrapped: it sat
+   permanently in the layout eating vertical space, and its own shortcuts
+   needed a horizontal scroll to reach, defeating the point of a shortcut.
+   This is a floating speed dial instead: a single round button that springs
+   the five stops open in place with nothing to scroll. Same component on
+   phone and desktop — sizing/position live entirely in CSS (globals.css for
+   desktop, mobile.css overrides for phone). */
 const NAV_SECTIONS = [
   { id: "about", label: "About" },
   { id: "experience", label: "Experience" },
@@ -865,7 +865,7 @@ const NAV_SECTIONS = [
   { id: "skills", label: "Skills" },
 ];
 
-function PhoneJumpNav({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+function JumpNav({ containerRef, compact }: { containerRef: React.RefObject<HTMLDivElement | null>; compact: boolean }) {
   const [open, setOpen] = useState(false);
 
   const goTo = (id: string) => {
@@ -874,13 +874,13 @@ function PhoneJumpNav({ containerRef }: { containerRef: React.RefObject<HTMLDivE
   };
 
   return (
-    <div className="ph-jump-nav" style={{ display: "none" }}>
-      {open && <div className="ph-fab-scrim" onClick={() => setOpen(false)} />}
+    <div className="jump-nav">
+      {open && <div className="jump-nav-scrim" onClick={() => setOpen(false)} />}
 
-      <div className="ph-fab-anchor">
+      <div className={`jump-nav-anchor${compact ? " jump-nav-anchor--compact" : ""}`}>
         {/* Stops spring open bottom-to-top, closest to the button first — the
             button is the hinge the whole thing pivots from. */}
-        <div className="ph-fab-panel" aria-hidden={!open} style={{ pointerEvents: open ? "auto" : "none" }}>
+        <div className="jump-nav-panel" aria-hidden={!open} style={{ pointerEvents: open ? "auto" : "none" }}>
           {NAV_SECTIONS.map((s, i) => (
             <button
               key={s.id}
@@ -904,7 +904,7 @@ function PhoneJumpNav({ containerRef }: { containerRef: React.RefObject<HTMLDivE
 
         <button
           type="button"
-          className="ph-fab"
+          className="jump-nav-fab"
           aria-label={open ? "Close jump menu" : "Jump to a section"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -1589,21 +1589,29 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
   return (
     <div
-      ref={containerRef}
       className={`${mono.variable} ${script.variable}`}
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        background: T.bg,
-        color: T.ink,
-        fontFamily: "var(--font-jackie-mono)",
-        WebkitFontSmoothing: "antialiased",
-      }}
+      style={{ position: "relative", width: "100%", height: "100%" }}
     >
-      <PhoneJumpNav containerRef={containerRef} />
+      {/* Sibling of the scrolling pane below, not a child of it — a FAB inside
+          an overflow:auto div scrolls away with the content instead of
+          floating. Living out here, it stays pinned to this pane's own
+          corner on both the fullscreen phone shell and a resizable desktop
+          Chrome window. */}
+      <JumpNav containerRef={containerRef} compact={compact} />
+      <div
+        ref={containerRef}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          overflowY: "auto",
+          overflowX: "hidden",
+          background: T.bg,
+          color: T.ink,
+          fontFamily: "var(--font-jackie-mono)",
+          WebkitFontSmoothing: "antialiased",
+        }}
+      >
 
       {/* SVG turbulence for About paragraphs – Jackie's wobbly ink */}
       <svg width={0} height={0} style={{ position: "absolute" }}>
@@ -2638,6 +2646,7 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
       </footer>
 
       {editMode && <EditPanel values={editValues} />}
+      </div>
     </div>
   );
 }

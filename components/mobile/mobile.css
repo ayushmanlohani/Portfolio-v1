@@ -477,77 +477,30 @@
   display: none !important;
 }
 
-/* The reverse of the two rules above: hidden by an inline display:none in
-   AboutMeLanding.tsx by default (so desktop never shows it without needing
-   its own guard), turned on only here.
-   A floating speed dial, not a sticky bar: the anchor sits above the phone's
-   own bottom bar (--ph-bar, defined on .phone) using the same safe-area
-   offset the page-dots indicator already uses, so it never overlaps the
-   Home orb. */
-.ph-jump-nav {
-  display: contents !important;
-}
-
-.ph-fab-scrim {
+/* Base look lives in globals.css (.jump-nav-*) — shared with desktop. This
+   phone-only override switches the anchor from absolute (pinned to the
+   About Me pane's own corner, right for a windowed desktop Chrome) to fixed,
+   so it floats above the phone's own bottom bar (--ph-bar, defined on
+   .phone) using the same safe-area offset the page-dots indicator already
+   uses, instead of sitting inside the pane and risking the Home orb. */
+.jump-nav-scrim {
   position: fixed;
   inset: 0;
-  z-index: 35;
-  background: rgba(38, 34, 30, 0.18);
 }
 
-.ph-fab-anchor {
+.jump-nav-anchor,
+.jump-nav-anchor.jump-nav-anchor--compact {
   position: fixed;
   right: 16px;
   bottom: calc(var(--ph-bar) + env(safe-area-inset-bottom) + 16px);
-  z-index: 40;
 }
 
-.ph-fab {
-  position: relative;
-  overflow: hidden;
-  width: 52px;
-  height: 52px;
-  padding: 0;
-  border-radius: 50%;
-  border: none;
-  background: #3E3E42;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 22px rgba(62, 62, 66, 0.32);
-}
-.ph-fab:active {
-  transform: scale(0.94);
-}
-
-.ph-fab-panel {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 10px);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.ph-fab-panel button {
-  font-family: var(--font-jackie-mono, "IBM Plex Mono", monospace);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #3E3E42;
-  background: #FCF7F2;
-  border: 1px solid #E7E6DE;
-  border-radius: 14px;
-  padding: 9px 16px;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(62, 62, 66, 0.14);
-  transform-origin: right bottom;
-  transition: opacity 0.22s cubic-bezier(0.16,1,0.3,1), transform 0.22s cubic-bezier(0.16,1,0.3,1);
-}
-.ph-fab-panel button:active {
-  background: #F6F6F6;
+.jump-nav-fab {
+  /* !important: beats globals.css's more specific
+     .jump-nav-anchor--compact .jump-nav-fab rule, which fires here too since
+     a phone screen is always under the compact breakpoint. */
+  width: 52px !important;
+  height: 52px !important;
 }
 
 .ph-page img {
