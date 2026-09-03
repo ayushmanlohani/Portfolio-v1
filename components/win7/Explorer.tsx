@@ -14,6 +14,7 @@ import { useMarquee } from "@/components/win7/useMarquee";
 import { useFiles } from "@/store/files";
 import { useFolders } from "@/store/folders";
 import { useInlineEdit } from "@/store/inlineEdit";
+import { usePhotography } from "@/store/photography";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -331,6 +332,13 @@ function Contents({
   const warning = useInlineEdit((s) => s.warning);
   const commitRename = useInlineEdit((s) => s.commit);
   const cancelRename = useInlineEdit((s) => s.cancel);
+
+  // Fetches /api/photos the first time this folder is opened, never on page
+  // load — see store/photography.ts for why that's what keeps an idle visit
+  // at zero bandwidth.
+  useEffect(() => {
+    if (view === "photography") usePhotography.getState().load();
+  }, [view]);
 
   // Easter egg — same as Start menu search (works in every folder)
   if (isEasterEgg) {
