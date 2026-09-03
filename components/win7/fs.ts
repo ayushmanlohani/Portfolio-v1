@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { createElement, useState } from "react";
 
 import {
   ChromeIcon,
@@ -58,7 +58,7 @@ export type FsNode = {
   body?: readonly string[];
 };
 
-/** The six folders on the desktop, in the order Windows stacks them. */
+/** The seven folders on the desktop, in the order Windows stacks them. */
 export const DESKTOP_FOLDERS = [
   "about",
   "projects",
@@ -66,6 +66,7 @@ export const DESKTOP_FOLDERS = [
   "education",
   "resume",
   "contact",
+  "photography",
 ] as const;
 
 /**
@@ -267,6 +268,56 @@ const thumbnail = (src: string) => {
   return Thumbnail;
 };
 
+/**
+ * A photo synced from Google Drive's "Photography" folder — see
+ * app/api/photos/route.ts for how these fields are produced. `id` is
+ * Drive's own file id, stable across re-fetches, which is what makes it
+ * safe to key a window or a retry on rather than the URL.
+ */
+export type DrivePhoto = {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  thumbUrl: string;
+  fullUrl: string;
+};
+
+export const DRIVE_PHOTOS_PREFIX = "drivephoto:";
+
+/**
+ * A Drive photo's grid icon. Unlike `thumbnail()` above, this one carries
+ * its own retry: Drive's `thumbnailLink` is short-lived (~1 hour), and a
+ * browser tab left open past that would otherwise show a permanently
+ * broken image forever. One failed load re-fetches the photo list and
+ * swaps in a fresh URL; a second failure gives up rather than looping.
+ */
+const driveThumbnail = (photo: DrivePhoto) => {
+  const DriveThumbnail = ({ className }: { className?: string }) => {
+    const [src, setSrc] = useState(photo.thumbUrl);
+    const [retried, setRetried] = useState(false);
+    return createElement("img", {
+      className: `fs-thumb ${className ?? ""}`.trim(),
+      src,
+      alt: "",
+      loading: "lazy",
+      onError: () => {
+        if (retried) return;
+        setRetried(true);
+        fetch("/api/photos")
+          .then((res) => res.json())
+          .then((data: { photos: DrivePhoto[] }) => {
+            const fresh = data.photos.find((p) => p.id === photo.id);
+            if (fresh) setSrc(fresh.thumbUrl);
+          })
+          .catch(() => {});
+      },
+    });
+  };
+  DriveThumbnail.displayName = `DriveThumbnail(${photo.name})`;
+  return DriveThumbnail;
+};
+
 const PICTURE_NODES: FsNode[] = PICTURES.map((picture) => ({
   id: PHOTOS_PREFIX + picture.src,
   label: fileName(picture.src),
@@ -303,6 +354,7 @@ const NODE_LIST: FsNode[] = [
   folder("education", "Education"),
   folder("resume", "Resume"),
   folder("contact", "Contact"),
+  folder("photography", "Photography"),
 
   // An installed program, not a place. Double-clicking it launches a window
   // rather than listing anything, so it has no `children` — see
@@ -581,6 +633,32 @@ export function unregisterFile(id: string) {
   NODES.delete(id);
   const parent = parentOf(id);
   if (parent) parent.children = (parent.children ?? []).filter((child) => child !== id);
+}
+
+/**
+ * Wires the Photography folder's contents to whatever `/api/photos` last
+ * returned. Called by `store/photography.ts` after a successful fetch —
+ * follows the same trick `registerFile` uses above: mutate the same
+ * `NODES` map every other place already reads, so Explorer picks the
+ * result up with no changes of its own beyond the subscription that makes
+ * it re-render.
+ */
+export function registerPhotos(photos: DrivePhoto[]) {
+  const ids = photos.map((photo) => {
+    const id = DRIVE_PHOTOS_PREFIX + photo.id;
+    NODES.set(id, {
+      id,
+      label: photo.name,
+      Icon: driveThumbnail(photo),
+      kind: "file",
+      type: "JPEG image",
+      deletable: false,
+    });
+    return id;
+  });
+
+  const photography = NODES.get("photography")!;
+  photography.children = ids;
 }
 
 /**
