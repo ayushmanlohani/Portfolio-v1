@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import type { DrivePhoto } from "@/components/win7/fs";
 import { fileName, mediaBySrc, PICTURES, type MediaItem } from "@/components/win7/media";
+import { toMediaItems, usePhotography } from "@/store/photography";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -54,14 +56,19 @@ const mailto = (title: string, src: string) => {
  * them out of the library, the Pictures folder, and every "Open"/next-prev
  * list, reachable only by the exact window id that names them.
  */
-function initialPictures(src: string): MediaItem[] {
+function initialPictures(src: string, drivePictures: MediaItem[]): MediaItem[] {
+  if (drivePictures.some((p) => p.src === src)) return drivePictures;
   if (PICTURES.some((p) => p.src === src)) return PICTURES;
   const item = mediaBySrc(src);
   return [item ?? { src, title: fileName(src), kind: "picture", album: "Pictures" }];
 }
 
 export function PhotoViewer({ windowId, src }: { windowId: string; src: string }) {
-  const [pictures, setPictures] = useState<MediaItem[]>(() => initialPictures(src));
+  const drivePhotos = usePhotography((s) => s.photos);
+  const driveMediaItems = useMemo(() => toMediaItems(drivePhotos), [drivePhotos]);
+  const retriedDriveIds = useRef<Set<string>>(new Set());
+
+  const [pictures, setPictures] = useState<MediaItem[]>(() => initialPictures(src, driveMediaItems));
   const [index, setIndex] = useState(() => Math.max(0, pictures.findIndex((p) => p.src === src)));
   const [zoom, setZoom] = useState<number | null>(null); // null = fit to window
   const [angle, setAngle] = useState(0);
@@ -77,7 +84,7 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
   // The caption follows the picture, the way Explorer's follows the folder.
   const setTitle = useWindowStore((s) => s.setTitle);
   useEffect(() => {
-    if (current) setTitle(windowId, fileName(current.src));
+    if (current) setTitle(windowId, current.displayName ?? fileName(current.src));
   }, [current, setTitle, windowId]);
 
   /** Every control that changes picture goes through here, so zoom, rotation
@@ -190,7 +197,7 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
         {menuButton(
           "File",
           <>
-            {downloadItem("Download", current.src, fileName(current.src))}
+            {downloadItem("Download", current.src, current.displayName ?? fileName(current.src))}
             {item("Properties", () => setDialog("properties"))}
             {item("Delete", () => setDialog("delete"))}
           </>,
@@ -241,6 +248,21 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
             setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })
           }
           onDoubleClick={() => setZoom((z) => (z === null ? 1 : null))}
+          onError={() => {
+            const driveId = current.driveId;
+            if (!driveId || retriedDriveIds.current.has(driveId)) return;
+            retriedDriveIds.current.add(driveId);
+            fetch("/api/photos")
+              .then((res) => res.json())
+              .then((data: { photos: DrivePhoto[] }) => {
+                const fresh = data.photos.find((p) => p.id === driveId);
+                if (!fresh) return;
+                setPictures((prev) =>
+                  prev.map((p) => (p.driveId === driveId ? { ...p, src: fresh.fullUrl } : p)),
+                );
+              })
+              .catch(() => {});
+          }}
         />
       </div>
 
@@ -398,13 +420,13 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
                   <p className="win7-dialog-message">
                     Are you sure you want to move this picture to the Recycle Bin?
                   </p>
-                  <p className="win7-dialog-where">{fileName(current.src)}</p>
+                  <p className="win7-dialog-where">{current.displayName ?? fileName(current.src)}</p>
                 </>
               )}
 
               {dialog === "properties" && (
                 <>
-                  <p className="win7-dialog-message">{fileName(current.src)}</p>
+                  <p className="win7-dialog-message">{current.displayName ?? fileName(current.src)}</p>
                   <dl className="pv-props">
                     <dt>Title</dt>
                     <dd>{current.title}</dd>
