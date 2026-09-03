@@ -18,6 +18,11 @@ import { fileName, PDF_PREFIX, PHOTOS_PREFIX, PICTURES } from "@/components/win7
 import { FOLDERS } from "@/content/folders";
 import { type Entry, isGroup, PAGES } from "@/content/pages";
 import { RESUME } from "@/content/resume";
+// A circular import with store/photography.ts (which imports registerPhotos
+// and DrivePhoto from this file): safe because usePhotography is only
+// touched inside driveThumbnail()'s onError callback, which runs long after
+// both modules have finished evaluating — never at module top level.
+import { usePhotography } from "@/store/photography";
 
 /**
  * The file tree.
@@ -304,13 +309,17 @@ const driveThumbnail = (photo: DrivePhoto) => {
       onError: () => {
         if (retried) return;
         setRetried(true);
-        fetch("/api/photos")
-          .then((res) => res.json())
-          .then((data: { photos: DrivePhoto[] }) => {
-            const fresh = data.photos.find((p) => p.id === photo.id);
+        // refresh() bypasses /api/photos' ISR cache (a plain fetch here can
+        // get back the same expired response) and dedupes concurrent
+        // callers, so several thumbnails expiring at once share one
+        // request instead of each firing its own.
+        usePhotography
+          .getState()
+          .refresh()
+          .then(() => {
+            const fresh = usePhotography.getState().photos.find((p) => p.id === photo.id);
             if (fresh) setSrc(fresh.thumbUrl);
-          })
-          .catch(() => {});
+          });
       },
     });
   };

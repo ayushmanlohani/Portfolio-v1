@@ -61,10 +61,14 @@ async function getAccessToken(): Promise<string | null> {
   return data.access_token ?? null;
 }
 
-/** Drive's thumbnailLink ends `=s<n>` — swap the number to ask for a
- *  different render size instead of generating our own. */
+/** Drive's thumbnailLink ends in a size/parameter suffix after the last
+ *  `=` — usually `=s<n>`, but real links also show up as `=s220-p-k` or
+ *  `=w220-h150`. Match any trailing run of word/hyphen characters after
+ *  the last `=`, not just a bare `=s<digits>`, so the swap actually lands
+ *  instead of silently no-opping and leaving both thumbUrl and fullUrl
+ *  pointing at the same small original render. */
 function resized(thumbnailLink: string, size: number): string {
-  return thumbnailLink.replace(/=s\d+$/, `=s${size}`);
+  return thumbnailLink.replace(/=[-\w]+$/, `=s${size}`);
 }
 
 type DriveFile = {

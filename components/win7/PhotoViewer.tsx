@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import type { DrivePhoto } from "@/components/win7/fs";
 import { fileName, mediaBySrc, PICTURES, type MediaItem } from "@/components/win7/media";
 import { toMediaItems, usePhotography } from "@/store/photography";
 import { useRecycleBin } from "@/store/recycleBin";
@@ -252,16 +251,20 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
             const driveId = current.driveId;
             if (!driveId || retriedDriveIds.current.has(driveId)) return;
             retriedDriveIds.current.add(driveId);
-            fetch("/api/photos")
-              .then((res) => res.json())
-              .then((data: { photos: DrivePhoto[] }) => {
-                const fresh = data.photos.find((p) => p.id === driveId);
+            // refresh() bypasses /api/photos' ISR cache and dedupes
+            // concurrent callers — see store/photography.ts and fs.ts's
+            // driveThumbnail() for why a plain fetch here can't actually
+            // recover a just-expired link.
+            usePhotography
+              .getState()
+              .refresh()
+              .then(() => {
+                const fresh = usePhotography.getState().photos.find((p) => p.id === driveId);
                 if (!fresh) return;
                 setPictures((prev) =>
                   prev.map((p) => (p.driveId === driveId ? { ...p, src: fresh.fullUrl } : p)),
                 );
-              })
-              .catch(() => {});
+              });
           }}
         />
       </div>

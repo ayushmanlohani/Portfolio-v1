@@ -333,6 +333,13 @@ function Contents({
   const commitRename = useInlineEdit((s) => s.commit);
   const cancelRename = useInlineEdit((s) => s.cancel);
 
+  // Not read directly below — same reason as useFiles/useFolders above.
+  // registerPhotos (fs.ts) mutates the NODES map directly, which is
+  // invisible to React; subscribing here is what repaints this grid once
+  // the effect below's load() resolves and the store's photos actually
+  // change, rather than data landing with nothing to trigger a re-render.
+  usePhotography((s) => s.photos);
+
   // Fetches /api/photos the first time this folder is opened, never on page
   // load — see store/photography.ts for why that's what keeps an idle visit
   // at zero bandwidth.
