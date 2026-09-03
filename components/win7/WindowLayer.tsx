@@ -5,7 +5,7 @@ import { Chrome } from "@/components/win7/chrome/Chrome";
 import { ControlPanel } from "@/components/win7/ControlPanel";
 import { useDesk } from "@/components/win7/desk";
 import { Explorer } from "@/components/win7/Explorer";
-import { node } from "@/components/win7/fs";
+import { DRIVE_PHOTOS_PREFIX, node } from "@/components/win7/fs";
 import { MediaPlayer } from "@/components/win7/MediaPlayer";
 import { Notepad } from "@/components/win7/Notepad";
 import { PdfViewer } from "@/components/win7/PdfViewer";
@@ -32,6 +32,7 @@ import {
   WMP_ID,
 } from "@/components/win7/apps";
 import { Win7Window } from "@/components/win7/Win7Window";
+import { usePhotography } from "@/store/photography";
 import { useWindowStore, type OpenWindow } from "@/store/windows";
 
 /**
@@ -58,6 +59,11 @@ function contentFor(win: OpenWindow) {
   if (id === SCREEN_RES_ID) return <ScreenResolution />;
   if (id === CONTROL_PANEL_ID) return <ControlPanel />;
   if (id.startsWith(PHOTOS_PREFIX)) return <PhotoViewer windowId={id} src={mediaSrc(id)} />;
+  if (id.startsWith(DRIVE_PHOTOS_PREFIX)) {
+    const driveId = id.slice(DRIVE_PHOTOS_PREFIX.length);
+    const photo = usePhotography.getState().photos.find((p) => p.id === driveId);
+    return <PhotoViewer windowId={id} src={photo?.fullUrl ?? ""} />;
+  }
   if (id.startsWith(PDF_PREFIX)) return <PdfViewer src={mediaSrc(id)} />;
   if (id === CHROME_ID) return <Chrome windowId={id} />;
   if (node(id)?.kind === "file") return <Notepad windowId={id} fileId={id} />;
