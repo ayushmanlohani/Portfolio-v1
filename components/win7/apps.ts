@@ -11,9 +11,10 @@ import {
   RacerIcon,
   TerminalIcon,
 } from "@/components/win7/icons";
-import { node } from "@/components/win7/fs";
+import { DRIVE_PHOTOS_PREFIX, node } from "@/components/win7/fs";
 import { PDF_PREFIX, PHOTOS_PREFIX } from "@/components/win7/media";
 import { useWindowStore } from "@/store/windows";
+import { usePhotography } from "@/store/photography";
 
 /**
  * Windows that aren't folders.
@@ -185,6 +186,16 @@ export function launchWindow(id: string) {
   // file's name rather than anything fixed.
   if (id.startsWith(PHOTOS_PREFIX)) {
     open(id, { title: baseName(mediaSrc(id)), ...PHOTOS_SIZE, desk });
+    return;
+  }
+
+  // Same idea for a Drive-backed photo, except its id carries Drive's file
+  // id rather than a src to parse a name out of — the store already has
+  // the real filename.
+  if (id.startsWith(DRIVE_PHOTOS_PREFIX)) {
+    const driveId = id.slice(DRIVE_PHOTOS_PREFIX.length);
+    const photo = usePhotography.getState().photos.find((p) => p.id === driveId);
+    open(id, { title: photo?.name ?? "Photo", ...PHOTOS_SIZE, desk });
     return;
   }
 
