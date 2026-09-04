@@ -1,4 +1,4 @@
-import { createElement, useState } from "react";
+import { createElement } from "react";
 
 import {
   ChromeIcon,
@@ -18,11 +18,6 @@ import { fileName, PDF_PREFIX, PHOTOS_PREFIX, PICTURES } from "@/components/win7
 import { FOLDERS } from "@/content/folders";
 import { type Entry, isGroup, PAGES } from "@/content/pages";
 import { RESUME } from "@/content/resume";
-// A circular import with store/photography.ts (which imports registerPhotos
-// and DrivePhoto from this file): safe because usePhotography is only
-// touched inside driveThumbnail()'s onError callback, which runs long after
-// both modules have finished evaluating — never at module top level.
-import { usePhotography } from "@/store/photography";
 
 /**
  * The file tree.
@@ -271,60 +266,6 @@ const thumbnail = (src: string) => {
     createElement("img", { className: `fs-thumb ${className ?? ""}`.trim(), src, alt: "" });
   Thumbnail.displayName = `Thumbnail(${fileName(src)})`;
   return Thumbnail;
-};
-
-/**
- * A photo synced from Google Drive's "Photography" folder — see
- * app/api/photos/route.ts for how these fields are produced. `id` is
- * Drive's own file id, stable across re-fetches, which is what makes it
- * safe to key a window or a retry on rather than the URL.
- */
-export type DrivePhoto = {
-  id: string;
-  name: string;
-  width: number;
-  height: number;
-  thumbUrl: string;
-  fullUrl: string;
-};
-
-export const DRIVE_PHOTOS_PREFIX = "drivephoto:";
-
-/**
- * A Drive photo's grid icon. Unlike `thumbnail()` above, this one carries
- * its own retry: Drive's `thumbnailLink` is short-lived (~1 hour), and a
- * browser tab left open past that would otherwise show a permanently
- * broken image forever. One failed load re-fetches the photo list and
- * swaps in a fresh URL; a second failure gives up rather than looping.
- */
-const driveThumbnail = (photo: DrivePhoto) => {
-  const DriveThumbnail = ({ className }: { className?: string }) => {
-    const [src, setSrc] = useState(photo.thumbUrl);
-    const [retried, setRetried] = useState(false);
-    return createElement("img", {
-      className: `fs-thumb ${className ?? ""}`.trim(),
-      src,
-      alt: "",
-      loading: "lazy",
-      onError: () => {
-        if (retried) return;
-        setRetried(true);
-        // refresh() bypasses /api/photos' ISR cache (a plain fetch here can
-        // get back the same expired response) and dedupes concurrent
-        // callers, so several thumbnails expiring at once share one
-        // request instead of each firing its own.
-        usePhotography
-          .getState()
-          .refresh()
-          .then(() => {
-            const fresh = usePhotography.getState().photos.find((p) => p.id === photo.id);
-            if (fresh) setSrc(fresh.thumbUrl);
-          });
-      },
-    });
-  };
-  DriveThumbnail.displayName = `DriveThumbnail(${photo.name})`;
-  return DriveThumbnail;
 };
 
 const PICTURE_NODES: FsNode[] = PICTURES.map((picture) => ({
@@ -645,29 +586,17 @@ export function unregisterFile(id: string) {
 }
 
 /**
- * Wires the Photography folder's contents to whatever `/api/photos` last
- * returned. Called by `store/photography.ts` after a successful fetch —
- * follows the same trick `registerFile` uses above: mutate the same
+ * Replaces everything a folder lists with `nodes` — how the Photography
+ * folder gets its contents once `/api/photos` answers (see
+ * store/photography.ts). Same trick `registerFile` uses above: mutate the
  * `NODES` map every other place already reads, so Explorer picks the
  * result up with no changes of its own beyond the subscription that makes
  * it re-render.
  */
-export function registerPhotos(photos: DrivePhoto[]) {
-  const ids = photos.map((photo) => {
-    const id = DRIVE_PHOTOS_PREFIX + photo.id;
-    NODES.set(id, {
-      id,
-      label: photo.name,
-      Icon: driveThumbnail(photo),
-      kind: "file",
-      type: "JPEG image",
-      deletable: false,
-    });
-    return id;
-  });
-
-  const photography = NODES.get("photography")!;
-  photography.children = ids;
+export function setFolderContents(parentId: string, nodes: FsNode[]) {
+  for (const node of nodes) NODES.set(node.id, node);
+  const parent = NODES.get(parentId);
+  if (parent) parent.children = nodes.map((node) => node.id);
 }
 
 /**

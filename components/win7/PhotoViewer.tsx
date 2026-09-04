@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { fileName, mediaBySrc, PICTURES, type MediaItem } from "@/components/win7/media";
-import { toMediaItems, usePhotography } from "@/store/photography";
+import { photoById, toMediaItems, usePhotography } from "@/store/photography";
 import { useRecycleBin } from "@/store/recycleBin";
 import { useWindowStore } from "@/store/windows";
 
@@ -62,6 +62,11 @@ function initialPictures(src: string, drivePictures: MediaItem[]): MediaItem[] {
   return [item ?? { src, title: fileName(src), kind: "picture", album: "Pictures" }];
 }
 
+/** A Drive picture's `src` is a CDN URL with no filename in it, so its name
+ *  is its title; everything else reads its name off the path. */
+const nameOf = (picture: MediaItem) =>
+  picture.driveId ? picture.title : fileName(picture.src);
+
 export function PhotoViewer({ windowId, src }: { windowId: string; src: string }) {
   const drivePhotos = usePhotography((s) => s.photos);
   const driveMediaItems = useMemo(() => toMediaItems(drivePhotos), [drivePhotos]);
@@ -78,12 +83,19 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
 
   const recycle = useRecycleBin((s) => s.remove);
 
-  const current = pictures[index];
+  // For a Drive picture the store is the source of truth for `src`, so a
+  // link refreshed after expiry reaches the <img> with nothing to patch.
+  const shown = pictures[index];
+  const freshUrl = shown?.driveId ? photoById(shown.driveId)?.fullUrl : undefined;
+  const current = useMemo(
+    () => (freshUrl && shown ? { ...shown, src: freshUrl } : shown),
+    [shown, freshUrl],
+  );
 
   // The caption follows the picture, the way Explorer's follows the folder.
   const setTitle = useWindowStore((s) => s.setTitle);
   useEffect(() => {
-    if (current) setTitle(windowId, current.displayName ?? fileName(current.src));
+    if (current) setTitle(windowId, nameOf(current));
   }, [current, setTitle, windowId]);
 
   /** Every control that changes picture goes through here, so zoom, rotation
@@ -196,7 +208,7 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
         {menuButton(
           "File",
           <>
-            {downloadItem("Download", current.src, current.displayName ?? fileName(current.src))}
+            {downloadItem("Download", current.src, nameOf(current))}
             {item("Properties", () => setDialog("properties"))}
             {item("Delete", () => setDialog("delete"))}
           </>,
@@ -239,6 +251,10 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
           className="pv-image"
           src={current.src}
           alt={current.title}
+          // Drive's lh3.googleusercontent.com URLs reject any request that
+          // carries a Referer header — harmless for local /letterbox/ images,
+          // required for Drive ones (see fs.ts's driveThumbnail for the same).
+          referrerPolicy="no-referrer"
           style={{
             transform: `rotate(${angle}deg)`,
             width: zoom === null ? undefined : `${zoom * 100}%`,
@@ -248,23 +264,13 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
           }
           onDoubleClick={() => setZoom((z) => (z === null ? 1 : null))}
           onError={() => {
+            // A Drive link expires after ~an hour. One reload re-asks Drive
+            // and `current` picks the fresh URL up on its own; a second
+            // failure gives up rather than looping.
             const driveId = current.driveId;
             if (!driveId || retriedDriveIds.current.has(driveId)) return;
             retriedDriveIds.current.add(driveId);
-            // refresh() bypasses /api/photos' ISR cache and dedupes
-            // concurrent callers — see store/photography.ts and fs.ts's
-            // driveThumbnail() for why a plain fetch here can't actually
-            // recover a just-expired link.
-            usePhotography
-              .getState()
-              .refresh()
-              .then(() => {
-                const fresh = usePhotography.getState().photos.find((p) => p.id === driveId);
-                if (!fresh) return;
-                setPictures((prev) =>
-                  prev.map((p) => (p.driveId === driveId ? { ...p, src: fresh.fullUrl } : p)),
-                );
-              });
+            usePhotography.getState().load(true);
           }}
         />
       </div>
@@ -423,13 +429,13 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
                   <p className="win7-dialog-message">
                     Are you sure you want to move this picture to the Recycle Bin?
                   </p>
-                  <p className="win7-dialog-where">{current.displayName ?? fileName(current.src)}</p>
+                  <p className="win7-dialog-where">{nameOf(current)}</p>
                 </>
               )}
 
               {dialog === "properties" && (
                 <>
-                  <p className="win7-dialog-message">{current.displayName ?? fileName(current.src)}</p>
+                  <p className="win7-dialog-message">{nameOf(current)}</p>
                   <dl className="pv-props">
                     <dt>Title</dt>
                     <dd>{current.title}</dd>

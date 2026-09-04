@@ -30,10 +30,6 @@ export type MediaItem = {
   album: string;
   /** Still frame the library shows before the video has ever been played. */
   poster?: string;
-  /** Drive's real filename, used instead of parsing one out of `src` — only
-   *  set for photos synced from Google Drive, whose `src` is a CDN URL
-   *  rather than a real file path. */
-  displayName?: string;
   /** Drive's own file id — only set for Drive-synced photos, and only used
    *  by PhotoViewer to re-resolve a fresh URL if `src` has expired. */
   driveId?: string;

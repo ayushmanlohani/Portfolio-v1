@@ -117,6 +117,15 @@ export function Explorer({ id, title }: { id: string; title: string }) {
     setAt(next.length - 1);
   }
 
+  // Photography's contents are fetched, not authored, so "F5" is the one
+  // real action a visitor can take here — `load(true)` skips the route's
+  // 30-minute cache so a photo just added to Drive shows up without waiting.
+  const commands = view === "photography" ? [...COMMANDS, "Refresh"] : COMMANDS;
+  const handlers: Record<string, () => void> = {
+    "New folder": newFolder,
+    Refresh: () => usePhotography.getState().load(true),
+  };
+
   // Made in `view` itself — wherever this window is standing, not wherever
   // it was opened from. Handed straight to rename-in-place so typing the
   // real name over "New folder" is the whole "ask for its name" step; a full
@@ -201,13 +210,8 @@ export function Explorer({ id, title }: { id: string; title: string }) {
       </div>
 
       <div className="ex-commands">
-        {COMMANDS.map((command) => (
-          <button
-            type="button"
-            className="ex-cmd"
-            key={command}
-            onClick={command === "New folder" ? newFolder : undefined}
-          >
+        {commands.map((command) => (
+          <button type="button" className="ex-cmd" key={command} onClick={handlers[command]}>
             {command}
             {HAS_MENU.has(command) && <span className="ex-cmd-caret" />}
           </button>
@@ -334,10 +338,9 @@ function Contents({
   const cancelRename = useInlineEdit((s) => s.cancel);
 
   // Not read directly below — same reason as useFiles/useFolders above.
-  // registerPhotos (fs.ts) mutates the NODES map directly, which is
-  // invisible to React; subscribing here is what repaints this grid once
-  // the effect below's load() resolves and the store's photos actually
-  // change, rather than data landing with nothing to trigger a re-render.
+  // The store writes this folder's children straight into fs.ts's NODES
+  // map, which is invisible to React; subscribing here is what repaints the
+  // grid once the effect below's load() resolves.
   usePhotography((s) => s.photos);
 
   // Fetches /api/photos the first time this folder is opened, never on page

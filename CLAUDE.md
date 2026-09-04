@@ -67,8 +67,8 @@ tree everything reads, `components/win7/apps.ts` is every non-folder window, and
   no webfont. Tahoma is the period-correct fallback.
 - **Taskbar:** Aero bar, Start orb, a working Start menu, notification tray,
   clock, pinning, and a button per open window.
-- **Six desktop folders** — About Me, Projects, Experience, Education, Resume,
-  Contact — plus a Recycle Bin, all with content. Each opens a real Win7
+- **Seven desktop folders** — About Me, Projects, Experience, Education,
+  Resume, Contact, Photography — plus a Recycle Bin, all with content. Each opens a real Win7
   Explorer window.
 - **Nothing persists.** Icon positions, the Recycle Bin, Notepad saves and
   folders you create are all in memory and gone on reload — deliberately, so
@@ -127,6 +127,23 @@ tree everything reads, `components/win7/apps.ts` is every non-folder window, and
   effects (the cursor trail, the hover-tilts) are skipped behind
   `coarsePointer()` rather than left attached. Anything mobile lives in
   `components/mobile/mobile.css`, never in `globals.css`.
+
+- **The Photography folder is live from Google Drive** (2026-09-04).
+  `app/api/photos/route.ts` lists a private Drive folder with a service
+  account (a plain API key gets a 401 on `files.list`, even for a
+  link-shared folder) and caches the Drive call for 30 minutes;
+  `?fresh=1` skips that cache, which is what Explorer's Refresh and an
+  expired thumbnail both use. Everything Drive-shaped lives in
+  `store/photography.ts` — the type, the id prefix, the thumbnail icon and
+  the node builder — so `fs.ts` stays a plain tree and only exports
+  `setFolderContents`. Contents are fetched the first time the folder is
+  opened, never on page load. Two things are non-obvious and load-bearing:
+  Drive's `thumbnailLink` expires after ~an hour (one failed load re-asks
+  Drive, a second gives up), and its `lh3.googleusercontent.com` URLs
+  reject any request carrying a `Referer` — hence `referrerPolicy="no-referrer"`
+  on every Drive `<img>`. **It needs `GDRIVE_PHOTOS_FOLDER_ID`,
+  `GDRIVE_SA_EMAIL` and `GDRIVE_SA_PRIVATE_KEY`** (see `.env.example`); with
+  them missing the folder just comes back empty rather than erroring.
 
 - **The global leaderboard is done** (2026-08-28): one Upstash Redis sorted set
   behind `app/api/scores/route.ts`, hit with plain fetch — no client library.
