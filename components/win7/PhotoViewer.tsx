@@ -31,8 +31,9 @@ import { useWindowStore } from "@/store/windows";
 const ICON = { viewBox: "0 0 24 24", xmlns: "http://www.w3.org/2000/svg", "aria-hidden": true } as const;
 const STROKE = { fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round" } as const;
 
-/** Steps the zoom slider and the +/- keys move through. */
-const ZOOM_MIN = 0.1;
+/** Steps the zoom slider and the +/- keys move through. Fit is the floor —
+ *  zooming out past original size snaps back to it, never smaller. */
+const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 const SLIDESHOW_MS = 3000;
 
@@ -80,6 +81,16 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
   const [menu, setMenu] = useState<string | null>(null);
   const [dialog, setDialog] = useState<"delete" | "properties" | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  /** Which whitespace half the pointer is over — drives the faint nav arrow. */
+  const [hoverSide, setHoverSide] = useState<"prev" | "next" | null>(null);
+
+  // Drag-to-pan while zoomed: the frame is the scroller, so panning is just
+  // moving its scroll offset. `moved` tells the click handler a drag just
+  // ended, so it doesn't read it as a prev/next click.
+  const pan = useRef<{ x: number; y: number; left: number; top: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const recycle = useRecycleBin((s) => s.remove);
 
@@ -134,7 +145,11 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
   };
 
   const nudgeZoom = (by: number) =>
-    setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, (z ?? 1) + by)));
+    setZoom((z) => {
+      const next = (z ?? ZOOM_MIN) + by;
+      if (next <= ZOOM_MIN) return null;
+      return Math.min(ZOOM_MAX, next);
+    });
 
   const menuButton = (label: string, items: React.ReactNode) => (
     <div className="pv-menu-wrap" key={label}>
@@ -245,19 +260,81 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
         )}
       </div>
 
-      <div className="pv-frame" data-zoomed={zoom !== null || undefined}>
+      <div
+        className="pv-frame"
+        ref={frameRef}
+        data-zoomed={zoom !== null || undefined}
+        onClick={(e) => {
+          // A drag that just ended isn't a prev/next click.
+          if (suppressClick.current) {
+            suppressClick.current = false;
+            return;
+          }
+          // Whitespace beside the picture steps through the folder: left
+          // goes back, right goes forward. Clicks on the picture itself
+          // are left alone for double-click zoom.
+          if (e.target !== e.currentTarget) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          goTo(index + (e.clientX < rect.left + rect.width / 2 ? -1 : 1));
+        }}
+        onPointerDown={(e) => {
+          // Pan only when zoomed past fit — otherwise clicks navigate.
+          if (zoom === null || e.button !== 0) return;
+          const frame = e.currentTarget;
+          pan.current = { x: e.clientX, y: e.clientY, left: frame.scrollLeft, top: frame.scrollTop, moved: false };
+          frame.setPointerCapture(e.pointerId);
+          setHoverSide(null);
+        }}
+        onPointerMove={(e) => {
+          const p = pan.current;
+          if (p) {
+            const dx = e.clientX - p.x;
+            const dy = e.clientY - p.y;
+            if (Math.abs(dx) + Math.abs(dy) > 3) p.moved = true;
+            e.currentTarget.scrollLeft = p.left - dx;
+            e.currentTarget.scrollTop = p.top - dy;
+            return;
+          }
+          // Arrow follows the pointer half, but never over the picture.
+          if (e.target !== e.currentTarget) return setHoverSide(null);
+          const rect = e.currentTarget.getBoundingClientRect();
+          setHoverSide(e.clientX < rect.left + rect.width / 2 ? "prev" : "next");
+        }}
+        onPointerUp={() => {
+          if (pan.current?.moved) suppressClick.current = true;
+          pan.current = null;
+        }}
+        onPointerCancel={() => {
+          pan.current = null;
+        }}
+        onMouseLeave={() => setHoverSide(null)}
+      >
+        {pictures.length > 1 && (
+          <>
+            <span className="pv-nav pv-nav-prev" data-show={hoverSide === "prev" || undefined} aria-hidden="true">
+              ‹
+            </span>
+            <span className="pv-nav pv-nav-next" data-show={hoverSide === "next" || undefined} aria-hidden="true">
+              ›
+            </span>
+          </>
+        )}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="pv-image"
+          ref={imgRef}
           src={current.src}
           alt={current.title}
+          draggable={false}
           // Drive's lh3.googleusercontent.com URLs reject any request that
           // carries a Referer header — harmless for local /letterbox/ images,
           // required for Drive ones (see fs.ts's driveThumbnail for the same).
           referrerPolicy="no-referrer"
           style={{
             transform: `rotate(${angle}deg)`,
-            width: zoom === null ? undefined : `${zoom * 100}%`,
+            // Real pixels of the photo's natural size, not a percentage of
+            // the frame — 100% has to mean the actual original image.
+            width: zoom === null ? undefined : size ? `${zoom * size.w}px` : `${zoom * 100}%`,
           }}
           onLoad={(e) =>
             setSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })
@@ -305,7 +382,10 @@ export function PhotoViewer({ windowId, src }: { windowId: string; src: string }
                   step={0.05}
                   value={zoom ?? 1}
                   aria-label="Zoom level"
-                  onChange={(e) => setZoom(Number(e.target.value))}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setZoom(v <= ZOOM_MIN ? null : v);
+                  }}
                 />
               </div>
             )}

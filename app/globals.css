@@ -4013,26 +4013,73 @@ img.project-crest {
   padding: calc(10 * var(--px));
   overflow: hidden;
   background: #ffffff;
+  position: relative;
+}
+
+/* Faint prev/next hint over each whitespace half. Pointer-transparent so
+   clicks fall through to the frame's own handler; fades in on hover. */
+.pv-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: calc(56 * var(--px));
+  line-height: 1;
+  color: #38434f;
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pv-nav-prev {
+  left: calc(14 * var(--px));
+}
+
+.pv-nav-next {
+  right: calc(14 * var(--px));
+}
+
+.pv-nav[data-show] {
+  opacity: 0.22;
 }
 
 /* Zoomed past fit, the frame becomes the scroller and the picture keeps its
-   true size — fit is a state here, not a max-width. */
+   true size — fit is a state here, not a max-width. Grab cursor says it can
+   be dragged; :active flips to grabbing while held, no JS needed. */
 .pv-frame[data-zoomed] {
   align-items: flex-start;
   overflow: auto;
+  cursor: grab;
+  /* Panning is by drag now, so the bars are just visual noise. */
+  scrollbar-width: none;
+}
+
+.pv-frame[data-zoomed]::-webkit-scrollbar {
+  display: none;
+}
+
+.pv-frame[data-zoomed]:active {
+  cursor: grabbing;
 }
 
 .pv-image {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  transition: transform 160ms ease;
+  transition:
+    transform 160ms ease,
+    width 160ms ease;
 }
 
 .pv-frame[data-zoomed] .pv-image {
   max-width: none;
   max-height: none;
   height: auto;
+  /* .pv-frame is a flex container, and a flex item's automatic min-width is
+     its intrinsic size — so without this, flex-shrink fights any explicit
+     width below/near that size back up to exactly the natural size. That's
+     what made the zoom feel "stuck" rather than tracking the cursor/slider. */
+  flex-shrink: 0;
 }
 
 .pv-bar {

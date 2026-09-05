@@ -342,6 +342,7 @@ function Contents({
   // map, which is invisible to React; subscribing here is what repaints the
   // grid once the effect below's load() resolves.
   usePhotography((s) => s.photos);
+  const loadingPhotos = usePhotography((s) => s.loading);
 
   // Fetches /api/photos the first time this folder is opened, never on page
   // load — see store/photography.ts for why that's what keeps an idle visit
@@ -400,7 +401,11 @@ function Contents({
   if (items.length === 0) {
     return (
       <p className="ex-empty">
-        {view === "recycle" ? "The Recycle Bin is empty." : "This folder is empty."}
+        {view === "recycle"
+          ? "The Recycle Bin is empty."
+          : view === "photography" && loadingPhotos
+            ? "Just a second…"
+            : "This folder is empty."}
       </p>
     );
   }

@@ -32,6 +32,9 @@ export const DRIVE_PHOTOS_PREFIX = "drivephoto:";
 
 type PhotographyStore = {
   photos: DrivePhoto[];
+  /** True while the first fetch is in flight — Explorer shows a waiting
+   *  line instead of "empty" until this settles. */
+  loading: boolean;
   /** `force` re-asks Drive rather than settling for the route's 30-minute
    *  cache — what an expired thumbnail and Explorer's Refresh both need. */
   load: (force?: boolean) => Promise<void>;
@@ -43,12 +46,14 @@ let inFlight: Promise<void> | null = null;
 
 export const usePhotography = create<PhotographyStore>((set, get) => ({
   photos: [],
+  loading: false,
 
   load: (force = false) => {
     if (inFlight) return inFlight;
     if (!force && get().photos.length) return Promise.resolve();
 
     inFlight = (async () => {
+      set({ loading: true });
       try {
         const res = await fetch(force ? "/api/photos?fresh=1" : "/api/photos");
         const { photos } = (await res.json()) as { photos: DrivePhoto[] };
@@ -58,6 +63,7 @@ export const usePhotography = create<PhotographyStore>((set, get) => ({
         // Leave whatever was already showing in place — a failed reload
         // shouldn't blank the folder out.
       } finally {
+        set({ loading: false });
         inFlight = null;
       }
     })();
