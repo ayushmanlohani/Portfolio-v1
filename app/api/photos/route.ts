@@ -1,5 +1,4 @@
-import { createSign } from "node:crypto";
-
+import { getAccessToken } from "@/assistant/drive";
 import type { DrivePhoto } from "@/store/photography";
 
 /**
@@ -17,43 +16,6 @@ import type { DrivePhoto } from "@/store/photography";
  */
 
 const CACHE_SECONDS = 1800;
-
-/** A self-signed JWT, exchanged for a Drive-scoped access token — the
- *  service-account flow, with no `googleapis` dependency. */
-async function getAccessToken(): Promise<string | null> {
-  const email = process.env.GDRIVE_SA_EMAIL;
-  const rawKey = process.env.GDRIVE_SA_PRIVATE_KEY;
-  if (!email || !rawKey) return null;
-  const key = rawKey.replace(/\\n/g, "\n");
-
-  const now = Math.floor(Date.now() / 1000);
-  const b64 = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  const header = b64({ alg: "RS256", typ: "JWT" });
-  const claims = b64({
-    iss: email,
-    scope: "https://www.googleapis.com/auth/drive.readonly",
-    aud: "https://oauth2.googleapis.com/token",
-    iat: now,
-    exp: now + 3600,
-  });
-  const signature = createSign("RSA-SHA256")
-    .update(`${header}.${claims}`)
-    .sign(key)
-    .toString("base64url");
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: `${header}.${claims}.${signature}`,
-    }),
-  });
-  if (!res.ok) return null;
-
-  const data = (await res.json()) as { access_token?: string };
-  return data.access_token ?? null;
-}
 
 /** Drive's thumbnailLink ends in a size/parameter suffix after the last
  *  `=` — usually `=s<n>`, but real links also show up as `=s220-p-k` or

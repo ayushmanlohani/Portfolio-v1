@@ -1,0 +1,141 @@
+/* ── Ask deskband ──────────────────────────────────────────────
+   A permanent box on the taskbar, right of the Start orb, and the
+   flyout it answers into. Measurements are in --px (one Windows-7
+   pixel) like the rest of the shell, so this keeps its real size on
+   a bigger screen instead of scaling up.
+   ───────────────────────────────────────────────────────────── */
+
+.ask-band {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  width: calc(190 * var(--px));
+  height: calc(22 * var(--px));
+  margin-left: calc(6 * var(--px));
+  border-radius: calc(3 * var(--px));
+  /* Sunken glass: dark well, lit bottom edge. The taskbar's own gradient
+     shows through, which is what keeps it looking set *into* the bar. */
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow:
+    inset 0 calc(1 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, 0.6),
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.14),
+    0 calc(1 * var(--px)) 0 rgba(255, 255, 255, 0.16);
+  transition: box-shadow 140ms ease;
+}
+
+.ask-band:focus-within {
+  box-shadow:
+    inset 0 calc(1 * var(--px)) calc(3 * var(--px)) rgba(0, 0, 0, 0.55),
+    inset 0 0 0 calc(1 * var(--px)) rgba(150, 205, 255, 0.75),
+    0 0 calc(6 * var(--px)) rgba(120, 190, 255, 0.45);
+}
+
+/* The specular sweep across the top half, same trick as the task buttons. */
+.ask-band-glass {
+  position: absolute;
+  inset: calc(1 * var(--px)) calc(1 * var(--px)) 50% calc(1 * var(--px));
+  border-radius: calc(2 * var(--px)) calc(2 * var(--px)) 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03));
+  pointer-events: none;
+}
+
+.ask-band-input {
+  position: relative;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: none;
+  padding: 0 calc(8 * var(--px));
+  font-family: inherit;
+  font-size: calc(12 * var(--px));
+  color: #f2f7ff;
+  text-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.7);
+}
+
+.ask-band-input::placeholder {
+  color: rgba(224, 236, 250, 0.62);
+}
+
+/* ── Flyout ──────────────────────────────────────────────────── */
+
+/* Sits directly on the taskbar's top edge: the band is 22px tall and
+   centred in a 40px bar, so 9px above the band is exactly that edge. */
+.ask-flyout {
+  position: absolute;
+  bottom: calc(100% + 9 * var(--px));
+  left: calc(-6 * var(--px));
+  width: calc(360 * var(--px));
+  padding: calc(10 * var(--px)) calc(12 * var(--px)) calc(12 * var(--px));
+  border-radius: calc(6 * var(--px)) calc(6 * var(--px)) 0 0;
+  backdrop-filter: blur(calc(14 * var(--px))) saturate(1.4);
+  background: rgba(28, 52, 84, 0.78);
+  box-shadow:
+    inset 0 0 0 calc(1 * var(--px)) rgba(255, 255, 255, 0.45),
+    inset 0 0 0 calc(2 * var(--px)) rgba(90, 140, 190, 0.35),
+    0 calc(-2 * var(--px)) calc(24 * var(--px)) rgba(0, 0, 0, 0.55);
+  animation: ask-rise 140ms ease-out;
+}
+
+/* Fixed-duration ease, no bounce — the house rule for window physics. */
+@keyframes ask-rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(6 * var(--px)));
+  }
+}
+
+.ask-flyout-question {
+  font-size: calc(12 * var(--px));
+  font-weight: 700;
+  color: #dcebff;
+  padding-bottom: calc(7 * var(--px));
+  margin-bottom: calc(8 * var(--px));
+  border-bottom: calc(1 * var(--px)) solid rgba(150, 190, 235, 0.28);
+  text-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.6);
+}
+
+.ask-flyout-body {
+  max-height: calc(260 * var(--px));
+  overflow-y: auto;
+  font-size: calc(12 * var(--px));
+  line-height: 1.55;
+  color: #eef5ff;
+  white-space: pre-wrap;
+  text-shadow: 0 calc(1 * var(--px)) calc(2 * var(--px)) rgba(0, 0, 0, 0.55);
+}
+
+.ask-flyout-body[data-error] {
+  color: #ffd9d0;
+}
+
+/* Three dots that cycle while Groq is answering. One element, one
+   animation on its text content — nothing to lay out or tear down. */
+.ask-dots::after {
+  content: "";
+  animation: ask-dots 1.2s steps(1, end) infinite;
+}
+
+@keyframes ask-dots {
+  0% {
+    content: "·";
+  }
+  33% {
+    content: "· ·";
+  }
+  66% {
+    content: "· · ·";
+  }
+}
+
+/* A phone has no taskbar; the mobile shell doesn't render this at all.
+   Narrow desktop windows still can, so the band gives up its width first. */
+@media (max-width: 900px) {
+  .ask-band {
+    width: calc(120 * var(--px));
+  }
+
+  .ask-flyout {
+    width: calc(280 * var(--px));
+  }
+}

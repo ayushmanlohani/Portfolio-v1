@@ -33,7 +33,7 @@ import { useWindowStore } from "@/store/windows";
 const MIN_BRIGHTNESS = 40;
 
 /** Which popup the taskbar is showing. One at a time, Start menu included. */
-export type Panel = "start" | "network" | "battery" | "volume" | "clock" | null;
+export type Panel = "start" | "ask" | "network" | "battery" | "volume" | "clock" | null;
 
 type TrayProps = {
   panel: Panel;

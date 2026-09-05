@@ -1,5 +1,6 @@
 "use client";
 
+import { AskBar } from "@/assistant/AskBar";
 import { StartOrbFace } from "@/components/win7/StartOrbFace";
 import { useEffect, useRef, useState } from "react";
 
@@ -135,6 +136,8 @@ export function Taskbar({ onShutdown }: { onShutdown?: () => void } = {}) {
         >
           <StartOrbFace />
         </button>
+
+        <AskBar open={panel === "ask"} setOpen={(open) => setPanel(open ? "ask" : null)} />
 
         <div className="taskbar-windows">
           {windows.map((w) => {
