@@ -416,6 +416,14 @@
   text-align: center;
 }
 
+.ph-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #1a1a1a;
+}
+
 .ph-blocked-title {
   margin: 0 0 8px;
   font-size: 17px;

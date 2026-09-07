@@ -9,6 +9,7 @@ import { pageFor } from "@/components/win7/folders/pageFor";
 import { contents, node } from "@/components/win7/fs";
 import { NavArrowIcon } from "@/components/win7/icons";
 import { SITE_FOR, useChrome } from "@/store/chrome";
+import { DRIVE_PHOTOS_PREFIX, photoById, usePhotography } from "@/store/photography";
 import { useWindowStore } from "@/store/windows";
 
 /**
@@ -104,6 +105,28 @@ function labelOf(id: string) {
 function Body({ id, onOpen }: { id: string; onOpen: (id: string) => void }) {
   const here = node(id);
 
+  // Photography is filled from Drive the first time it is opened, exactly as
+  // Explorer does it on the desktop. Subscribing to the store is what re-runs
+  // `contents()` once the fetch lands.
+  usePhotography((s) => s.photos);
+  const loadingPhotos = usePhotography((s) => s.loading);
+  useEffect(() => {
+    if (id === "photography") usePhotography.getState().load();
+  }, [id]);
+
+  // A Drive photo has no window to open on a phone — the picture is the screen.
+  if (id.startsWith(DRIVE_PHOTOS_PREFIX)) {
+    const photo = photoById(id.slice(DRIVE_PHOTOS_PREFIX.length));
+    return (
+      <img
+        className="ph-photo"
+        src={photo?.fullUrl}
+        alt={photo?.name ?? ""}
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
   // Everything on the phone's second home page. They open — they just open
   // onto an explanation, which beats a game that can't be steered.
   const app = program(id);
@@ -136,7 +159,8 @@ function Body({ id, onOpen }: { id: string; onOpen: (id: string) => void }) {
   }
 
   const items = contents(id, []);
-  if (items.length === 0) return <p className="ph-empty">This folder is empty.</p>;
+  if (items.length === 0)
+    return <p className="ph-empty">{loadingPhotos ? "Loading…" : "This folder is empty."}</p>;
 
   return (
     <ul className="ph-list">
