@@ -1535,6 +1535,232 @@ function ProjectEditPanel({ layout }: { layout: typeof CLUSTER_LAYOUT }) {
   );
 }
 
+
+/* --- Now-playing tile -------------------------------------------------------
+   A Spotify card in the desk's palette. It holds its own audio state so the
+   timeupdate ticks re-render 200px of card, not the whole 700-line desk.
+
+   Hover is the transport: point at it and the track plays, leave and it pauses
+   where it stood, so the next hover picks up rather than restarting. Playback
+   begins at 18s -- the part of the song worth landing on -- and the end of the
+   track loops back there, not to 0:00, because 0:00 is the intro nobody asked
+   for. play() is allowed here without its own click: the visitor clicked their
+   way into this window, which gives the document sticky activation. It can
+   still be refused (an autoplay-blocking setting), so the promise is swallowed
+   and the card just sits still rather than throwing. */
+const VIOLET_START = 18;
+const VIOLET_FALLBACK_DURATION = 213; // 3:33, until the file reports its own
+
+function clock(sec: number) {
+  const s = Math.max(0, Math.floor(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function NowPlayingTile({ compact }: { compact: boolean }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [t, setT] = useState(VIOLET_START);
+  const [duration, setDuration] = useState(VIOLET_FALLBACK_DURATION);
+  const [hot, setHot] = useState(false);
+
+  const play = () => {
+    const a = audioRef.current;
+    if (!a) return;
+    setHot(true);
+    if (a.currentTime < VIOLET_START) a.currentTime = VIOLET_START;
+    a.volume = 0.7;
+    void a.play().catch(() => {});
+  };
+  const pause = () => {
+    setHot(false);
+    audioRef.current?.pause();
+  };
+
+  // <audio preload="metadata"> can finish loading before React attaches its
+  // props, and a loadedmetadata that already fired is a loadedmetadata missed —
+  // which left the bar reading the 3:33 fallback against a 3:46 file. So the
+  // same handler is bound here and also run straight away if the metadata is
+  // already in (readyState >= HAVE_METADATA).
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const init = () => {
+      if (Number.isFinite(a.duration)) setDuration(a.duration);
+      if (a.currentTime < VIOLET_START) a.currentTime = VIOLET_START;
+    };
+    if (a.readyState >= 1) init();
+    a.addEventListener("loadedmetadata", init);
+    return () => a.removeEventListener("loadedmetadata", init);
+  }, []);
+
+  const pct = Math.min(100, (t / duration) * 100);
+
+  return (
+    <div
+      className="ph-hide-desk"
+      onMouseEnter={play}
+      onMouseLeave={pause}
+      style={{
+        width: compact ? 170 : 214,
+        background: T.card,
+        border: `1px solid ${hot ? "rgba(247,98,64,0.45)" : T.border}`,
+        borderRadius: 18,
+        padding: 12,
+        boxShadow: hot
+          ? "0 10px 30px rgba(166,166,166,0.38), 0 0 0 4px rgba(247,98,64,0.10)"
+          : "0 2px 14px rgba(166,166,166,0.20)",
+        transform: hot ? "scale(1.06)" : "scale(1)",
+        transition: "transform .22s ease, box-shadow .22s ease, border-color .22s ease",
+        pointerEvents: "auto",
+      }}
+    >
+      <audio
+        ref={audioRef}
+        src="/letterbox/violet.mp3"
+        preload="metadata"
+        onTimeUpdate={(e) => setT(e.currentTarget.currentTime)}
+        onEnded={(e) => {
+          const a = e.currentTarget;
+          a.currentTime = VIOLET_START;
+          setT(VIOLET_START);
+          void a.play().catch(() => {});
+        }}
+      />
+
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        {/* The record: the album art is the label in the middle of the vinyl,
+            so the whole disc spins as one. The cover is a dark wide shot, and
+            centre-cropping a 45px circle out of it lands on the crowd -- hence
+            the crop is biased up and left, onto the stage. */}
+        <div
+          style={{
+            width: compact ? 56 : 64,
+            height: compact ? 56 : 64,
+            borderRadius: "50%",
+            background: "repeating-radial-gradient(circle at 50% 50%, #191919 0 1.5px, #0d0d0d 1.5px 3px)",
+            boxShadow: "0 1px 6px rgba(0,0,0,0.28), inset 0 0 0 1px rgba(255,255,255,0.07)",
+            display: "grid",
+            placeItems: "center",
+            flex: "none",
+            animation: `j-spin ${hot ? 3.2 : 6}s linear infinite`,
+          }}
+        >
+          <div
+            style={{
+              width: "72%",
+              height: "72%",
+              borderRadius: "50%",
+              overflow: "hidden",
+              position: "relative",
+              boxShadow: "0 0 0 1px rgba(255,255,255,0.12)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/letterbox/violet.png"
+              alt="Alone at Prom"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                objectPosition: "38% 30%",
+                display: "block",
+              }}
+            />
+            {/* the spindle hole */}
+            <span
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                width: 6,
+                height: 6,
+                marginLeft: -3,
+                marginTop: -3,
+                borderRadius: "50%",
+                background: T.card,
+                boxShadow: "0 0 0 1px rgba(0,0,0,0.35)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span className={hot ? "j-eq" : "j-eq j-eq-idle"} aria-hidden>
+              <i />
+              <i />
+              <i />
+            </span>
+            <span
+              style={{
+                fontSize: 8.5,
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                color: T.accent,
+                fontWeight: 700,
+              }}
+            >
+              {hot ? "Now playing" : "Hover to play"}
+            </span>
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: T.ink,
+              marginTop: 3,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            The Color Violet
+          </div>
+          <div
+            style={{
+              fontSize: 10.5,
+              color: T.muted,
+              marginTop: 1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Tory Lanez
+          </div>
+
+          {/* Spotify's scrubber: a hairline track with the played part filled,
+              and the times sitting under either end. */}
+          <div style={{ marginTop: 7, height: 3, borderRadius: 99, background: T.line, overflow: "hidden" }}>
+            <div
+              style={{
+                width: `${pct}%`,
+                height: "100%",
+                background: T.accent,
+                borderRadius: 99,
+                transition: "width .25s linear",
+              }}
+            />
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 8.5,
+              color: T.muted,
+              marginTop: 3,
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            <span>{clock(t)}</span>
+            <span>{clock(duration)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useContainerSize(containerRef);
@@ -1695,63 +1921,24 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             </div>
           </Draggable>
 
-          {/* Vinyl player – Jackie music widget reinterpreted as coding lofi */}
+          {/* Record player – a Spotify now-playing card in the desk's own palette */}
           <Draggable
             targetX={px(deskMode === "chaos" ? 287 : 127)}
             targetY={py(deskMode === "chaos" ? -279 : -241)}
             rotate={deskMode === "chaos" ? 7 : 0}
-            z={2}
+            // The cat PNG (z 7) overlapped this card's right half, and an
+            // element you cannot point at cannot be hovered to play. The tile
+            // is the only interactive prop on the desk, so it sits on top.
+            z={8}
             onFront={bringToFront}
             editId={editMode ? "vinyl" : undefined}
-            baseWidth={190}
+            baseWidth={214}
             scaleFactor={k}
             onEditChange={handleEditChange}
             compact={compact}
             disabled={deskMode === "clean"}
           >
-            <div
-              className="ph-hide-desk"
-              style={{
-                width: compact ? 148 : 190,
-                background: T.card,
-                border: `1px solid ${T.border}`,
-                borderRadius: 18,
-                padding: 12,
-                boxShadow: "0 2px 14px rgba(166,166,166,0.20)",
-                pointerEvents: "auto",
-              }}
-            >
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: "50%",
-                    background:
-                      "radial-gradient(circle at 30% 30%, #2b2b2b 0 18%, #111 18% 26%, #2b2b2b 26% 34%, #0a0a0a 34% 100%)",
-                    border: "3px solid #fff",
-                    boxShadow: "0 1px 6px rgba(0,0,0,0.25)",
-                    display: "grid",
-                    placeItems: "center",
-                    flex: "none",
-                    animation: "j-spin 8s linear infinite",
-                  }}
-                >
-                  <div style={{ width: 18, height: 18, borderRadius: "50%", background: T.accent, border: "2px solid #fff" }} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: T.ink, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    lofi • late night
-                  </div>
-                  <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>1:10 / 3:32 • RAG & chill</div>
-                  <div style={{ display: "flex", gap: 2, marginTop: 6, alignItems: "end" }}>
-                    {[7, 12, 5, 14, 9, 6, 11].map((h, i) => (
-                      <span key={i} style={{ width: 3, height: h, background: T.accent, borderRadius: 99, opacity: 0.85 - i * 0.06, display: "inline-block" }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <NowPlayingTile compact={compact} />
           </Draggable>
 
           {/* Polaroid – placeholder for Ayushman photo (AL monogram) */}
@@ -2205,6 +2392,12 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
         <style>{`
           @keyframes j-spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+          @keyframes j-eq{0%,100%{height:3px}50%{height:9px}}
+          .j-eq{display:inline-flex;align-items:flex-end;gap:1.5px;height:9px;}
+          .j-eq i{width:2px;height:3px;border-radius:99px;background:#F76240;animation:j-eq .9s ease-in-out infinite;}
+          .j-eq i:nth-child(2){animation-delay:.3s}
+          .j-eq i:nth-child(3){animation-delay:.6s}
+          .j-eq-idle i{animation-play-state:paused;height:3px;opacity:.55}
           .edit-item{cursor:grab;}
           .edit-item .edit-frame{position:absolute;inset:-6px;border:1.5px dashed transparent;border-radius:8px;pointer-events:none;transition:border-color .12s;}
           .edit-item:hover .edit-frame{border-color:rgba(247,98,64,0.55);}
