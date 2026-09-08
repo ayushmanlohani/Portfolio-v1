@@ -779,6 +779,32 @@ const SKILLS: { id: string; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
+    id: "langchain",
+    label: "LangChain",
+    // Two interlocking links. The real logo is a parrot beside a chain, and a
+    // parrot does not survive being drawn at 18px in one stroke weight.
+    icon: (
+      <>
+        <rect x="2.5" y="9" width="10" height="6" rx="3" />
+        <rect x="11.5" y="9" width="10" height="6" rx="3" />
+      </>
+    ),
+  },
+  {
+    id: "mcp",
+    label: "MCP SDK",
+    // A plug entering a port: the protocol is the connector, and a socket
+    // reads as one at this size where MCP's own layered arcs would not.
+    icon: (
+      <>
+        <path d="M9 3v4M15 3v4" />
+        <rect x="6" y="7" width="12" height="5" rx="1.5" />
+        <path d="M12 12v4" />
+        <path d="M7 20h10a2 2 0 0 0 2-2v-2H5v2a2 2 0 0 0 2 2z" />
+      </>
+    ),
+  },
+  {
     id: "edge-yolo",
     label: "Edge AI / YOLO",
     icon: (
