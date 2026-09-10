@@ -81,6 +81,12 @@ export const LIVE_WALLPAPERS: WallpaperEntry[] = [
   },
 ];
 
+/** The one the slideshow shows next — also what WallpaperBg preloads. */
+export function nextWallpaper(entry: WallpaperEntry): WallpaperEntry {
+  const i = WALLPAPERS.findIndex((w) => w.id === entry.id);
+  return WALLPAPERS[(i + 1) % WALLPAPERS.length];
+}
+
 type WallpaperStore = {
   current: WallpaperEntry;
   /** True once the visitor picks a wallpaper themselves — stops the rotation. */
@@ -107,11 +113,7 @@ export const useWallpaper = create<WallpaperStore>((set, get) => ({
       set({ current: pending, pending: null, confirming: false, pinned: true });
   },
 
-  rotate: () =>
-    set((s) => {
-      const i = WALLPAPERS.findIndex((w) => w.id === s.current.id);
-      return { current: WALLPAPERS[(i + 1) % WALLPAPERS.length] };
-    }),
+  rotate: () => set((s) => ({ current: nextWallpaper(s.current) })),
 
   cancel: () => set({ pending: null, confirming: false }),
 }));
