@@ -80,7 +80,10 @@ const taskLabel = (id: string) => APP_NAMES[id] ?? node(id)?.label ?? id;
  * shows once, as its window's button — Windows merges the two rather than
  * drawing the app twice. Pin and unpin live on the right-click menu.
  */
-export function Taskbar({ onShutdown }: { onShutdown?: () => void } = {}) {
+export function Taskbar({
+  onShutdown,
+  signedIn,
+}: { onShutdown?: () => void; signedIn?: boolean } = {}) {
   const [panel, setPanel] = useState<Panel>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const windows = useWindowStore((s) => s.windows);
@@ -137,7 +140,11 @@ export function Taskbar({ onShutdown }: { onShutdown?: () => void } = {}) {
           <StartOrbFace />
         </button>
 
-        <AskBar open={panel === "ask"} setOpen={(open) => setPanel(open ? "ask" : null)} />
+        <AskBar
+          open={panel === "ask"}
+          setOpen={(open) => setPanel(open ? "ask" : null)}
+          signedIn={signedIn}
+        />
 
         <div className="taskbar-windows">
           {windows.map((w) => {

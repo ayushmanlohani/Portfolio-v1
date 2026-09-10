@@ -55,6 +55,141 @@
 
 .ask-band-input::placeholder {
   color: rgba(224, 236, 250, 0.62);
+  transition: opacity 200ms ease;
+}
+
+/* Set for one beat while the carousel swaps hints, so the words dip out
+   rather than snapping to the next question. */
+.ask-band-input[data-dim]::placeholder {
+  opacity: 0;
+}
+
+/* ── Balloon tip ─────────────────────────────────────────────────
+   Windows 7's own info balloon: a pale gradient card, a steel hairline
+   and a tail pointing down at the band. It shows once per visit, a few
+   seconds after sign-in, and leaves on its own.
+   ─────────────────────────────────────────────────────────────── */
+
+.ask-tip {
+  position: absolute;
+  bottom: calc(100% + 11 * var(--px));
+  left: calc(-4 * var(--px));
+  z-index: 40;
+  display: flex;
+  gap: calc(9 * var(--px));
+  width: calc(246 * var(--px));
+  padding: calc(10 * var(--px)) calc(11 * var(--px)) calc(11 * var(--px));
+  border: calc(1 * var(--px)) solid #8ba0b6;
+  border-radius: calc(4 * var(--px));
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fc 55%, #eef3f9 100%);
+  box-shadow: 0 calc(4 * var(--px)) calc(16 * var(--px)) rgba(0, 0, 0, 0.45);
+  animation: ask-tip 13s ease forwards;
+}
+
+/* The tail: a corner of the same card, rotated to a point. Its two lit
+   edges are the ones that face out, so the hairline runs unbroken. */
+.ask-tip::after {
+  content: "";
+  position: absolute;
+  bottom: calc(-6 * var(--px));
+  left: calc(20 * var(--px));
+  width: calc(10 * var(--px));
+  height: calc(10 * var(--px));
+  transform: rotate(45deg);
+  background: #eef3f9;
+  border-right: calc(1 * var(--px)) solid #8ba0b6;
+  border-bottom: calc(1 * var(--px)) solid #8ba0b6;
+}
+
+/* Fade in, hold, fade out — the whole life in one keyframe, so nothing
+   has to time the exit. `onAnimationEnd` unmounts it. */
+@keyframes ask-tip {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(6 * var(--px)));
+  }
+  4% {
+    opacity: 1;
+    transform: none;
+  }
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+
+.ask-tip-icon {
+  flex: none;
+  width: calc(16 * var(--px));
+  height: calc(16 * var(--px));
+  margin-top: calc(1 * var(--px));
+}
+
+/* A button, not a div: the whole message is the affordance — clicking it
+   puts the caret in the band, which is the thing it is talking about. */
+.ask-tip-text {
+  display: block;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ask-tip-title {
+  display: block;
+  font-size: calc(12 * var(--px));
+  font-weight: 700;
+  color: #24425f;
+}
+
+.ask-tip-body {
+  display: block;
+  margin-top: calc(3 * var(--px));
+  padding-right: calc(10 * var(--px));
+  font-size: calc(12 * var(--px));
+  line-height: 1.45;
+  color: #333a41;
+}
+
+.ask-tip-close {
+  position: absolute;
+  top: calc(3 * var(--px));
+  right: calc(5 * var(--px));
+  padding: calc(2 * var(--px));
+  border: 0;
+  background: none;
+  color: #7d8894;
+  font-size: calc(14 * var(--px));
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ask-tip-close:hover {
+  color: #1a1a1a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ask-tip {
+    animation-name: ask-tip-still;
+  }
+
+  @keyframes ask-tip-still {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    4%,
+    88% {
+      opacity: 1;
+    }
+  }
 }
 
 /* ── Flyout ──────────────────────────────────────────────────── */

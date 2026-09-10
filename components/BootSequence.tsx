@@ -41,7 +41,7 @@ export function BootSequence() {
           <WallpaperBg />
           <DesktopSurface />
           <WindowLayer />
-          <Taskbar onShutdown={handleShutdown} />
+          <Taskbar onShutdown={handleShutdown} signedIn={!loginVisible} />
           {showWelcome && (
             <DesktopWelcomeToast onDismiss={() => setShowWelcome(false)} />
           )}
