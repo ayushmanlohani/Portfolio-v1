@@ -83,15 +83,19 @@ export const LIVE_WALLPAPERS: WallpaperEntry[] = [
 
 type WallpaperStore = {
   current: WallpaperEntry;
+  /** True once the visitor picks a wallpaper themselves — stops the rotation. */
+  pinned: boolean;
   pending: WallpaperEntry | null;
   confirming: boolean;
   select: (entry: WallpaperEntry) => void;
   confirm: () => void;
   cancel: () => void;
+  rotate: () => void;
 };
 
 export const useWallpaper = create<WallpaperStore>((set, get) => ({
   current: WALLPAPERS[0],
+  pinned: false,
   pending: null,
   confirming: false,
 
@@ -99,8 +103,15 @@ export const useWallpaper = create<WallpaperStore>((set, get) => ({
 
   confirm: () => {
     const { pending } = get();
-    if (pending) set({ current: pending, pending: null, confirming: false });
+    if (pending)
+      set({ current: pending, pending: null, confirming: false, pinned: true });
   },
+
+  rotate: () =>
+    set((s) => {
+      const i = WALLPAPERS.findIndex((w) => w.id === s.current.id);
+      return { current: WALLPAPERS[(i + 1) % WALLPAPERS.length] };
+    }),
 
   cancel: () => set({ pending: null, confirming: false }),
 }));
