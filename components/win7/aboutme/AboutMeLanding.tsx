@@ -295,8 +295,16 @@ function Draggable({
       className={editable ? "edit-item" : undefined}
       onPointerDown={(e) => {
         if (disabledNow) return;
-        const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-        off.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        // Measured against where the box *lays out*, not its rendered
+        // rectangle: getBoundingClientRect() returns the axis-aligned box
+        // around a rotated prop, which is wider than the prop itself, so the
+        // grab offset came out short and the piece jumped on the first move.
+        // The most-rotated prop — the cat, at -20deg — jumped the furthest.
+        const parent = (e.currentTarget as HTMLDivElement).parentElement!.getBoundingClientRect();
+        off.current = {
+          x: e.clientX - (parent.left + parent.width / 2 + pos.x),
+          y: e.clientY - (parent.top + parent.height / 2 + pos.y),
+        };
         if (onFront) setZi(onFront());
         setDrag(true);
         (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
@@ -321,6 +329,11 @@ function Draggable({
         // minimised and restored.
         left: `calc(50% + ${pos.x}px)`,
         top: `calc(50% + ${pos.y}px)`,
+        // An absolutely positioned box with `left` set is shrink-to-fit: its
+        // width caps at whatever room is left to the right. With `img
+        // { max-width: 100% }` in play, dragging a prop rightwards shrank the
+        // picture inside it. `max-content` pins the prop to its own size.
+        width: "max-content",
         transform: `rotate(${displayRotate}deg) scale(${displayScale})`,
         zIndex: zi,
         cursor: disabledNow ? "default" : drag ? "grabbing" : "grab",
@@ -1952,9 +1965,9 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
             targetX={px(deskMode === "chaos" ? 287 : 127)}
             targetY={py(deskMode === "chaos" ? -279 : -241)}
             rotate={deskMode === "chaos" ? 7 : 0}
-            // The cat PNG (z 7) overlapped this card's right half, and an
-            // element you cannot point at cannot be hovered to play. The tile
-            // is the only interactive prop on the desk, so it sits on top.
+            // The cat (z 20) rests on this card by default. Being the only
+            // interactive prop on the desk, one click hands this card the
+            // next z and it comes out from under the cat.
             z={8}
             onFront={bringToFront}
             editId={editMode ? "vinyl" : undefined}
@@ -2077,13 +2090,17 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
 
           {/* Desk clutter — real PNGs from the Pictures folder, free to drag around */}
           <Draggable
-            targetX={px(deskMode === "chaos" ? 341 : -150)}
-            targetY={py(deskMode === "chaos" ? -250 : -147)}
+            /* Sits over every other prop by default — 20 is the top of the
+               starting range, one below the first number bringToFront hands
+               out. Clicking any other prop, the record card included, still
+               lifts that one above the cat. */
+            targetX={px(deskMode === "chaos" ? 392 : -150)}
+            targetY={py(deskMode === "chaos" ? -156 : -147)}
             rotate={deskMode === "chaos" ? -20 : 0}
-            z={7}
+            z={20}
             onFront={bringToFront}
             editId={editMode ? "cat-headphones" : undefined}
-            baseWidth={242}
+            baseWidth={89}
             scaleFactor={k}
             onEditChange={handleEditChange}
             compact={compact}
@@ -2095,7 +2112,11 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
               alt=""
               draggable={false}
               onDragStart={(e) => e.preventDefault()}
-              style={{ width: compact ? 84 : 242, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
+              /* The file was a 674x721 canvas holding a 247x293 cat, and all
+                 that empty margin was still a hit target — the cat answered
+                 the pointer from well outside itself. It is cropped to the
+                 cat now, so these widths are the cat, not the canvas. */
+              style={{ width: compact ? 31 : 89, height: "auto", display: "block", pointerEvents: "auto", filter: "drop-shadow(0 6px 14px rgba(62,62,66,0.22))" }}
             />
           </Draggable>
 
