@@ -53,12 +53,6 @@ export const WALLPAPERS: WallpaperEntry[] = [
     label: "Bliss Hills",
   },
   {
-    id: "rolling-hills",
-    src: "/letterbox/wallpaper/wp15133312-windows-7-nature-wallpapers.webp",
-    type: "image",
-    label: "Rolling Hills",
-  },
-  {
     id: "sandstone-wave",
     src: "/letterbox/wallpaper/wp15133315-windows-7-nature-wallpapers.webp",
     type: "image",
