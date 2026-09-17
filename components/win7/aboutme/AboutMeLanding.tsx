@@ -2094,8 +2094,8 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
                starting range, one below the first number bringToFront hands
                out. Clicking any other prop, the record card included, still
                lifts that one above the cat. */
-            targetX={px(deskMode === "chaos" ? 392 : -150)}
-            targetY={py(deskMode === "chaos" ? -156 : -147)}
+            targetX={px(deskMode === "chaos" ? 392 : -74)}
+            targetY={py(deskMode === "chaos" ? -156 : -68)}
             rotate={deskMode === "chaos" ? -20 : 0}
             z={20}
             onFront={bringToFront}
@@ -2144,8 +2144,8 @@ export function AboutMeLanding({ scrollTo }: { scrollTo?: string } = {}) {
           </Draggable>
 
           <Draggable
-            targetX={px(deskMode === "chaos" ? -579 : 75)}
-            targetY={py(deskMode === "chaos" ? -50 : -89)}
+            targetX={px(deskMode === "chaos" ? -579 : 57)}
+            targetY={py(deskMode === "chaos" ? -50 : -91)}
             rotate={deskMode === "chaos" ? 9 : 0}
             z={6}
             onFront={bringToFront}
