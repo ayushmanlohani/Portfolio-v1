@@ -38,7 +38,7 @@ export function WelcomeScreen({ onSignIn, resetKey }: Props) {
         <div className="win7-login-core">
           <div className="win7-login-avatar">
             <div className="win7-login-avatar-inner">
-              <img src="/letterbox/photo-1.png" alt="" className="win7-login-avatar-photo" />
+              <img src="/letterbox/AL_logo.jpeg" alt="" className="win7-login-avatar-photo" />
             </div>
           </div>
 

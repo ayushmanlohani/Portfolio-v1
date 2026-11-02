@@ -59,5 +59,11 @@ AGENTS.md
 .github
 .windsurf
 
+# trail-code local (keep package files + opencode.json)
+.trail
+.gemini
+.kiro
+GEMINI.md
+
 # stray local drop, wrong folder name
 /public/letterbox/linked in/
